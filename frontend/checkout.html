@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone - Checkout</title>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .checkout-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        
+        .checkout-form {
+            width: 60%;
+            padding-right: 30px;
+        }
+        
+        .order-summary {
+            width: 35%;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .form-row .form-group {
+            width: 48%;
+        }
+        
+        .section-title {
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .order-item-details {
+            flex-grow: 1;
+        }
+        
+        .order-item-image {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        
+        .order-total {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid #e1e1e1;
+            font-weight: 600;
+        }
+        
+        .payment-methods {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .payment-method {
+            margin-right: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .payment-method label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .payment-method input {
+            margin-right: 10px;
+        }
+        
+        @media (max-width: 799px) {
+            .checkout-form, .order-summary {
+                width: 100%;
+                padding-right: 0;
+                margin-bottom: 30px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <section id="header">
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
+        <div>
+            <ul id="navbar">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="shop.html">Shop</a></li>
+                <li><a href="blog.html">Blog</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li><a href="login.html">Login</a></li>
+                <a href="#" id="close"><i class="far fa-times"></i></a>
+            </ul>
+        </div>
+        <div id="mobile">
+            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <i id="bar" class="fas fa-outdent"></i>
+        </div>
+    </section>
+
+    <section id="page-header" class="about-header">
+        <h2>Checkout</h2>
+        <p>Complete your order and get ready to start your fitness journey</p>
+    </section>
+
+    <section id="checkout-section" class="section-p1">
+        <div class="checkout-container">
+            <!-- Checkout Form -->
+            <div class="checkout-form">
+                <form id="checkout-form">
+                    <div class="section-title">Shipping Information</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="firstname">First Name</label>
+                            <input type="text" id="firstname" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastname">Last Name</label>
+                            <input type="text" id="lastname" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="address">Address</label>
+                        <input type="text" id="address" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="zip">Zip/Postal Code</label>
+                            <input type="text" id="zip" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="country">Country</label>
+                        <select id="country" class="form-control" required>
+                            <option value="">Select Country</option>
+                            <option value="US">United States</option>
+                            <option value="CA">Canada</option>
+                            <option value="UK">United Kingdom</option>
+                            <option value="AU">Australia</option>
+                            <!-- Add more countries as needed -->
+                        </select>
+                    </div>
+                    
+                    <div class="section-title">Payment Information</div>
+                    
+                    <div class="payment-methods">
+                        <div class="payment-method">
+                            <label>
+                                <input type="radio" name="payment" value="credit" checked>
+                                Credit Card
+                            </label>
+                        </div>
+                        <div class="payment-method">
+                            <label>
+                                <input type="radio" name="payment" value="paypal">
+                                PayPal
+                            </label>
+                        </div>
+                        <div class="payment-method">
+                            <label>
+                                <input type="radio" name="payment" value="apple">
+                                Apple Pay
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="credit-card-fields">
+                        <div class="form-group">
+                            <label for="card-number">Card Number</label>
+                            <input type="text" id="card-number" class="form-control" placeholder="1234 5678 9012 3456" required>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="expiry">Expiry Date</label>
+                                <input type="text" id="expiry" class="form-control" placeholder="MM/YY" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cvv">CVV</label>
+                                <input type="text" id="cvv" class="form-control" placeholder="123" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="card-name">Name on Card</label>
+                            <input type="text" id="card-name" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button type="submit" class="normal">Place Order</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="order-summary">
+                <div class="section-title">Order Summary</div>
+                
+                <div id="order-items">
+                    <!-- Order items will be dynamically populated by JavaScript -->
+                </div>
+                
+                <div class="order-totals">
+                    <div class="order-subtotal">
+                        <div>Subtotal</div>
+                        <div id="summary-subtotal">$0.00</div>
+                    </div>
+                    <div class="order-shipping">
+                        <div>Shipping</div>
+                        <div>$10.00</div>
+                    </div>
+                    <div class="order-total">
+                        <div>Total</div>
+                        <div id="summary-total">$0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="newsletter" class="section-p1 section-m1">
+        <div class="newstext">
+            <h4>Sign Up For Newsletters</h4>
+            <p>Get E-mail updates about our latest shop and <span>special offers.</span></p>
+        </div>
+        <div class="form">
+            <input type="text" placeholder="Your email address">
+            <button class="normal">Sign Up</button>
+        </div>
+    </section>
+
+    <footer class="section-p1">
+        <div class="col">
+            <img class="logo" src="img/logo.png" alt="">
+            <h4>Contact</h4>
+            <p><strong>Address: </strong> 123 Fitness Street, Health District, Cityville</p>
+            <p><strong>Phone:</strong> +1 234 567 8901 / +1 234 567 8902</p>
+            <p><strong>Hours:</strong> 10:00 - 18:00, Mon - Sat</p>
+            <div class="follow">
+                <h4>Follow Us</h4>
+                <div class="icon">
+                    <i class="fab fa-facebook-f"></i>
+                    <i class="fab fa-twitter"></i>
+                    <i class="fab fa-instagram"></i>
+                    <i class="fab fa-pinterest-p"></i>
+                    <i class="fab fa-youtube"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <h4>About</h4>
+            <a href="about.html">About Us</a>
+            <a href="#">Delivery Information</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms & Conditions</a>
+            <a href="contact.html">Contact Us</a>
+        </div>
+
+        <div class="col">
+            <h4>My Account</h4>
+            <a href="login.html">Sign In</a>
+            <a href="cart.html">View Cart</a>
+            <a href="#">My Wishlist</a>
+            <a href="#">Track My Order</a>
+            <a href="contact.html">Help</a>
+        </div>
+
+        <div class="col install">
+            <h4>Install App</h4>
+            <p>From App Store or Google Play</p>
+            <div class="row">
+                <img src="img/pay/app.jpg" alt="">
+                <img src="img/pay/play.jpg" alt="">
+            </div>
+            <p>Secured Payment Gateways </p>
+            <img src="img/pay/pay.png" alt="">
+        </div>
+
+        <div class="copyright">
+            <p>© 2023, FitZone - Premium Fitness Products & Supplements</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            if (!FitZoneAuth.isLoggedIn()) {
+                alert('Please log in to proceed with checkout.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Populate user information if available
+            const user = FitZoneAuth.getCurrentUser();
+            if (user) {
+                document.getElementById('email').value = user.email || '';
+                if (user.name) {
+                    const nameParts = user.name.split(' ');
+                    if (nameParts.length > 0) {
+                        document.getElementById('firstname').value = nameParts[0];
+                        if (nameParts.length > 1) {
+                            document.getElementById('lastname').value = nameParts.slice(1).join(' ');
+                        }
+                    }
+                }
+            }
+
+            // Render order items
+            function renderOrderItems() {
+                const orderItemsElement = document.getElementById('order-items');
+                const subtotalElement = document.getElementById('summary-subtotal');
+                const totalElement = document.getElementById('summary-total');
+                
+                const cart = FitZoneCart.getCart();
+                
+                if (cart.length === 0) {
+                    orderItemsElement.innerHTML = '<p>Your cart is empty</p>';
+                    subtotalElement.textContent = '$0.00';
+                    totalElement.textContent = '$0.00';
+                    return;
+                }
+                
+                let itemsHTML = '';
+                cart.forEach(item => {
+                    itemsHTML += `
+                        <div class="order-item">
+                            <img src="${item.image}" alt="${item.name}" class="order-item-image">
+                            <div class="order-item-details">
+                                <div>${item.name}</div>
+                                <div>$${item.price.toFixed(2)} × ${item.quantity}</div>
+                            </div>
+                            <div class="order-item-price">$${(item.price * item.quantity).toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+                
+                orderItemsElement.innerHTML = itemsHTML;
+                
+                // Update subtotal and total
+                const subtotal = FitZoneCart.calculateTotal();
+                const shipping = subtotal > 0 ? 10 : 0;
+                const total = subtotal + shipping;
+                
+                subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+                totalElement.textContent = `$${total.toFixed(2)}`;
+            }
+            
+            // Initialize order summary
+            renderOrderItems();
+
+            // Handle form submission
+            document.getElementById('checkout-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form data
+                const formData = {
+                    firstName: document.getElementById('firstname').value,
+                    lastName: document.getElementById('lastname').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    zip: document.getElementById('zip').value,
+                    country: document.getElementById('country').value,
+                    paymentMethod: document.querySelector('input[name="payment"]:checked').value
+                };
+                
+                // Save order to localStorage
+                const user = FitZoneAuth.getCurrentUser();
+                const cart = FitZoneCart.getCart();
+                const subtotal = FitZoneCart.calculateTotal();
+                const shipping = subtotal > 0 ? 10 : 0;
+                const total = subtotal + shipping;
+                
+                const order = {
+                    id: Date.now().toString(),
+                    userId: user.id,
+                    items: cart,
+                    subtotal: subtotal,
+                    shipping: shipping,
+                    total: total,
+                    status: 'processing',
+                    createdAt: new Date().toISOString(),
+                    shippingInfo: formData
+                };
+                
+                // Get existing orders or initialize new array
+                const orders = JSON.parse(localStorage.getItem('fitzone_orders') || '[]');
+                orders.push(order);
+                localStorage.setItem('fitzone_orders', JSON.stringify(orders));
+                
+                // Clear cart
+                FitZoneCart.clearCart();
+                
+                // Redirect to order confirmation page
+                alert('Thank you for your order! Your order has been placed successfully.');
+                window.location.href = 'order-confirmation.html?orderId=' + order.id;
+            });
+
+            // Toggle payment method fields
+            const paymentRadios = document.querySelectorAll('input[name="payment"]');
+            const creditCardFields = document.getElementById('credit-card-fields');
+            
+            paymentRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'credit') {
+                        creditCardFields.style.display = 'block';
+                    } else {
+                        creditCardFields.style.display = 'none';
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

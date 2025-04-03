@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone - Order Confirmation</title>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .confirmation-container {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .confirmation-icon {
+            font-size: 64px;
+            color: #088178;
+            margin-bottom: 20px;
+        }
+        
+        .confirmation-message {
+            margin-bottom: 20px;
+        }
+        
+        .order-details {
+            background-color: white;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .order-header {
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .order-item {
+            display: flex;
+            padding: 15px 0;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .order-item-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 20px;
+        }
+        
+        .order-item-details {
+            flex-grow: 1;
+        }
+        
+        .order-item-price {
+            font-weight: 600;
+        }
+        
+        .order-summary {
+            margin-top: 30px;
+            border-top: 1px solid #e1e1e1;
+            padding-top: 20px;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .summary-row.total {
+            font-weight: 600;
+            font-size: 18px;
+            border-top: 1px solid #e1e1e1;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+        
+        .shipping-address {
+            margin-top: 30px;
+        }
+        
+        .address-box {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .action-buttons {
+            margin-top: 40px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <section id="header">
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
+        <div>
+            <ul id="navbar">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="shop.html">Shop</a></li>
+                <li><a href="blog.html">Blog</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="contact.html">Contact</a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li><a href="login.html">Login</a></li>
+                <a href="#" id="close"><i class="far fa-times"></i></a>
+            </ul>
+        </div>
+        <div id="mobile">
+            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <i id="bar" class="fas fa-outdent"></i>
+        </div>
+    </section>
+
+    <section id="page-header" class="about-header">
+        <h2>Order Confirmation</h2>
+        <p>Thank you for your purchase!</p>
+    </section>
+
+    <section class="section-p1">
+        <div class="confirmation-container">
+            <div class="confirmation-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="confirmation-message">
+                <h2>Order Received!</h2>
+                <p>Your order has been placed successfully. We'll start processing it right away!</p>
+            </div>
+            <div id="order-id">
+                <strong>Order ID:</strong> <span id="confirmation-order-id">...</span>
+            </div>
+            
+            <div class="order-details">
+                <div class="order-header">
+                    <h3>Order Details</h3>
+                    <div id="order-date">Date: <span id="confirmation-order-date">...</span></div>
+                </div>
+                
+                <div id="order-items">
+                    <!-- Order items will be dynamically populated by JavaScript -->
+                </div>
+                
+                <div class="order-summary">
+                    <div class="summary-row">
+                        <div>Subtotal:</div>
+                        <div id="confirmation-subtotal">$0.00</div>
+                    </div>
+                    <div class="summary-row">
+                        <div>Shipping:</div>
+                        <div id="confirmation-shipping">$0.00</div>
+                    </div>
+                    <div class="summary-row total">
+                        <div>Total:</div>
+                        <div id="confirmation-total">$0.00</div>
+                    </div>
+                </div>
+                
+                <div class="shipping-address">
+                    <h4>Shipping Address</h4>
+                    <div class="address-box" id="confirmation-address">
+                        <!-- Address will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="normal" onclick="window.location.href='index.html'">Continue Shopping</button>
+                    <button class="normal" onclick="window.print()">Print Receipt</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="newsletter" class="section-p1 section-m1">
+        <div class="newstext">
+            <h4>Sign Up For Newsletters</h4>
+            <p>Get E-mail updates about our latest shop and <span>special offers.</span></p>
+        </div>
+        <div class="form">
+            <input type="text" placeholder="Your email address">
+            <button class="normal">Sign Up</button>
+        </div>
+    </section>
+
+    <footer class="section-p1">
+        <div class="col">
+            <img class="logo" src="img/logo.png" alt="">
+            <h4>Contact</h4>
+            <p><strong>Address: </strong> 123 Fitness Street, Health District, Cityville</p>
+            <p><strong>Phone:</strong> +1 234 567 8901 / +1 234 567 8902</p>
+            <p><strong>Hours:</strong> 10:00 - 18:00, Mon - Sat</p>
+            <div class="follow">
+                <h4>Follow Us</h4>
+                <div class="icon">
+                    <i class="fab fa-facebook-f"></i>
+                    <i class="fab fa-twitter"></i>
+                    <i class="fab fa-instagram"></i>
+                    <i class="fab fa-pinterest-p"></i>
+                    <i class="fab fa-youtube"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <h4>About</h4>
+            <a href="about.html">About Us</a>
+            <a href="#">Delivery Information</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms & Conditions</a>
+            <a href="contact.html">Contact Us</a>
+        </div>
+
+        <div class="col">
+            <h4>My Account</h4>
+            <a href="login.html">Sign In</a>
+            <a href="cart.html">View Cart</a>
+            <a href="#">My Wishlist</a>
+            <a href="#">Track My Order</a>
+            <a href="contact.html">Help</a>
+        </div>
+
+        <div class="col install">
+            <h4>Install App</h4>
+            <p>From App Store or Google Play</p>
+            <div class="row">
+                <img src="img/pay/app.jpg" alt="">
+                <img src="img/pay/play.jpg" alt="">
+            </div>
+            <p>Secured Payment Gateways </p>
+            <img src="img/pay/pay.png" alt="">
+        </div>
+
+        <div class="copyright">
+            <p>© 2025, FitZone - Premium Fitness Products & Supplements</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get order ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('orderId');
+            
+            if (!orderId) {
+                // No order ID in URL, redirect to homepage
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Get order details from localStorage
+            const orders = JSON.parse(localStorage.getItem('fitzone_orders') || '[]');
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) {
+                // Order not found, redirect to homepage
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Populate order details
+            document.getElementById('confirmation-order-id').textContent = order.id;
+            document.getElementById('confirmation-order-date').textContent = new Date(order.createdAt).toLocaleDateString();
+            document.getElementById('confirmation-subtotal').textContent = `$${order.subtotal.toFixed(2)}`;
+            document.getElementById('confirmation-shipping').textContent = `$${order.shipping.toFixed(2)}`;
+            document.getElementById('confirmation-total').textContent = `$${order.total.toFixed(2)}`;
+            
+            // Populate shipping address
+            const address = order.shippingInfo;
+            document.getElementById('confirmation-address').innerHTML = `
+                ${address.firstName} ${address.lastName}<br>
+                ${address.address}<br>
+                ${address.city}, ${address.zip}<br>
+                ${address.country}<br>
+                ${address.phone}<br>
+                ${address.email}
+            `;
+            
+            // Populate order items
+            const orderItemsElement = document.getElementById('order-items');
+            let itemsHTML = '';
+            
+            order.items.forEach(item => {
+                itemsHTML += `
+                    <div class="order-item">
+                        <img src="${item.image}" alt="${item.name}" class="order-item-image">
+                        <div class="order-item-details">
+                            <h4>${item.name}</h4>
+                            <p>Quantity: ${item.quantity}</p>
+                            <p>Unit Price: $${item.price.toFixed(2)}</p>
+                        </div>
+                        <div class="order-item-price">
+                            $${(item.price * item.quantity).toFixed(2)}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            orderItemsElement.innerHTML = itemsHTML;
+        });
+    </script>
+</body>
+
+</html>
