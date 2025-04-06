@@ -4,9 +4,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Login</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <style>
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .success-message {
+            color: #2ecc71;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .debug-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #333;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .show-debug-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 12px;
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 10px;
+            padding: 0;
+        }
+    </style>
 </head> 
 <body>
     <section id="header">
@@ -15,7 +58,6 @@
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shop.html">Shop</a></li>
-                <li><a href="blog.html">Blog</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
@@ -29,27 +71,32 @@
         </div>
     </section>
 
-    <div class="wrapper">
-        <form id="loginForm">
-            <h1>Login</h1>
-            <div class="input-box">
-                <input type="email" id="email" placeholder="Email" required>  
-                <i class='bx bxs-user'></i>
-            </div>
-            <div class="input-box">
-                <input type="password" id="password" placeholder="Password" required>
-                <i class='bx bxs-lock-alt'></i>
-            </div>
-            <div class="remember-forgot">
-                <label><input type="checkbox" id="remember">Remember me</label>
-                <a href="#">Forgot password?</a>
-            </div>
-            <button type="submit" class="btn">Login</button>
-            <div class="register-link">
-                <p>Don't have an account? <a href="register.html">Register now!</a></p>
-            </div>
-        </form>
-    </div>
+    <section class="wrapper-section">
+        <div class="wrapper">
+            <form id="loginForm">
+                <h1>Login</h1>
+                <div class="input-box">
+                    <input type="email" id="email" placeholder="Email" required>  
+                    <i class='bx bxs-user'></i>
+                </div>
+                <div class="input-box">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class='bx bxs-lock-alt'></i>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox" id="remember-me"> Remember me</label>
+                    <a href="#">Forgot password?</a>
+                </div>
+                <button type="submit" class="btn" id="loginButton">Login</button>
+                <div id="login-message" class="message"></div>
+                <button type="button" id="show-debug-btn" class="show-debug-btn" style="display:none">Show debug info</button>
+                <div id="debug-info" class="debug-info"></div>
+                <div class="register-link">
+                    <p>Don't have an account? <a href="register.html">Register now!</a></p>
+                </div>
+            </form>
+        </div>
+    </section>
 
     <footer class="section-p1">
         <div class="col">
@@ -104,48 +151,105 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            if (FitZoneAuth.isLoggedIn()) {
+                // Redirect to previously attempted page or homepage
+                const redirect = new URLSearchParams(window.location.search).get('redirect');
+                window.location.href = redirect || 'index.html';
+                return;
+            }
             
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember').checked;
+            // Elements
+            const loginForm = document.getElementById('loginForm');
+            const messageElement = document.getElementById('login-message');
+            const debugInfo = document.getElementById('debug-info');
+            const showDebugBtn = document.getElementById('show-debug-btn');
             
-            // In a real implementation, this would make an API call to a backend
-            // For demo purposes, we're using localStorage
-            const users = JSON.parse(localStorage.getItem('fitzone_users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
+            // Show/hide debug info button
+            showDebugBtn.addEventListener('click', function() {
+                if (debugInfo.style.display === 'none') {
+                    debugInfo.style.display = 'block';
+                    showDebugBtn.textContent = 'Hide debug info';
+                } else {
+                    debugInfo.style.display = 'none';
+                    showDebugBtn.textContent = 'Show debug info';
+                }
+            });
             
-            if (user) {
-                // Store current user in session
-                sessionStorage.setItem('fitzone_current_user', JSON.stringify({
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    isLoggedIn: true
-                }));
+            // Login form submission
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                // Remember user if selected
-                if (remember) {
-                    localStorage.setItem('fitzone_remembered_user', email);
+                // Reset UI
+                messageElement.textContent = '';
+                messageElement.className = '';
+                debugInfo.style.display = 'none';
+                debugInfo.textContent = '';
+                showDebugBtn.style.display = 'none';
+                
+                // Get form data
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('remember-me').checked;
+                
+                if (!email || !password) {
+                    messageElement.textContent = 'Please enter both email and password';
+                    messageElement.className = 'error-message';
+                    return;
                 }
                 
-                alert('Login successful!');
-                window.location.href = 'index.html';
-            } else {
-                alert('Invalid email or password. Please try again.');
-            }
-        });
-
-        // Check for remembered user
-        window.addEventListener('DOMContentLoaded', function() {
-            const rememberedUser = localStorage.getItem('fitzone_remembered_user');
-            if (rememberedUser) {
-                document.getElementById('email').value = rememberedUser;
-                document.getElementById('remember').checked = true;
-            }
+                // Login button state
+                const loginButton = document.getElementById('loginButton');
+                const originalButtonText = loginButton.textContent;
+                loginButton.textContent = 'Logging in...';
+                loginButton.disabled = true;
+                
+                try {
+                    // Log debug info
+                    debugInfo.textContent += `Attempting login with email: ${email}\n`;
+                    
+                    const result = await FitZoneAuth.login({
+                        email: email,
+                        password: password,
+                        remember_me: rememberMe
+                    });
+                    
+                    debugInfo.textContent += `Login result: ${JSON.stringify(result)}\n`;
+                    
+                    if (result.success) {
+                        // Show success message
+                        messageElement.textContent = 'Login successful! Redirecting...';
+                        messageElement.className = 'success-message';
+                        
+                        // Redirect to previously attempted page or homepage
+                        const redirect = new URLSearchParams(window.location.search).get('redirect');
+                        setTimeout(() => {
+                            window.location.href = redirect || 'index.html';
+                        }, 1000);
+                    } else {
+                        throw new Error(result.message || 'Login failed with unknown error');
+                    }
+                } catch (error) {
+                    // Show error and debug info
+                    messageElement.textContent = error.message || 'Login failed. Please check your credentials.';
+                    messageElement.className = 'error-message';
+                    showDebugBtn.style.display = 'block';
+                    
+                    // Add error to debug info
+                    debugInfo.textContent += `Error: ${error.message}\n`;
+                    if (error.stack) {
+                        debugInfo.textContent += `Stack: ${error.stack}\n`;
+                    }
+                    
+                    // Reset button
+                    loginButton.textContent = originalButtonText;
+                    loginButton.disabled = false;
+                }
+            });
         });
     </script>
 </body>

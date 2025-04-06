@@ -1,3 +1,4 @@
+-- Active: 1743970933967@@127.0.0.1@3307@fitzone_db
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,96 +6,200 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech2etc Ecommerce Tutorial</title>
+    <title>FitZone - About Us</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
-
     <link rel="stylesheet" href="style.css">
+    <style>
+        #page-header.about-header {
+            background-image: url('img/banner/b16.jpg');
+            background-size: cover;
+            background-position: top 25% center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        #page-header.about-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+        
+        #page-header h2, 
+        #page-header p {
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+    </style>
 </head>
 
 <body>
 
     <section id="header">
-        <a href="#"><img src="img/logo.png" class="logo" alt=""></a>
-
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
         <div>
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shop.html">Shop</a></li>
-                <li><a href="blog.html">Blog</a></li>
                 <li><a class="active" href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
-                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
+                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                <li><a href="login.html">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Search for products...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+                <div id="search-results"></div>
+            </div>
+        </div>
         <div id="mobile">
-            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
 
     <section id="page-header" class="about-header">
-
-        <h2>#KnowUs </h2>
-
-        <p>Lorem ipsum dolor sit amet, consectetur </p>
-
+        <h2>#KnowUs</h2>
+        <p>Premium fitness supplements & equipment for your journey</p>
     </section>
 
     <section id="about-head" class="section-p1">
-        <img src="about/a6.jpg" alt="">
+        <img src="img/final-fitness-man.png" alt="About Us Image">
         <div>
-            <h2>Who We Are?</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis auteirure
-                dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
-
-            <abbr title="">Create stunning images with as much or as little control as you like thanks to a choice of Basic and Creative modes.</abbr>
+            <h2>Who We Are</h2>
+            <p>FitZone was founded in 2025 with a simple mission: to provide premium quality fitness supplements and equipment that actually deliver results. We started as a small operation with just three fitness enthusiasts who were tired of overpriced, under-performing products in the market.</p>
+            <p>Today, we've grown into a leading online fitness retailer trusted by thousands of customers who share our passion for health and fitness. What sets us apart is our commitment to quality, transparency, and customer satisfaction. We personally test all products before they hit our shelves, provide detailed nutritional information, and offer expert advice to help you choose the right products for your goals.</p>
+            <p>Whether you're just starting your fitness journey or you're a seasoned athlete, we're here to support you every step of the way with the best supplements and equipment in the industry.</p>
+            <abbr title="Our Promise">Your gains are our business, and we take that seriously.</abbr>
 
             <br><br>
 
-            <marquee bgcolor="#ccc" loop="-1" scrollamount="5" width="100%">Create stunning images with as much or as little control as you like thanks to a choice of Basic and Creative modes.
-            </marquee>
+            <marquee bgcolor="#ccc" loop="-1" scrollamount="5" width="100%">Premium quality fitness supplements and equipment - Whey Proteins, BCAAs, Mass Gainers, Pre-Workouts, and Fitness Accessories - Trusted by professionals and fitness enthusiasts alike.</marquee>
+        </div>
+    </section>
+
+    <section id="about-values" class="section-p1">
+        <h2>Our Core Values</h2>
+        <div class="values-container">
+            <div class="value-box">
+                <i class="fas fa-check-circle"></i>
+                <h3>Quality</h3>
+                <p>We never compromise on the quality of our products. All supplements are manufactured in certified facilities and undergo rigorous testing.</p>
+            </div>
+            <div class="value-box">
+                <i class="fas fa-user-shield"></i>
+                <h3>Transparency</h3>
+                <p>We believe in full disclosure about what goes into our products, with accurate labels and honest marketing.</p>
+            </div>
+            <div class="value-box">
+                <i class="fas fa-heart"></i>
+                <h3>Customer Focus</h3>
+                <p>Your satisfaction is our priority. We're committed to exceptional service and support at every step.</p>
+            </div>
+            <div class="value-box">
+                <i class="fas fa-flask"></i>
+                <h3>Innovation</h3>
+                <p>We continuously research and develop new formulations and products to help you achieve better results.</p>
+            </div>
         </div>
     </section>
 
     <section id="about-app" class="section-p1">
-        <h1>Download Our <a href="#">App</a> </h1>
+        <h1>Download Our <a href="#">App</a></h1>
         <div class="video">
-            <video autoplay muted loop src="about/1.mp4"></video>
+            <video autoplay muted loop src="img/3209068-uhd_3840_2160_25fps.mp4"></video>
+        </div>
+    </section>
+
+    <section id="about-team" class="section-p1">
+        <h2>Meet Our Team</h2>
+        <p>The fitness experts behind FitZone</p>
+        
+        <div class="team-container">
+            <div class="team-member">
+                <img src="img/people/1.png" alt="Team Member">
+                <div class="team-info">
+                    <h3>John Smith</h3>
+                    <p class="position">Co-Founder & CEO</p>
+                    <p>Former professional bodybuilder with 15+ years of industry experience. John oversees our product development and quality control.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-member">
+                <img src="img/people/2.png" alt="Team Member">
+                <div class="team-info">
+                    <h3>Emma Brown</h3>
+                    <p class="position">Co-Founder & Nutrition Expert</p>
+                    <p>Certified nutritionist specializing in sports nutrition. Emma ensures all our supplements meet the highest nutritional standards.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class "fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="team-member">
+                <img src="img/people/3.png" alt="Team Member">
+                <div class="team-info">
+                    <h3>David Wilson</h3>
+                    <p class="position">Co-Founder & Head of Research</p>
+                    <p>Sports scientist with a PhD in Exercise Physiology. David leads our research team in developing innovative fitness solutions.</p>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-linkedin"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <section id="feature" class="section-p1">
         <div class="fe-box">
-            <img src="img/features/f1.png" alt="">
+            <img src="img/features/f1.png" alt="Free Shipping">
             <h6>Free Shipping</h6>
         </div>
         <div class="fe-box">
-            <img src="img/features/f2.png" alt="">
+            <img src="img/features/f2.png" alt="Online Order">
             <h6>Online Order</h6>
         </div>
         <div class="fe-box">
-            <img src="img/features/f3.png" alt="">
+            <img src="img/features/f3.png" alt="Save Money">
             <h6>Save Money</h6>
         </div>
         <div class="fe-box">
-            <img src="img/features/f4.png" alt="">
+            <img src="img/features/f4.png" alt="Promotions">
             <h6>Promotions</h6>
         </div>
         <div class="fe-box">
-            <img src="img/features/f5.png" alt="">
+            <img src="img/features/f5.png" alt="Happy Sell">
             <h6>Happy Sell</h6>
         </div>
         <div class="fe-box">
-            <img src="img/features/f6.png" alt="">
-            <h6>F24/7 Support</h6>
+            <img src="img/features/f6.png" alt="24/7 Support">
+            <h6>24/7 Support</h6>
         </div>
     </section>
 
     <section id="newsletter" class="section-p1 section-m1">
         <div class="newstext">
             <h4>Sign Up For Newsletters</h4>
-            <p>Get E-mail updates about our latest shop and <span>special offers.</span> </p>
+            <p>Get E-mail updates about our latest products and <span>special offers.</span></p>
         </div>
         <div class="form">
             <input type="text" placeholder="Your email address">
@@ -106,8 +211,8 @@
         <div class="col">
             <img class="logo" src="img/logo.png" alt="">
             <h4>Contact</h4>
-            <p><strong>Address: </strong> 562 Wellington Road, Street 32, San Francisco</p>
-            <p><strong>Phone:</strong> +01 2222 365 /(+91) 01 2345 6789</p>
+            <p><strong>Address: </strong> 123 Fitness Street, Health District, Cityville</p>
+            <p><strong>Phone:</strong> +1 234 567 8901 / +1 234 567 8902</p>
             <p><strong>Hours:</strong> 10:00 - 18:00, Mon - Sat</p>
             <div class="follow">
                 <h4>Follow Us</h4>
@@ -123,17 +228,17 @@
 
         <div class="col">
             <h4>About</h4>
-            <a href="#">About Us</a>
+            <a href="about.html">About Us</a>
             <a href="#">Delivery Information</a>
             <a href="#">Privacy Policy</a>
             <a href="#">Terms & Conditions</a>
-            <a href="#">Contact Us</a>
+            <a href="contact.html">Contact Us</a>
         </div>
 
         <div class="col">
             <h4>My Account</h4>
-            <a href="#">Sign In</a>
-            <a href="#">View Cart</a>
+            <a href="login.html">Sign In</a>
+            <a href="cart.html">View Cart</a>
             <a href="#">My Wishlist</a>
             <a href="#">Track My Order</a>
             <a href="#">Help</a>
@@ -155,8 +260,256 @@
         </div>
     </footer>
 
-
     <script src="script.js"></script>
+
+    <style>
+        /* Additional styles for the About page */
+        #about-values {
+            text-align: center;
+        }
+        
+        .values-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        
+        .value-box {
+            flex: 1 0 20%;
+            min-width: 240px;
+            padding: 30px 20px;
+            margin: 15px 10px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            background-color: #f8f9fa;
+        }
+        
+        .value-box:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .value-box i {
+            font-size: 3em;
+            color: #088178;
+            margin-bottom: 15px;
+        }
+        
+        .value-box h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .team-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        
+        .team-member {
+            flex: 1 0 30%;
+            min-width: 280px;
+            margin: 15px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .team-member:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .team-member img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+        
+        .team-info h3 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: #1a1a1a;
+        }
+        
+        .team-info .position {
+            color: #088178;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .social-icons {
+            margin-top: 15px;
+        }
+        
+        .social-icons a {
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 18px;
+            color: #606063;
+            transition: color 0.3s ease;
+        }
+        
+        .social-icons a:hover {
+            color: #088178;
+        }
+        
+        #about-team {
+            text-align: center;
+        }
+        
+        #about-team p {
+            max-width: 700px;
+            margin: 0 auto 30px;
+        }
+        
+        @media (max-width: 799px) {
+            .team-member {
+                min-width: 45%;
+                margin: 10px;
+            }
+            
+            .value-box {
+                min-width: 45%;
+                margin: 10px;
+            }
+        }
+        
+        @media (max-width: 477px) {
+            .team-member {
+                min-width: 100%;
+                margin: 10px 0;
+            }
+            
+            .value-box {
+                min-width: 100%;
+                margin: 10px 0;
+            }
+        }
+        
+        #about-head {
+            display: flex;
+            flex-direction: row;
+        }
+        
+        #about-head img {
+            width: 50%;
+            height: auto;
+        }
+        
+        #about-head div {
+            padding-left: 40px;
+        }
+        
+        @media (max-width: 799px) {
+            #about-head {
+                flex-direction: column;
+            }
+            
+            #about-head img {
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            #about-head div {
+                padding-left: 0;
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update cart count
+            function updateCartCount() {
+                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                const cartCountElements = document.querySelectorAll('.cart-count');
+                
+                const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+                
+                cartCountElements.forEach(element => {
+                    element.innerText = totalItems;
+                    
+                    if (totalItems > 0) {
+                        element.style.display = 'block';
+                    } else {
+                        element.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Call update cart count when page loads
+            updateCartCount();
+        });
+
+        // Update API URL to use the correct path to PHP
+        const API_URL = 'http://localhost/site_fitness/backend';
+        
+        // Add error handling for API calls
+        async function makeAPICall(endpoint, method = 'GET', data = null) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include' // Include cookies for session handling
+                };
+                
+                if (data) {
+                    options.body = JSON.stringify(data);
+                }
+                
+                const response = await fetch(API_URL + endpoint, options);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API call failed:', error);
+                throw error;
+            }
+        }
+
+        // Use this function for all API calls
+        // Example for registration:
+        async function register(userData) {
+            try {
+                const result = await makeAPICall('register.php', 'POST', userData);
+                if (result.success) {
+                    alert('Registration successful!');
+                    // Redirect or update UI as needed
+                } else {
+                    alert(result.message || 'Registration failed');
+                }
+            } catch (error) {
+                alert('Registration failed: ' + error.message);
+            }
+        }
+
+        // Example for fetching products:
+        async function loadProducts() {
+            try {
+                const products = await makeAPICall('products.php');
+                // Update UI with products
+                displayProducts(products);
+            } catch (error) {
+                console.error('Failed to load products:', error);
+                // Show error message to user
+            }
+        }
+
+        // Call this when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProducts();
+        });
+    </script>
+
 </body>
 
 </html>

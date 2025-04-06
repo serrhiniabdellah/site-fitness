@@ -4,12 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Register</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <style>
         .wrapper {
             width: 450px;
+        }
+        
+        .wrapper .input-box {
+            margin: 20px 0;
+        }
+        
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+        }
+        
+        .terms-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        .password-requirements {
+            font-size: 12px;
+            color: #666;
+            margin: 5px 0;
         }
     </style>
 </head> 
@@ -20,11 +47,10 @@
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shop.html">Shop</a></li>
-                <li><a href="blog.html">Blog</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
-                <li><a class="active" href="login.html">Login</a></li>
+                <li><a href="login.html">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
@@ -34,34 +60,40 @@
         </div>
     </section>
 
-    <div class="wrapper">
-        <form id="registerForm">
-            <h1>Create Account</h1>
-            <div class="input-box">
-                <input type="text" id="name" placeholder="Full Name" required>  
-                <i class='bx bxs-user'></i>
-            </div>
-            <div class="input-box">
-                <input type="email" id="email" placeholder="Email" required>  
-                <i class='bx bxs-envelope'></i>
-            </div>
-            <div class="input-box">
-                <input type="password" id="password" placeholder="Password" required>
-                <i class='bx bxs-lock-alt'></i>
-            </div>
-            <div class="input-box">
-                <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
-                <i class='bx bxs-lock-alt'></i>
-            </div>
-            <div class="remember-forgot">
-                <label><input type="checkbox" id="terms" required> I agree to the Terms & Conditions</label>
-            </div>
-            <button type="submit" class="btn">Register</button>
-            <div class="register-link">
-                <p>Already have an account? <a href="login.html">Login now!</a></p>
-            </div>
-        </form>
-    </div>
+    <section class="wrapper-section">
+        <div class="wrapper">
+            <form id="registerForm">
+                <h1>Create Account</h1>
+                <div class="input-box">
+                    <input type="text" id="name" placeholder="Full Name" required>  
+                    <i class='bx bxs-user'></i>
+                </div>
+                <div class="input-box">
+                    <input type="email" id="email" placeholder="Email" required>  
+                    <i class='bx bxs-envelope'></i>
+                </div>
+                <div class="input-box">
+                    <input type="password" id="password" placeholder="Password" required>
+                    <i class='bx bxs-lock-alt'></i>
+                </div>
+                <div class="password-requirements">
+                    Password should be at least 8 characters long
+                </div>
+                <div class="input-box">
+                    <input type="password" id="confirmPassword" placeholder="Confirm Password" required>
+                    <i class='bx bxs-lock-alt'></i>
+                </div>
+                <div class="remember-forgot terms-checkbox">
+                    <label><input type="checkbox" id="terms" required> I agree to the Terms & Conditions</label>
+                </div>
+                <button type="submit" class="btn" id="registerButton">Register</button>
+                <div id="register-error" class="error-message"></div>
+                <div class="register-link">
+                    <p>Already have an account? <a href="login.html">Login now!</a></p>
+                </div>
+            </form>
+        </div>
+    </section>
 
     <footer class="section-p1">
         <div class="col">
@@ -116,52 +148,97 @@
         </div>
     </footer>
 
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
     <script src="script.js"></script>
     <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            // Basic validation
-            if (password !== confirmPassword) {
-                alert('Passwords do not match!');
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            if (FitZoneAuth.isLoggedIn()) {
+                window.location.href = 'index.html';
                 return;
             }
             
-            // Check if email is already registered
-            const users = JSON.parse(localStorage.getItem('fitzone_users') || '[]');
-            if (users.some(u => u.email === email)) {
-                alert('This email is already registered. Please use another email or login.');
-                return;
-            }
+            const registerForm = document.getElementById('registerForm');
+            const errorElement = document.getElementById('register-error');
             
-            // Create new user
-            const newUser = {
-                id: Date.now().toString(),
-                name: name,
-                email: email,
-                password: password, // In a real app, NEVER store passwords in plain text
-                createdAt: new Date().toISOString()
-            };
-            
-            // Save user to localStorage
-            users.push(newUser);
-            localStorage.setItem('fitzone_users', JSON.stringify(users));
-            
-            // Auto login
-            sessionStorage.setItem('fitzone_current_user', JSON.stringify({
-                id: newUser.id,
-                name: newUser.name,
-                email: newUser.email,
-                isLoggedIn: true
-            }));
-            
-            alert('Registration successful! You are now logged in.');
-            window.location.href = 'index.html';
+            registerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                errorElement.textContent = '';
+                
+                // Get form values
+                const name = document.getElementById('name').value.trim();
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const terms = document.getElementById('terms').checked;
+                
+                // Validation
+                if (!name || !email || !password || !confirmPassword) {
+                    errorElement.textContent = 'All fields are required';
+                    return;
+                }
+                
+                if (password.length < 8) {
+                    errorElement.textContent = 'Password should be at least 8 characters long';
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    errorElement.textContent = 'Passwords do not match';
+                    return;
+                }
+                
+                if (!terms) {
+                    errorElement.textContent = 'You must agree to the Terms & Conditions';
+                    return;
+                }
+                
+                try {
+                    const submitButton = document.getElementById('registerButton');
+                    submitButton.textContent = 'Creating account...';
+                    submitButton.disabled = true;
+                    
+                    // Extract first and last name
+                    const nameParts = name.split(' ');
+                    const firstName = nameParts[0];
+                    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+                    
+                    console.log('Sending registration data:', {
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email
+                    });
+                    
+                    const result = await FitZoneAuth.register({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (result.success) {
+                        // Show success message and redirect to home page
+                        registerForm.innerHTML = `
+                            <div class="success-message">
+                                <h2>Registration Successful!</h2>
+                                <p>Redirecting to home page...</p>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 2000);
+                    } else {
+                        throw new Error(result.message || 'Registration failed');
+                    }
+                } catch (error) {
+                    errorElement.textContent = error.message || 'Registration failed. Please try again.';
+                    document.getElementById('registerButton').textContent = 'Register';
+                    document.getElementById('registerButton').disabled = false;
+                    
+                    console.error('Registration error:', error);
+                }
+            });
         });
     </script>
 </body>

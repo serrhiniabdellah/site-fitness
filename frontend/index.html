@@ -5,15 +5,51 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Updated Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:*;">
     <title>FitZone - Premium Fitness Products</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
 
     <link rel="stylesheet" href="style.css">
+    <style>
+        .scroll-indicator {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            animation: fadeIn 0.8s ease-in-out forwards, bounce 1.5s infinite;
+        }
+        
+        .scroll-text {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        
+        .scroll-arrow {
+            color: #088178;
+            font-size: 18px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0) translateX(-50%); }
+            50% { transform: translateY(8px) translateX(-50%); }
+        }
+    </style>
 </head>
 
 <body>
-    
-
     <section id="header">
         <a href="#"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
 
@@ -21,16 +57,24 @@
             <ul id="navbar">
                 <li><a class="active" href="index.html">Home</a></li>
                 <li><a href="shop.html">Shop</a></li>
-                <li><a href="blog.html">Blog</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
                 <li><a href="login.html">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+                <div id="search-results"></div>
+            </div>
+        </div>
         <div id="mobile">
             <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
@@ -41,6 +85,12 @@
         <h1>For Your Fitness Journey</h1>
         <p>Save more with members-only deals & up to 30% off on supplements!</p>
         <button>Shop Now</button>
+        
+        <!-- Scroll indicator -->
+        <div class="scroll-indicator">
+            <span class="scroll-text">Scroll to explore</span>
+            <i class="fas fa-chevron-down scroll-arrow"></i>
+        </div>
     </section>
 
     <section id="feature" class="section-p1">
@@ -440,8 +490,13 @@
         </div>
     </footer>
 
-
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
     <script src="script.js"></script>
+    
+    <!-- Development only - Fixed reload script with proper WebSocket URL -->
+    <script src="reload.js"></script>
 </body>
 
 </html>

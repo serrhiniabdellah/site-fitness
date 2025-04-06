@@ -1,557 +1,588 @@
-const bar = document.getElementById('bar');
-const close = document.getElementById('close');
-const nav = document.getElementById('navbar');
-
-if (bar) {
-    bar.addEventListener('click', () => {
-        nav.classList.add('active');
-    })
-}
-
-if (close) {
-    close.addEventListener('click', () => {
-        nav.classList.remove('active');
-    })
-}
-
-// FitZone E-commerce functionality
-
-/**
- * User Authentication and Profile Management
- */
-const FitZoneAuth = {
-    /**
-     * Check if user is logged in
-     * @returns {boolean} Login status
-     */
-    isLoggedIn: function() {
-        const user = sessionStorage.getItem('fitzone_current_user');
-        return user ? JSON.parse(user).isLoggedIn : false;
-    },
-
-    /**
-     * Get current user
-     * @returns {object|null} User object or null if not logged in
-     */
-    getCurrentUser: function() {
-        const user = sessionStorage.getItem('fitzone_current_user');
-        return user ? JSON.parse(user) : null;
-    },
-
-    /**
-     * Log out current user
-     */
-    logout: function() {
-        sessionStorage.removeItem('fitzone_current_user');
-        window.location.href = 'index.html';
-    },
-
-    /**
-     * Update user profile
-     * @param {object} userData - Updated user data 
-     */
-    updateProfile: function(userData) {
-        const currentUser = this.getCurrentUser();
-        if (!currentUser) return;
-
-        // Get all users from storage
-        const users = JSON.parse(localStorage.getItem('fitzone_users') || '[]');
-        const userIndex = users.findIndex(u => u.id === currentUser.id);
+// Check if FitZoneAuth is already defined before declaring it
+if (typeof FitZoneAuth === 'undefined') {
+    // FitZone Authentication Module
+    const FitZoneAuth = (function() {
+        const API_URL = 'http://127.0.0.1:5500/backend/api';
         
-        if (userIndex !== -1) {
-            // Update user data (except password)
-            users[userIndex] = {
-                ...users[userIndex],
-                name: userData.name || users[userIndex].name,
-                email: userData.email || users[userIndex].email
-            };
-            
-            // Save back to local storage
-            localStorage.setItem('fitzone_users', JSON.stringify(users));
-            
-            // Update session storage
-            const updatedUser = {
-                id: currentUser.id,
-                name: userData.name || currentUser.name,
-                email: userData.email || currentUser.email,
-                isLoggedIn: true
-            };
-            sessionStorage.setItem('fitzone_current_user', JSON.stringify(updatedUser));
-            
-            return true;
+        // Get user data from localStorage
+        function getCurrentUser() {
+            const userData = localStorage.getItem('fitzone_user');
+            return userData ? JSON.parse(userData) : null;
         }
         
-        return false;
-    },
-
-    /**
-     * Initialize auth UI elements
-     */
-    initUI: function() {
-        const loginLinks = document.querySelectorAll('a[href="login.html"]');
+        // Check if user is logged in
+        function isLoggedIn() {
+            return !!getCurrentUser();
+        }
         
-        if (this.isLoggedIn()) {
-            const user = this.getCurrentUser();
-            
-            // Update login links to show user name and dropdown
-            loginLinks.forEach(link => {
-                const parentLi = link.parentElement;
-                if (parentLi) {
-                    parentLi.innerHTML = `
-                        <a href="#" class="user-profile">${user.name} <i class="far fa-user"></i></a>
-                        <ul class="profile-dropdown">
-                            <li><a href="profile.html">My Profile</a></li>
-                            <li><a href="orders.html">My Orders</a></li>
-                            <li><a href="#" id="logout-btn">Logout</a></li>
-                        </ul>
-                    `;
-                }
-            });
-            
-            // Add logout functionality
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.logout();
+        // Register new user
+        async function register(userData) {
+            try {
+                const response = await fetch(`${API_URL}/register.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Registration failed');
+                }
+                
+                // Save user data to localStorage
+                localStorage.setItem('fitzone_user', JSON.stringify(data.user));
+                
+                // Redirect to home page
+                window.location.href = 'index.html';
+                
+                return data;
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert(error.message || 'An error occurred. Please try again.');
+                throw error;
             }
         }
+        
+        // Login user
+        async function login(email, password) {
+            try {
+                const response = await fetch(`${API_URL}/login.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Login failed');
+                }
+                
+                // Save user data to localStorage
+                localStorage.setItem('fitzone_user', JSON.stringify(data.user));
+                
+                // Redirect to home page
+                window.location.href = 'index.html';
+                
+                return data;
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(error.message || 'An error occurred. Please try again.');
+                throw error;
+            }
+        }
+        
+        // Logout user
+        async function logout() {
+            try {
+                const user = getCurrentUser();
+                
+                if (!user || !user.token) {
+                    throw new Error('User not logged in');
+                }
+                
+                // For simplicity, we're not actually calling a backend logout endpoint
+                // In a production app, you would call a backend logout endpoint
+                
+                // Remove user data from localStorage
+                localStorage.removeItem('fitzone_user');
+                
+                // Redirect to login page
+                window.location.href = 'login.html';
+                
+                return { success: true };
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Still remove user data from localStorage on error
+                localStorage.removeItem('fitzone_user');
+                
+                // Redirect to login page
+                window.location.href = 'login.html';
+                
+                throw error;
+            }
+        }
+        
+        // Update navigation based on authentication status
+        function updateNavigation() {
+            const isUserLoggedIn = isLoggedIn();
+            const loginLink = document.querySelector('#navbar li a[href="login.html"]');
+            
+            if (loginLink) {
+                if (isUserLoggedIn) {
+                    const user = getCurrentUser();
+                    const userProfileLink = document.createElement('li');
+                    userProfileLink.innerHTML = `<a href="profile.html">${user.prenom} ${user.nom}</a>`;
+                    
+                    const logoutLink = document.createElement('li');
+                    logoutLink.innerHTML = '<a href="javascript:void(0)">Déconnexion</a>';
+                    logoutLink.addEventListener('click', logout);
+                    
+                    loginLink.parentNode.replaceWith(userProfileLink);
+                    userProfileLink.parentNode.insertBefore(logoutLink, userProfileLink.nextSibling);
+                }
+            }
+        }
+        
+        // Initialize module
+        function init() {
+            // Update navigation when DOM is loaded
+            document.addEventListener('DOMContentLoaded', updateNavigation);
+        }
+        
+        // Call init function
+        init();
+        
+        // Public API
+        return {
+            getCurrentUser,
+            isLoggedIn,
+            register,
+            login,
+            logout
+        };
+    })();
+}
+
+// FitZone Cart Module 
+const FitZoneCart = (function() {
+    const API_URL = 'http://127.0.0.1:5500/backend/api';
+    
+    // Initialize cart from localStorage
+    function getLocalCart() {
+        const cart = localStorage.getItem('fitzone_cart');
+        return cart ? JSON.parse(cart) : [];
     }
-};
-
-/**
- * Shopping Cart Functionality
- */
-const FitZoneCart = {
-    /**
-     * Get cart from local storage
-     * @returns {Array} Cart items
-     */
-    getCart: function() {
-        return JSON.parse(localStorage.getItem('fitzone_cart') || '[]');
-    },
-
-    /**
-     * Save cart to local storage
-     * @param {Array} cartItems - Cart items to save
-     */
-    saveCart: function(cartItems) {
-        localStorage.setItem('fitzone_cart', JSON.stringify(cartItems));
-        this.updateCartCount();
-    },
-
-    /**
-     * Add item to cart
-     * @param {object} product - Product to add
-     * @param {number} quantity - Quantity to add
-     */
-    addToCart: function(product, quantity = 1) {
-        const cart = this.getCart();
+    
+    // Save cart to localStorage
+    function saveLocalCart(cart) {
+        localStorage.setItem('fitzone_cart', JSON.stringify(cart));
+    }
+    
+    // Add item to cart
+    function addToCart(product, quantity = 1, variantId = null) {
+        const cart = getLocalCart();
         
-        // Check if product already exists in cart
-        const existingItemIndex = cart.findIndex(item => item.id === product.id);
+        // Check if product is already in cart
+        const existingItem = cart.find(item => 
+            item.id === product.id && 
+            ((!variantId && !item.variant_id) || (item.variant_id === variantId))
+        );
         
-        if (existingItemIndex !== -1) {
-            // Update quantity
-            cart[existingItemIndex].quantity += quantity;
+        if (existingItem) {
+            existingItem.quantity += quantity;
         } else {
-            // Add new item
             cart.push({
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image: product.image,
-                quantity: quantity
+                quantity: quantity,
+                variant_id: variantId
             });
         }
         
-        this.saveCart(cart);
+        // Save updated cart
+        saveLocalCart(cart);
         
-        // Show notification
-        this.showNotification(`${product.name} added to cart!`);
-    },
-
-    /**
-     * Remove item from cart
-     * @param {string} productId - ID of product to remove
-     */
-    removeFromCart: function(productId) {
-        const cart = this.getCart();
-        const updatedCart = cart.filter(item => item.id !== productId);
-        this.saveCart(updatedCart);
-    },
-
-    /**
-     * Update item quantity
-     * @param {string} productId - ID of product to update
-     * @param {number} quantity - New quantity
-     */
-    updateQuantity: function(productId, quantity) {
-        const cart = this.getCart();
-        const itemIndex = cart.findIndex(item => item.id === productId);
+        // Update cart count in UI
+        updateCartCount();
         
-        if (itemIndex !== -1) {
-            if (quantity <= 0) {
-                // Remove item if quantity is 0 or negative
-                this.removeFromCart(productId);
-            } else {
-                // Update quantity
-                cart[itemIndex].quantity = quantity;
-                this.saveCart(cart);
-            }
-        }
-    },
-
-    /**
-     * Calculate cart total
-     * @returns {number} Cart total price
-     */
-    calculateTotal: function() {
-        const cart = this.getCart();
-        return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-    },
-
-    /**
-     * Clear cart
-     */
-    clearCart: function() {
-        localStorage.removeItem('fitzone_cart');
-        this.updateCartCount();
-    },
-
-    /**
-     * Update cart item count in UI
-     */
-    updateCartCount: function() {
-        const cart = this.getCart();
-        const cartCount = cart.reduce((count, item) => count + item.quantity, 0);
+        return { success: true };
+    }
+    
+    // Update cart count in UI
+    function updateCartCount() {
+        const cart = getLocalCart();
+        const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
         
-        // Update all cart indicators
         const cartCountElements = document.querySelectorAll('.cart-count');
-        cartCountElements.forEach(element => {
-            element.textContent = cartCount;
+        if (cartCountElements) {
+            cartCountElements.forEach(element => {
+                element.textContent = totalItems;
+                element.style.display = totalItems > 0 ? 'block' : 'none';
+            });
+        }
+    }
+    
+    // Get user's cart from server
+    async function getUserCart() {
+        const user = FitZoneAuth.getCurrentUser();
+        
+        if (!user) {
+            return { success: false, message: 'User not logged in' };
+        }
+        
+        try {
+            const response = await fetch(`${API_URL}/cart/get.php`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.id_utilisateur,
+                    token: user.token
+                })
+            });
             
-            // Show/hide based on count
-            if (cartCount > 0) {
-                element.style.display = 'flex';
-            } else {
-                element.style.display = 'none';
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
+    // Add item to cart
+    async function addItem(productId, quantity = 1) {
+        // If user is logged in, add to server cart
+        const user = FitZoneAuth.getCurrentUser();
+        
+        if (user) {
+            try {
+                const response = await fetch(`${API_URL}/cart/add.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: user.id_utilisateur,
+                        token: user.token,
+                        product_id: productId,
+                        quantity: quantity
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Update cart count in UI
+                if (result.success) {
+                    updateCartCount(result.cart.item_count);
+                }
+                
+                return result;
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                return { success: false, message: error.message };
             }
-        });
-    },
-
-    /**
-     * Show notification message
-     * @param {string} message - Message to display
-     */
-    showNotification: function(message) {
-        // Create notification element if it doesn't exist
-        let notification = document.getElementById('notification');
-        
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'notification';
-            notification.className = 'notification';
-            document.body.appendChild(notification);
-            
-            // Add styles
-            const style = document.createElement('style');
-            style.textContent = `
-                .notification {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    background-color: #088178;
-                    color: white;
-                    padding: 15px 25px;
-                    border-radius: 5px;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                    z-index: 1000;
-                    opacity: 0;
-                    transform: translateY(-20px);
-                    transition: opacity 0.3s, transform 0.3s;
-                }
-                .notification.show {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        // Set message and show notification
-        notification.textContent = message;
-        notification.classList.add('show');
-        
-        // Hide after 3 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, 3000);
-    },
-
-    /**
-     * Initialize cart functionality and UI
-     */
-    init: function() {
-        // Initialize cart count indicator
-        const cartBags = document.querySelectorAll('.far.fa-shopping-bag');
-        cartBags.forEach(bag => {
-            const parent = bag.parentElement.parentElement;
-            
-            if (parent) {
-                // Create cart count indicator
-                const cartCount = document.createElement('span');
-                cartCount.className = 'cart-count';
-                parent.appendChild(cartCount);
-            }
-        });
-        
-        // Update cart count
-        this.updateCartCount();
-        
-        // Add event listeners for "Add to Cart" buttons
-        document.querySelectorAll('.cart').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                const productElement = e.target.closest('.pro');
-                if (productElement) {
-                    const product = {
-                        id: productElement.dataset.id || Date.now().toString(), // Use data-id if available
-                        name: productElement.querySelector('h5').textContent,
-                        price: parseFloat(productElement.querySelector('h4').textContent.replace('$', '')),
-                        image: productElement.querySelector('img').src
-                    };
-                    
-                    this.addToCart(product);
-                }
-            });
-        });
-        
-        // Initialize cart page if on cart.html
-        if (window.location.pathname.includes('cart.html')) {
-            this.initCartPage();
-        }
-    },
-
-    /**
-     * Initialize the cart page
-     */
-    initCartPage: function() {
-        this.renderCartItems();
-        
-        // Add event listener for quantity changes
-        const cartTable = document.getElementById('cart-items');
-        if (cartTable) {
-            cartTable.addEventListener('change', (e) => {
-                if (e.target.classList.contains('qty-input')) {
-                    const productId = e.target.dataset.id;
-                    const quantity = parseInt(e.target.value);
-                    this.updateQuantity(productId, quantity);
-                    this.renderCartItems();
-                }
-            });
-            
-            // Add event listener for item removal
-            cartTable.addEventListener('click', (e) => {
-                if (e.target.classList.contains('remove-btn')) {
-                    e.preventDefault();
-                    const productId = e.target.dataset.id;
-                    this.removeFromCart(productId);
-                    this.renderCartItems();
-                }
-            });
-        }
-        
-        // Add event listener for checkout button
-        const checkoutBtn = document.getElementById('checkout-btn');
-        if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                // Check if user is logged in
-                if (!FitZoneAuth.isLoggedIn()) {
-                    alert('Please log in to proceed with checkout.');
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                // Proceed to checkout
-                window.location.href = 'checkout.html';
-            });
-        }
-    },
-
-    /**
-     * Render cart items in the cart page
-     */
-    renderCartItems: function() {
-        const cartItemsElement = document.getElementById('cart-items');
-        const subtotalElement = document.getElementById('subtotal-amount');
-        const totalElement = document.getElementById('total-amount');
-        
-        if (!cartItemsElement) return;
-        
-        const cart = this.getCart();
-        
-        if (cart.length === 0) {
-            // Cart is empty
-            cartItemsElement.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center">Your cart is empty</td>
-                </tr>
-            `;
-            
-            if (subtotalElement) subtotalElement.textContent = '$0.00';
-            if (totalElement) totalElement.textContent = '$0.00';
         } else {
-            // Generate cart items HTML
-            let itemsHTML = '';
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                
-                itemsHTML += `
-                    <tr>
-                        <td><a href="#" class="remove-btn" data-id="${item.id}"><i class="far fa-times-circle"></i></a></td>
-                        <td><img src="${item.image}" alt="${item.name}"></td>
-                        <td>${item.name}</td>
-                        <td>$${item.price.toFixed(2)}</td>
-                        <td><input type="number" value="${item.quantity}" class="qty-input" data-id="${item.id}" min="1"></td>
-                        <td>$${itemTotal.toFixed(2)}</td>
-                    </tr>
-                `;
-            });
+            // For non-authenticated users, use localStorage
+            const cart = getLocalCart();
             
-            cartItemsElement.innerHTML = itemsHTML;
+            // Check if item already exists
+            const existingItem = cart.find(item => item.id === productId);
             
-            // Update subtotal and total
-            const subtotal = this.calculateTotal();
-            const shipping = subtotal > 0 ? 10 : 0; // $10 shipping fee
-            const total = subtotal + shipping;
-            
-            if (subtotalElement) subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
-            if (totalElement) totalElement.textContent = `$${total.toFixed(2)}`;
-        }
-    }
-};
-
-/**
- * Product Filtering and Searching
- */
-const FitZoneProducts = {
-    /**
-     * Filter products by category
-     * @param {string} category - Category to filter by
-     */
-    filterByCategory: function(category) {
-        const products = document.querySelectorAll('.pro');
-        
-        products.forEach(product => {
-            if (category === 'all' || product.dataset.category === category) {
-                product.style.display = 'block';
+            if (existingItem) {
+                existingItem.quantity += quantity;
             } else {
-                product.style.display = 'none';
-            }
-        });
-    },
-
-    /**
-     * Search products by name
-     * @param {string} query - Search query
-     */
-    searchProducts: function(query) {
-        const products = document.querySelectorAll('.pro');
-        const searchTerm = query.toLowerCase().trim();
-        
-        products.forEach(product => {
-            const productName = product.querySelector('h5').textContent.toLowerCase();
-            const productBrand = product.querySelector('span').textContent.toLowerCase();
-            
-            if (productName.includes(searchTerm) || productBrand.includes(searchTerm)) {
-                product.style.display = 'block';
-            } else {
-                product.style.display = 'none';
-            }
-        });
-    },
-
-    /**
-     * Initialize product filtering
-     */
-    init: function() {
-        // Add data-category attribute to products
-        document.querySelectorAll('.pro').forEach(product => {
-            // If data-category is not set, try to determine from product name
-            if (!product.dataset.category) {
-                const name = product.querySelector('h5').textContent.toLowerCase();
-                
-                if (name.includes('mass') || name.includes('gainer')) {
-                    product.dataset.category = 'mass-gainers';
-                } else if (name.includes('bcaa')) {
-                    product.dataset.category = 'bcaa';
-                } else if (name.includes('protein')) {
-                    product.dataset.category = 'protein';
-                } else {
-                    product.dataset.category = 'other';
+                // Fetch product details
+                try {
+                    const productResponse = await fetch(`${API_URL}/product.php?id=${productId}`);
+                    const productData = await productResponse.json();
+                    
+                    if (productData.success) {
+                        cart.push({
+                            id: productId,
+                            name: productData.product.nom_produit,
+                            price: productData.product.prix,
+                            image: productData.product.image,
+                            quantity: quantity
+                        });
+                    } else {
+                        return { success: false, message: 'Product not found' };
+                    }
+                } catch (error) {
+                    console.error('Error fetching product details:', error);
+                    return { success: false, message: error.message };
                 }
             }
-        });
-        
-        // Add event listeners for category filters
-        const categoryButtons = document.querySelectorAll('.category-btn');
-        categoryButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                
-                // Remove active class from all buttons
-                categoryButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // Add active class to clicked button
-                button.classList.add('active');
-                
-                // Filter products
-                const category = button.dataset.category;
-                this.filterByCategory(category);
-            });
-        });
-        
-        // Add event listener for search box
-        const searchBox = document.getElementById('search-box');
-        if (searchBox) {
-            searchBox.addEventListener('input', (e) => {
-                this.searchProducts(e.target.value);
-            });
+            
+            // Save updated cart
+            saveLocalCart(cart);
+            
+            // Update cart count in UI
+            updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+            
+            return { success: true, message: 'Product added to cart' };
         }
     }
-};
-
-/**
- * Initialize all functionality when DOM is loaded
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize authentication UI
-    FitZoneAuth.initUI();
     
-    // Initialize shopping cart
-    FitZoneCart.init();
-    
-    // Initialize product filtering
-    FitZoneProducts.init();
-    
-    // Add cart count indicator to cart icons
-    const cartBags = document.querySelectorAll('.fa-shopping-bag');
-    cartBags.forEach(bag => {
-        const parent = bag.parentElement;
-        if (parent) {
-            const cartCount = document.createElement('span');
-            cartCount.className = 'cart-count';
-            cartCount.style.cssText = 'position:absolute; top:-10px; right:-10px; width:20px; height:20px; background-color:#088178; color:white; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:12px;';
-            parent.style.position = 'relative';
-            parent.appendChild(cartCount);
+    // Initialize cart
+    async function initCart() {
+        // If user is logged in, get cart from server
+        const user = FitZoneAuth.getCurrentUser();
+        
+        if (user) {
+            const result = await getUserCart();
+            
+            if (result.success) {
+                updateCartCount(result.cart.item_count);
+            }
+        } else {
+            // For non-authenticated users, use localStorage
+            const cart = getLocalCart();
+            updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
         }
+    }
+    
+    // Initialize module
+    function init() {
+        document.addEventListener('DOMContentLoaded', initCart);
+    }
+    
+    // Call init function
+    init();
+    
+    // Public API
+    return {
+        addItem,
+        getUserCart,
+        getLocalCart,
+        saveLocalCart,
+        addToCart,
+        updateCartCount
+    };
+})();
+
+// FitZone Search Module
+const FitZoneSearch = (function() {
+    const API_URL = 'http://localhost/site%20fitness/backend/api';
+    let searchTimeout = null;
+    
+    // Toggle search bar
+    function toggleSearchBar() {
+        const searchContainer = document.getElementById('search-container');
+        searchContainer.classList.toggle('active');
+        
+        if (searchContainer.classList.contains('active')) {
+            document.getElementById('search-input').focus();
+        } else {
+            document.getElementById('search-input').value = '';
+            document.getElementById('search-results').classList.remove('show');
+        }
+    }
+    
+    // Search products
+    async function searchProducts(query) {
+        try {
+            const response = await fetch(`${API_URL}/search.php?q=${encodeURIComponent(query)}&limit=5`);
+            return await response.json();
+        } catch (error) {
+            console.error('Search error:', error);
+            return { success: false, message: error.message, results: [] };
+        }
+    }
+    
+    // Handle search input
+    function handleSearchInput(event) {
+        const query = event.target.value.trim();
+        const searchResults = document.getElementById('search-results');
+        
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+        
+        // Hide results if query too short
+        if (query.length < 2) {
+            searchResults.classList.remove('show');
+            return;
+        }
+        
+        // Set timeout to avoid making requests on each keystroke
+        searchTimeout = setTimeout(async () => {
+            const results = await searchProducts(query);
+            
+            if (results.success && results.results.length > 0) {
+                // Render search results
+                searchResults.innerHTML = results.results.map(product => `
+                    <div class="search-item" data-id="${product.id_produit}">
+                        <img src="${product.image || 'img/products/default.jpg'}" alt="${product.nom_produit}">
+                        <div class="search-item-details">
+                            <div class="search-item-name">${product.nom_produit}</div>
+                            <div class="search-item-category">${product.nom_categorie}</div>
+                            <div class="search-item-price">$${parseFloat(product.prix).toFixed(2)}</div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add click event to search items
+                document.querySelectorAll('.search-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        window.location.href = `sproduct.html?id=${item.getAttribute('data-id')}`;
+                    });
+                });
+                
+                searchResults.classList.add('show');
+            } else {
+                searchResults.innerHTML = '<div class="search-item no-results">No products found</div>';
+                searchResults.classList.add('show');
+            }
+        }, 300);
+    }
+    
+    // Search button click handler
+    function handleSearchButtonClick() {
+        const searchInput = document.getElementById('search-input');
+        const query = searchInput.value.trim();
+        
+        if (query.length >= 2) {
+            window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
+        }
+    }
+    
+    // Close search when clicking outside
+    function handleDocumentClick(event) {
+        const searchContainer = document.getElementById('search-container');
+        const searchToggle = document.querySelector('.fa-search');
+        
+        if (searchContainer && searchContainer.classList.contains('active')) {
+            // If click is outside search container and not on search toggle
+            if (!searchContainer.contains(event.target) && 
+                event.target !== searchToggle && 
+                !searchToggle.contains(event.target)) {
+                toggleSearchBar();
+            }
+        }
+    }
+    
+    // Initialize module
+    function init() {
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set up search functionality
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            
+            if (searchInput) {
+                searchInput.addEventListener('input', handleSearchInput);
+                
+                // Handle Enter key press
+                searchInput.addEventListener('keypress', (event) => {
+                    if (event.key === 'Enter') {
+                        handleSearchButtonClick();
+                    }
+                });
+            }
+            
+            if (searchButton) {
+                searchButton.addEventListener('click', handleSearchButtonClick);
+            }
+            
+            // Close search when clicking outside
+            document.addEventListener('click', handleDocumentClick);
+            
+            // Set up search toggle
+            const searchToggles = document.querySelectorAll('.fa-search');
+            searchToggles.forEach(toggle => {
+                toggle.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    toggleSearchBar();
+                });
+            });
+        });
+    }
+    
+    // Call init function
+    init();
+    
+    // Public API
+    return {
+        toggleSearchBar,
+        searchProducts
+    };
+})();
+
+// Mobile navigation
+document.addEventListener('DOMContentLoaded', () => {
+    // Mobile menu toggle
+    const bar = document.getElementById('bar');
+    const nav = document.getElementById('navbar');
+    const close = document.getElementById('close');
+
+    if (bar) {
+        bar.addEventListener('click', () => {
+            nav.classList.add('active');
+        });
+    }
+
+    if (close) {
+        close.addEventListener('click', () => {
+            nav.classList.remove('active');
+        });
+    }
+    
+    // Add to cart functionality
+    document.querySelectorAll('.cart').forEach(cartButton => {
+        cartButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const productElement = this.closest('.pro');
+            if (productElement) {
+                const productId = productElement.getAttribute('data-id');
+                
+                FitZoneCart.addItem(productId, 1).then(result => {
+                    if (result.success) {
+                        alert('Product added to cart!');
+                    } else {
+                        alert(result.message || 'Failed to add product to cart');
+                    }
+                });
+            }
+        });
     });
     
-    // Update cart count
-    FitZoneCart.updateCartCount();
+    // Product detail page
+    const addToCartButton = document.getElementById('add-to-cart');
+    if (addToCartButton) {
+        addToCartButton.addEventListener('click', function() {
+            const productId = this.getAttribute('data-id');
+            const quantity = parseInt(document.getElementById('qty').value, 10) || 1;
+            
+            FitZoneCart.addItem(productId, quantity).then(result => {
+                if (result.success) {
+                    alert('Product added to cart!');
+                } else {
+                    alert(result.message || 'Failed to add product to cart');
+                }
+            });
+        });
+    }
+
+    // Initialize product filtering if on shop page
+    if (document.querySelector('.filter-container')) {
+        initializeFilters();
+    }
+});
+
+// Global search toggle function
+function toggleSearchBar() {
+    FitZoneSearch.toggleSearchBar();
+}
+
+// Initialize cart count on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof FitZoneCart !== 'undefined') {
+        FitZoneCart.updateCartCount();
+    }
+    
+    // Search functionality
+    function toggleSearchBar() {
+        const searchContainer = document.getElementById('search-container');
+        if (searchContainer) {
+            searchContainer.classList.toggle('active');
+        }
+    }
+    
+    // Make toggleSearchBar available globally
+    window.toggleSearchBar = toggleSearchBar;
 });

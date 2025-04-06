@@ -5,148 +5,326 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tech2etc Ecommerce Tutorial</title>
+    <title>FitZone - Product Details</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
-
     <link rel="stylesheet" href="style.css">
+    <style>
+        .single-pro-image {
+            width: 40%;
+            margin-right: 50px;
+        }
+        
+        .small-img-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        
+        .small-img-col {
+            flex-basis: 24%;
+            cursor: pointer;
+        }
+        
+        .single-pro-details {
+            width: 50%;
+            padding-top: 30px;
+        }
+        
+        .single-pro-details h4 {
+            padding: 40px 0 20px 0;
+        }
+        
+        .single-pro-details h2 {
+            font-size: 26px;
+        }
+        
+        .single-pro-details select {
+            display: block;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+        }
+        
+        .single-pro-details input {
+            width: 50px;
+            height: 47px;
+            padding-left: 10px;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        .single-pro-details input:focus {
+            outline: none;
+        }
+        
+        .single-pro-details button {
+            background: #088178;
+            color: #fff;
+        }
+        
+        .single-pro-details span {
+            line-height: 25px;
+        }
+        
+        .product-badges {
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .badge-new {
+            background-color: #088178;
+        }
+        
+        .badge-bestseller {
+            background-color: #ff7e0e;
+        }
+        
+        .badge-sale {
+            background-color: #e74c3c;
+        }
+        
+        .product-meta {
+            margin: 20px 0;
+            padding-top: 20px;
+            border-top: 1px solid #e1e1e1;
+        }
+        
+        .meta-item {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .meta-item span {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+        
+        .nutrition-facts {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .nutrition-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .nutrition-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .nutrition-table tr td {
+            padding: 8px 0;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .nutrition-table tr td:last-child {
+            text-align: right;
+        }
+        
+        .product-description {
+            margin-bottom: 30px;
+        }
+        
+        .tabs {
+            margin-top: 40px;
+        }
+        
+        .tab-list {
+            display: flex;
+            border-bottom: 1px solid #e1e1e1;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .tab-button.active {
+            border-bottom: 2px solid #088178;
+            color: #088178;
+        }
+        
+        .tab-content {
+            padding: 20px 0;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .review {
+            border-bottom: 1px solid #e1e1e1;
+            padding: 20px 0;
+        }
+        
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .reviewer-name {
+            font-weight: 600;
+        }
+        
+        .review-date {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .review-text {
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+        
+        .related-products {
+            margin-top: 60px;
+        }
+        
+        .related-title {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+    </style>
 </head>
 
 <body>
 
     <section id="header">
-        <a href="#"><img src="img/logo.png" class="logo" alt=""></a>
-
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
         <div>
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
                 <li><a class="active" href="shop.html">Shop</a></li>
-                <li><a href="blog.html">Blog</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
-                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
+                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                <li><a href="login.html">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+                <div id="search-results"></div>
+            </div>
+        </div>
         <div id="mobile">
-            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
 
     <section id="prodetails" class="section-p1">
-        <div class="single-pro-image">
-            <img src="img/products/f1.jpg" width="100%" id="MainImg" alt="">
-
-            <div class="small-img-group">
-                <div class="small-img-col">
-                    <img src="img/products/f1.jpg" width="100%" class="small-img" alt="">
-                </div>
-                <div class="small-img-col">
-                    <img src="img/products/f2.jpg" width="100%" class="small-img" alt="">
-                </div>
-                <div class="small-img-col">
-                    <img src="img/products/f3.jpg" width="100%" class="small-img" alt="">
-                </div>
-                <div class="small-img-col">
-                    <img src="img/products/f4.jpg" width="100%" class="small-img" alt="">
-                </div>
+        <div class="loading-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading product details...</span>
             </div>
         </div>
+        
+        <div class="product-container" style="display: none;">
+            <div class="single-pro-image">
+                <img src="" id="MainImg" alt="">
+    
+                <div class="small-img-group">
+                    <div class="small-img-col">
+                        <img src="" class="small-img" alt="">
+                    </div>
+                    <div class="small-img-col">
+                        <img src="" class="small-img" alt="">
+                    </div>
+                    <div class="small-img-col">
+                        <img src="" class="small-img" alt="">
+                    </div>
+                    <div class="small-img-col">
+                        <img src="" class="small-img" alt="">
+                    </div>
+                </div>
+            </div>
+    
+            <div class="single-pro-details">
+                <h6 id="product-category">Category</h6>
+                <h4 id="product-name">Product Name</h4>
+                <div id="product-rating" class="star">
+                    <!-- Rating stars will be inserted here -->
+                </div>
+                <h2 id="product-price">$0.00</h2>
+                <div class="quantity-selector">
+                    <span>Quantity:</span>
+                    <input type="number" value="1" min="1" id="qty">
+                </div>
+                <button id="add-to-cart" class="normal">Add To Cart</button>
+                <h4>Product Details</h4>
+                <p id="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+            </div>
+        </div>
+    </section>
 
-        <div class="single-pro-details">
-            <h6>Home / T-Shirt</h6>
-            <h4>Men's Fashion T Shirt</h4>
-            <h2>$139.00</h2>
-            <select>
-              <option>Select Size</option>
-              <option>XL</option>
-              <option>XXL</option>
-              <option>Small</option>
-              <option>Large</option>
-          </select>
-            <input type="number" value="1">
-            <button class="normal">Add To Cart</button>
-            <h4>Product Details</h4>
-            <span>The Gildan Ultra Cotton T-shirt is made from a substantial 6.0 oz. per sq. yd. fabric constructed from 100% cotton, this classic fit preshrunk jersey knit provides unmatched comfort with each wear. Featuring a taped neck and shoulder, and a seamless double-needle collar, and available in a range of colors, it offers it all in the ultimate head-turning package.</span>
+    <section id="product-reviews" class="section-p1">
+        <h2>Reviews</h2>
+        <div id="reviews-container">
+            <!-- Reviews will be loaded here -->
+        </div>
+        
+        <div id="review-form-container" style="display: none;">
+            <h3>Write a Review</h3>
+            <form id="review-form">
+                <div class="rating-selector">
+                    <span>Your Rating:</span>
+                    <div class="star-rating">
+                        <i class="far fa-star" data-rating="1"></i>
+                        <i class="far fa-star" data-rating="2"></i>
+                        <i class="far fa-star" data-rating="3"></i>
+                        <i class="far fa-star" data-rating="4"></i>
+                        <i class="far fa-star" data-rating="5"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="review-text">Your Review:</label>
+                    <textarea id="review-text" rows="5" required></textarea>
+                </div>
+                <button type="submit" class="normal">Submit Review</button>
+            </form>
         </div>
     </section>
 
     <section id="product1" class="section-p1">
-        <h2>Featured Products </h2>
-        <p>Summer Collection New Morden Design</p>
-        <div class="pro-container">
-            <div class="pro">
-                <img src="img/products/n1.jpg" alt="">
-                <div class="des">
-                    <span>adidas</span>
-                    <h5>Cartoon Astronaut T-Shirts</h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$78</h4>
-                </div>
-                <a href="#"><i class="fal fa-shopping-cart cart"></i></a>
-            </div>
-            <div class="pro">
-                <img src="img/products/n2.jpg" alt="">
-                <div class="des">
-                    <span>adidas</span>
-                    <h5>Cartoon Astronaut T-Shirts</h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$78</h4>
-                </div>
-                <a href="#"><i class="fal fa-shopping-cart cart"></i></a>
-            </div>
-            <div class="pro">
-                <img src="img/products/n3.jpg" alt="">
-                <div class="des">
-                    <span>adidas</span>
-                    <h5>Cartoon Astronaut T-Shirts</h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$78</h4>
-                </div>
-                <a href="#"><i class="fal fa-shopping-cart cart"></i></a>
-            </div>
-            <div class="pro">
-                <img src="img/products/n4.jpg" alt="">
-                <div class="des">
-                    <span>adidas</span>
-                    <h5>Cartoon Astronaut T-Shirts</h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$78</h4>
-                </div>
-                <a href="#"><i class="fal fa-shopping-cart cart"></i></a>
-            </div>
-
+        <h2>Related Products</h2>
+        <p>Recommended products based on your interest</p>
+        <div class="pro-container" id="related-products-container">
+            <!-- Related products will be loaded here -->
         </div>
     </section>
 
     <section id="newsletter" class="section-p1 section-m1">
         <div class="newstext">
             <h4>Sign Up For Newsletters</h4>
-            <p>Get E-mail updates about our latest shop and <span>special offers.</span> </p>
+            <p>Get E-mail updates about our latest shop and <span>special offers.</span></p>
         </div>
         <div class="form">
             <input type="text" placeholder="Your email address">
@@ -158,8 +336,8 @@
         <div class="col">
             <img class="logo" src="img/logo.png" alt="">
             <h4>Contact</h4>
-            <p><strong>Address: </strong> 562 Wellington Road, Street 32, San Francisco</p>
-            <p><strong>Phone:</strong> +01 2222 365 /(+91) 01 2345 6789</p>
+            <p><strong>Address: </strong> 123 Fitness Street, Health District, Cityville</p>
+            <p><strong>Phone:</strong> +1 234 567 8901 / +1 234 567 8902</p>
             <p><strong>Hours:</strong> 10:00 - 18:00, Mon - Sat</p>
             <div class="follow">
                 <h4>Follow Us</h4>
@@ -175,20 +353,20 @@
 
         <div class="col">
             <h4>About</h4>
-            <a href="#">About Us</a>
+            <a href="about.html">About Us</a>
             <a href="#">Delivery Information</a>
             <a href="#">Privacy Policy</a>
             <a href="#">Terms & Conditions</a>
-            <a href="#">Contact Us</a>
+            <a href="contact.html">Contact Us</a>
         </div>
 
         <div class="col">
             <h4>My Account</h4>
-            <a href="#">Sign In</a>
-            <a href="#">View Cart</a>
+            <a href="login.html">Sign In</a>
+            <a href="cart.html">View Cart</a>
             <a href="#">My Wishlist</a>
             <a href="#">Track My Order</a>
-            <a href="#">Help</a>
+            <a href="contact.html">Help</a>
         </div>
 
         <div class="col install">
@@ -207,26 +385,330 @@
         </div>
     </footer>
 
+    <script src="script.js"></script>
     <script>
-        var MainImg = document.getElementById("MainImg");
-        var smallimg = document.getElementsByClassName("small-img");
-
-        smallimg[0].onclick = function() {
-            MainImg.src = smallimg[0].src;
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get product ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const productId = urlParams.get('id');
+            
+            if (!productId) {
+                window.location.href = 'shop.html';
+                return;
+            }
+            
+            // Fetch product data
+            fetch('products.json')
+                .then(response => response.json())
+                .then(data => {
+                    // Find product by ID
+                    const product = data.find(p => p.id === productId);
+                    
+                    if (!product) {
+                        window.location.href = 'shop.html';
+                        return;
+                    }
+                    
+                    // Populate product details
+                    document.title = `FitZone - ${product.name}`;
+                    document.getElementById('product-brand').textContent = product.brand;
+                    document.getElementById('product-title').textContent = product.name;
+                    document.getElementById('product-price').textContent = `$${product.price.toFixed(2)}`;
+                    document.getElementById('product-description').textContent = product.description;
+                    document.getElementById('details-content').innerHTML = product.details || product.description;
+                    document.getElementById('product-sku').textContent = product.sku || productId;
+                    document.getElementById('product-categories').textContent = product.categories ? product.categories.join(', ') : '';
+                    document.getElementById('product-tags').textContent = product.tags ? product.tags.join(', ') : '';
+                    
+                    // Main product image
+                    const mainImg = document.getElementById('MainImg');
+                    mainImg.src = product.image;
+                    mainImg.alt = product.name;
+                    
+                    // Product badges
+                    const badgesContainer = document.getElementById('product-badges');
+                    if (product.isNew) {
+                        const newBadge = document.createElement('span');
+                        newBadge.className = 'badge badge-new';
+                        newBadge.textContent = 'New';
+                        badgesContainer.appendChild(newBadge);
+                    }
+                    
+                    if (product.isBestseller) {
+                        const bestsellerBadge = document.createElement('span');
+                        bestsellerBadge.className = 'badge badge-bestseller';
+                        bestsellerBadge.textContent = 'Bestseller';
+                        badgesContainer.appendChild(bestsellerBadge);
+                    }
+                    
+                    if (product.onSale) {
+                        const saleBadge = document.createElement('span');
+                        saleBadge.className = 'badge badge-sale';
+                        saleBadge.textContent = 'Sale';
+                        badgesContainer.appendChild(saleBadge);
+                    }
+                    
+                    // Handle product variants (flavors)
+                    if (product.flavors && product.flavors.length > 0) {
+                        const flavorSelector = document.getElementById('flavor-selector');
+                        flavorSelector.innerHTML = '<option value="">Select Flavor</option>';
+                        
+                        product.flavors.forEach(flavor => {
+                            const option = document.createElement('option');
+                            option.value = flavor;
+                            option.textContent = flavor;
+                            flavorSelector.appendChild(option);
+                        });
+                    } else {
+                        document.getElementById('flavor-selector-container').style.display = 'none';
+                    }
+                    
+                    // Handle product sizes
+                    if (product.sizes && product.sizes.length > 0) {
+                        const sizeSelector = document.getElementById('size-selector');
+                        sizeSelector.innerHTML = '<option value="">Select Size</option>';
+                        
+                        product.sizes.forEach(size => {
+                            const option = document.createElement('option');
+                            option.value = size.value;
+                            option.textContent = size.name;
+                            if (size.price) {
+                                option.textContent += ` (+$${size.price.toFixed(2)})`;
+                            }
+                            sizeSelector.appendChild(option);
+                        });
+                    } else {
+                        document.getElementById('size-selector-container').style.display = 'none';
+                    }
+                    
+                    // Nutrition facts
+                    if (product.nutritionalInfo) {
+                        const nutritionFacts = document.getElementById('nutrition-facts');
+                        nutritionFacts.innerHTML = `
+                            <div class="nutrition-title">Nutrition Facts</div>
+                            <table class="nutrition-table">
+                                <tr>
+                                    <td>Serving Size</td>
+                                    <td>${product.nutritionalInfo.servingSize || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Calories</td>
+                                    <td>${product.nutritionalInfo.calories || '0'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Protein</td>
+                                    <td>${product.nutritionalInfo.protein || '0g'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Carbohydrates</td>
+                                    <td>${product.nutritionalInfo.carbohydrates || '0g'}</td>
+                                </tr>
+                                <tr>
+                                    <td>Fat</td>
+                                    <td>${product.nutritionalInfo.fat || '0g'}</td>
+                                </tr>
+                            </table>
+                        `;
+                        
+                        // Populate nutritional info tab
+                        if (product.nutritionalInfo.details) {
+                            document.getElementById('nutritional-info-content').innerHTML = product.nutritionalInfo.details;
+                        } else {
+                            document.getElementById('nutritional-info-content').innerHTML = '<p>Detailed nutritional information not available for this product.</p>';
+                        }
+                    } else {
+                        document.getElementById('nutrition-facts').style.display = 'none';
+                    }
+                    
+                    // Product reviews
+                    if (product.reviews && product.reviews.length > 0) {
+                        const reviewsContainer = document.getElementById('reviews-container');
+                        reviewsContainer.innerHTML = '';
+                        
+                        product.reviews.forEach(review => {
+                            const reviewElem = document.createElement('div');
+                            reviewElem.className = 'review';
+                            
+                            const starsHTML = generateStarRating(review.rating);
+                            
+                            reviewElem.innerHTML = `
+                                <div class="review-header">
+                                    <div class="reviewer-name">${review.name}</div>
+                                    <div class="review-date">${review.date}</div>
+                                </div>
+                                <div class="star">${starsHTML}</div>
+                                <p class="review-text">${review.text}</p>
+                            `;
+                            
+                            reviewsContainer.appendChild(reviewElem);
+                        });
+                    } else {
+                        document.getElementById('reviews-container').innerHTML = '<p>No reviews yet.</p>';
+                    }
+                    
+                    // Related products
+                    if (product.category) {
+                        fetch('products.json')
+                            .then(response => response.json())
+                            .then(allProducts => {
+                                // Find products in same category
+                                const relatedProducts = allProducts
+                                    .filter(p => p.id !== productId && p.categories && p.categories.includes(product.category))
+                                    .slice(0, 4); // Limit to 4 items
+                                
+                                if (relatedProducts.length > 0) {
+                                    const relatedContainer = document.getElementById('related-products-container');
+                                    relatedContainer.innerHTML = '';
+                                    
+                                    relatedProducts.forEach(relProduct => {
+                                        const productElem = document.createElement('div');
+                                        productElem.className = 'pro';
+                                        
+                                        const starsHTML = generateStarRating(relProduct.rating || 5);
+                                        
+                                        productElem.innerHTML = `
+                                            <img src="${relProduct.image}" alt="${relProduct.name}">
+                                            <div class="des">
+                                                <span>${relProduct.brand}</span>
+                                                <h5>${relProduct.name}</h5>
+                                                <div class="star">${starsHTML}</div>
+                                                <h4>$${relProduct.price.toFixed(2)}</h4>
+                                            </div>
+                                            <a href="sproduct.html?id=${relProduct.id}"><i class="fal fa-shopping-cart cart"></i></a>
+                                        `;
+                                        
+                                        relatedContainer.appendChild(productElem);
+                                    });
+                                } else {
+                                    document.getElementById('related-products').style.display = 'none';
+                                }
+                            });
+                    } else {
+                        document.getElementById('related-products').style.display = 'none';
+                    }
+                    
+                    // Add to cart functionality
+                    document.getElementById('add-to-cart').addEventListener('click', function() {
+                        const quantity = parseInt(document.getElementById('qty').value);
+                        const flavor = document.getElementById('flavor-selector').value;
+                        const size = document.getElementById('size-selector').value;
+                        
+                        // Validate selection
+                        if ((product.flavors && product.flavors.length > 0 && !flavor) || 
+                            (product.sizes && product.sizes.length > 0 && !size)) {
+                            alert('Please select all options before adding to cart');
+                            return;
+                        }
+                        
+                        // Create cart item
+                        const cartItem = {
+                            id: product.id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.image,
+                            quantity: quantity,
+                            flavor: flavor || null,
+                            size: size || null
+                        };
+                        
+                        // Get cart from localStorage
+                        const cart = JSON.parse(localStorage.getItem('fitzone_cart') || '[]');
+                        
+                        // Check if item is already in cart
+                        const existingItemIndex = cart.findIndex(item => 
+                            item.id === cartItem.id && 
+                            item.flavor === cartItem.flavor && 
+                            item.size === cartItem.size
+                        );
+                        
+                        if (existingItemIndex !== -1) {
+                            // Update quantity of existing item
+                            cart[existingItemIndex].quantity += quantity;
+                        } else {
+                            // Add new item to cart
+                            cart.push(cartItem);
+                        }
+                        
+                        // Save cart back to localStorage
+                        localStorage.setItem('fitzone_cart', JSON.stringify(cart));
+                        
+                        alert('Product added to cart!');
+                        
+                        // Update cart count in header
+                        updateCartCount();
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading product:', error);
+                    alert('Failed to load product details.');
+                });
+            
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Show corresponding content
+                    const tabId = button.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Small image click handlers
+            const smallImgs = document.querySelectorAll('.small-img');
+            smallImgs.forEach(img => {
+                img.addEventListener('click', function() {
+                    document.getElementById('MainImg').src = this.src;
+                });
+            });
+        });
+        
+        // Helper function to generate star ratings
+        function generateStarRating(rating) {
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5;
+            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+            
+            let starsHTML = '';
+            
+            // Add full stars
+            for (let i = 0; i < fullStars; i++) {
+                starsHTML += '<i class="fas fa-star"></i>';
+            }
+            
+            // Add half star if needed
+            if (halfStar) {
+                starsHTML += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            // Add empty stars
+            for (let i = 0; i < emptyStars; i++) {
+                starsHTML += '<i class="far fa-star"></i>';
+            }
+            
+            return starsHTML;
         }
-        smallimg[1].onclick = function() {
-            MainImg.src = smallimg[1].src;
-        }
-        smallimg[2].onclick = function() {
-            MainImg.src = smallimg[2].src;
-        }
-        smallimg[3].onclick = function() {
-            MainImg.src = smallimg[3].src;
+        
+        // Function to update cart count in header
+        function updateCartCount() {
+            const cart = JSON.parse(localStorage.getItem('fitzone_cart') || '[]');
+            const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
+            
+            // Update cart count display if it exists
+            const cartCountElem = document.querySelector('.cart-count');
+            if (cartCountElem) {
+                cartCountElem.textContent = cartCount;
+            }
         }
     </script>
-
-
-    <script src="script.js"></script>
 </body>
 
 </html>

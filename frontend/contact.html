@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone - Contact Us</title>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <link rel="stylesheet" href="style.css">
+    <style>
+        #page-header.about-header {
+            background-image: url('img/banner/b14.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        #page-header.about-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+        
+        #page-header h2, 
+        #page-header p {
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <section id="header">
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
+        <div>
+            <ul id="navbar">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="shop.html">Shop</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a class="active" href="contact.html">Contact</a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
+                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                <li><a href="login.html">Login</a></li>
+                <a href="#" id="close"><i class="far fa-times"></i></a>
+            </ul>
+        </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+                <div id="search-results"></div>
+            </div>
+        </div>
+        <div id="mobile">
+            <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
+            <i id="bar" class="fas fa-outdent"></i>
+        </div>
+    </section>
+
+    <section id="page-header" class="about-header">
+        <h2>#let's_talk</h2>
+        <p>Have a question? We'd love to hear from you!</p>
+    </section>
+
+    <section id="contact-details" class="section-p1">
+        <div class="details">
+            <span>GET IN TOUCH</span>
+            <h2>Visit our store or contact us today</h2>
+            <h3>Head Office</h3>
+            <div>
+                <li>
+                    <i class="fal fa-map"></i>
+                    <p>123 Fitness Street, Health District, Cityville</p>
+                </li>
+                <li>
+                    <i class="far fa-envelope"></i>
+                    <p>contact@fitzone.com</p>
+                </li>
+                <li>
+                    <i class="fas fa-phone-alt"></i>
+                    <p>+1 234 567 8901</p>
+                </li>
+                <li>
+                    <i class="far fa-clock"></i>
+                    <p>Monday to Saturday: 10:00am - 6:00pm</p>
+                </li>
+            </div>
+        </div>
+
+        <div class="map">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2624.9916256937604!2d2.292292615674!3d48.85837007928757!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e66e2964e34e2d%3A0x8ddca9ee380ef7e0!2sEiffel%20Tower!5e0!3m2!1sen!2sus!4v1637152514401!5m2!1sen!2sus" 
+                width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+        </div>
+    </section>
+
+    <section id="form-details" class="section-p1">
+        <form id="contact-form">
+            <span>LEAVE A MESSAGE</span>
+            <h2>We'd love to hear from you</h2>
+            <input type="text" id="name" placeholder="Your Name" required>
+            <input type="email" id="email" placeholder="Your Email" required>
+            <input type="text" id="subject" placeholder="Subject" required>
+            <textarea id="message" cols="30" rows="10" placeholder="Your Message" required></textarea>
+            <div id="form-message"></div>
+            <button class="normal" type="submit">Submit</button>
+        </form>
+
+        <div class="people">
+            <div>
+                <img src="img/people/1.png" alt="Person 1">
+                <p><span>John Smith</span> Senior Marketing Manager <br> Phone: +1 234 567 8912 <br> Email: john.smith@fitzone.com</p>
+            </div>
+            <div>
+                <img src="img/people/2.png" alt="Person 2">
+                <p><span>Emma Brown</span> Senior Customer Support <br> Phone: +1 234 567 8913 <br> Email: emma.brown@fitzone.com</p>
+            </div>
+            <div>
+                <img src="img/people/3.png" alt="Person 3">
+                <p><span>David Wilson</span> Fitness Advisor <br> Phone: +1 234 567 8914 <br> Email: david.wilson@fitzone.com</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="newsletter" class="section-p1 section-m1">
+        <div class="newstext">
+            <h4>Sign Up For Newsletters</h4>
+            <p>Get E-mail updates about our latest products and <span>special offers.</span></p>
+        </div>
+        <div class="form">
+            <input type="text" placeholder="Your email address">
+            <button class="normal">Sign Up</button>
+        </div>
+    </section>
+
+    <footer class="section-p1">
+        <div class="col">
+            <img class="logo" src="img/logo.png" alt="">
+            <h4>Contact</h4>
+            <p><strong>Address: </strong> 123 Fitness Street, Health District, Cityville</p>
+            <p><strong>Phone:</strong> +1 234 567 8901 / +1 234 567 8902</p>
+            <p><strong>Hours:</strong> 10:00 - 18:00, Mon - Sat</p>
+            <div class="follow">
+                <h4>Follow Us</h4>
+                <div class="icon">
+                    <i class="fab fa-facebook-f"></i>
+                    <i class="fab fa-twitter"></i>
+                    <i class="fab fa-instagram"></i>
+                    <i class="fab fa-pinterest-p"></i>
+                    <i class="fab fa-youtube"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <h4>About</h4>
+            <a href="about.html">About Us</a>
+            <a href="#">Delivery Information</a>
+            <a href="#">Privacy Policy</a>
+            <a href="#">Terms & Conditions</a>
+            <a href="contact.html">Contact Us</a>
+        </div>
+
+        <div class="col">
+            <h4>My Account</h4>
+            <a href="login.html">Sign In</a>
+            <a href="cart.html">View Cart</a>
+            <a href="#">My Wishlist</a>
+            <a href="#">Track My Order</a>
+            <a href="#">Help</a>
+        </div>
+
+        <div class="col install">
+            <h4>Install App</h4>
+            <p>From App Store or Google Play</p>
+            <div class="row">
+                <img src="img/pay/app.jpg" alt="">
+                <img src="img/pay/play.jpg" alt="">
+            </div>
+            <p>Secured Payment Gateways </p>
+            <img src="img/pay/pay.png" alt="">
+        </div>
+
+        <div class="copyright">
+            <p>© 2025, FitZone - Premium Fitness Products & Supplements</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form submission handler
+            const contactForm = document.getElementById('contact-form');
+            const formMessage = document.getElementById('form-message');
+            
+            if (contactForm) {
+                contactForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const subject = document.getElementById('subject').value;
+                    const message = document.getElementById('message').value;
+                    
+                    // Show loading state
+                    formMessage.innerHTML = '<p class="info-message">Sending your message...</p>';
+                    
+                    // Simulate sending (in a real app, you'd make an API request here)
+                    setTimeout(() => {
+                        console.log('Contact form submission:', { name, email, subject, message });
+                        
+                        // Reset form
+                        contactForm.reset();
+                        
+                        // Show success message
+                        formMessage.innerHTML = '<p class="success-message">Thank you for your message! We\'ll get back to you soon.</p>';
+                        
+                        // Clear success message after 5 seconds
+                        setTimeout(() => {
+                            formMessage.innerHTML = '';
+                        }, 5000);
+                    }, 1500);
+                });
+            }
+            
+            // Update cart count
+            function updateCartCount() {
+                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                const cartCountElements = document.querySelectorAll('.cart-count');
+                
+                const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+                
+                cartCountElements.forEach(element => {
+                    element.innerText = totalItems;
+                    
+                    if (totalItems > 0) {
+                        element.style.display = 'block';
+                    } else {
+                        element.style.display = 'none';
+                    }
+                });
+            }
+            
+            // Call update cart count when page loads
+            updateCartCount();
+        });
+    </script>
+
+    <style>
+        #form-message {
+            margin: 10px 0;
+        }
+        
+        .success-message {
+            color: #088178;
+            background-color: #e6f3f2;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #088178;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            background-color: #fae5e5;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .info-message {
+            color: #3498db;
+            background-color: #e9f5fe;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        
+        /* Additional styling for store locations */
+        #store-locations {
+            padding: 40px 80px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        
+        .store {
+            flex: 0 0 30%;
+            margin-bottom: 40px;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .store h3 {
+            margin-bottom: 15px;
+            color: #088178;
+        }
+        
+        .store p {
+            margin: 5px 0;
+        }
+        
+        @media (max-width: 799px) {
+            .store {
+                flex: 0 0 48%;
+            }
+        }
+        
+        @media (max-width: 477px) {
+            .store {
+                flex: 0 0 100%;
+            }
+        }
+    </style>
+</body>
+
+</html>
