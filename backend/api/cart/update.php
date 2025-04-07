@@ -1,105 +1,133 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
-require_once '../../utils.php';
+require_once '../config/database.php';
+require_once '../utils/auth.php';
+require_once '../utils/response.php';
 
-// Only accept POST requests
-Utils::validateMethod('POST');
+// Set response headers
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Check request method
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    sendErrorResponse('Invalid request method', 405);
+}
 
 // Get request data
-$data = Utils::getJsonData();
+$data = json_decode(file_get_contents('php://input'), true);
 
-// Validate required fields
-if (!isset($data['user_id']) || !isset($data['token']) || !isset($data['product_id']) || !isset($data['quantity'])) {
-    Utils::sendResponse(false, 'Missing required fields', null, 400);
+// Check for required fields
+if (!isset($data['product_id'])) {
+    sendErrorResponse('Product ID is required');
 }
 
-// Sanitize input
-$userId = (int)Utils::sanitizeInput($data['user_id']);
-$productId = (int)Utils::sanitizeInput($data['product_id']);
-$quantity = (int)Utils::sanitizeInput($data['quantity']);
-$variantId = isset($data['variant_id']) ? (int)Utils::sanitizeInput($data['variant_id']) : null;
+$productId = $data['product_id'];
+$variantId = isset($data['variant_id']) ? $data['variant_id'] : null;
+$quantity = isset($data['quantity']) ? max(1, intval($data['quantity'])) : 1;
+$userId = null;
+$sessionId = null;
 
-// Validate token
-$tokenData = Utils::validateToken($data['token']);
-if (!$tokenData || $tokenData['sub'] != $userId) {
-    Utils::sendResponse(false, 'Invalid or expired token', null, 401);
+// Check if request is authenticated
+$auth = new Auth($conn);
+$isAuthenticated = $auth->validateToken();
+
+// If authenticated, use user_id from token, otherwise use session_id
+if ($isAuthenticated) {
+    $userId = $auth->getUserId();
+} else {
+    // For guest users, require session_id
+    if (isset($data['session_id']) && !empty($data['session_id'])) {
+        $sessionId = $data['session_id'];
+    } else {
+        sendErrorResponse('Session ID is required for guest users');
+    }
 }
 
-if ($quantity <= 0) {
-    Utils::sendResponse(false, 'Quantity must be greater than 0', null, 400);
+// Check if product exists and has enough stock
+$stmt = $conn->prepare("SELECT id_produit, prix, stock FROM produits WHERE id_produit = ? AND est_actif = 1");
+$stmt->bind_param("i", $productId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    sendErrorResponse('Product not found or is inactive');
 }
 
-// Create database connection
-$db = new Database();
+$product = $result->fetch_assoc();
 
-// Check if product exists
-$db->query("SELECT * FROM produits WHERE id_produit = :id");
-$db->bind(':id', $productId);
-$product = $db->singleArray();
-
-if (!$product) {
-    Utils::sendResponse(false, 'Product not found', null, 404);
+// Check if enough stock is available
+if ($product['stock'] < $quantity) {
+    sendErrorResponse('Not enough stock available. Maximum: ' . $product['stock']);
 }
 
-// Check if the quantity exceeds stock
-if ($quantity > $product['stock']) {
-    Utils::sendResponse(false, 'Not enough stock available', null, 400);
-}
-
-// Check if the item is in the cart
-$db->query("SELECT * FROM cart WHERE id_utilisateur = :user_id AND id_produit = :product_id AND variant_id " . ($variantId ? "= :variant_id" : "IS NULL"));
-$db->bind(':user_id', $userId);
-$db->bind(':product_id', $productId);
-if ($variantId) {
-    $db->bind(':variant_id', $variantId);
-}
-
-$cartItem = $db->singleArray();
-
-if (!$cartItem) {
-    Utils::sendResponse(false, 'Item not found in cart', null, 404);
-}
-
-// Update quantity
-$db->query("UPDATE cart SET quantity = :quantity, updated_at = NOW() WHERE id = :id");
-$db->bind(':quantity', $quantity);
-$db->bind(':id', $cartItem['id']);
-
-if (!$db->execute()) {
-    Utils::sendResponse(false, 'Failed to update cart', null, 500);
-}
-
-// Get updated cart
-$db->query("SELECT c.*, p.nom_produit, p.prix, p.image, 
-            v.nom as variant_nom, v.prix as variant_prix
-            FROM cart c
-            JOIN produits p ON c.id_produit = p.id_produit
-            LEFT JOIN variants_produit v ON c.variant_id = v.id_variant
-            WHERE c.id_utilisateur = :user_id");
-$db->bind(':user_id', $userId);
-
-$items = $db->resultSetArray();
-
-// Calculate cart totals
-$itemCount = 0;
-$subtotal = 0;
-
-foreach ($items as &$item) {
-    $itemCount += $item['quantity'];
+try {
+    // Start transaction
+    $conn->begin_transaction();
     
-    // Use variant price if available, otherwise use product price
-    $price = $item['variant_prix'] ? $item['variant_prix'] : $item['prix'];
-    $item['prix'] = $price;
+    // Prepare update statement based on authentication
+    if ($userId) {
+        $stmt = $conn->prepare("
+            UPDATE cart 
+            SET quantity = ? 
+            WHERE id_utilisateur = ? AND id_produit = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))
+        ");
+        $stmt->bind_param("iiiii", $quantity, $userId, $productId, $variantId, $variantId);
+    } else {
+        $stmt = $conn->prepare("
+            UPDATE cart 
+            SET quantity = ? 
+            WHERE session_id = ? AND id_produit = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))
+        ");
+        $stmt->bind_param("isiii", $quantity, $sessionId, $productId, $variantId, $variantId);
+    }
     
-    $subtotal += $price * $item['quantity'];
+    $stmt->execute();
+    
+    // If no rows were updated, the item doesn't exist in cart yet
+    if ($stmt->affected_rows === 0) {
+        // Item doesn't exist, so insert it
+        if ($userId) {
+            $stmt = $conn->prepare("INSERT INTO cart (id_utilisateur, id_produit, variant_id, quantity) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiii", $userId, $productId, $variantId, $quantity);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO cart (session_id, id_produit, variant_id, quantity) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("siii", $sessionId, $productId, $variantId, $quantity);
+        }
+        
+        $stmt->execute();
+        
+        $response = [
+            'success' => true,
+            'message' => 'Item added to cart',
+            'item_id' => $conn->insert_id,
+            'quantity' => $quantity,
+            'operation' => 'insert'
+        ];
+    } else {
+        $response = [
+            'success' => true,
+            'message' => 'Cart item updated',
+            'quantity' => $quantity,
+            'operation' => 'update'
+        ];
+    }
+    
+    // Commit transaction
+    $conn->commit();
+    
+    sendResponse($response);
+} catch (Exception $e) {
+    // Rollback transaction on error
+    $conn->rollback();
+    sendErrorResponse('Error updating cart: ' . $e->getMessage());
 }
 
-$cart = [
-    'items' => $items,
-    'item_count' => $itemCount,
-    'subtotal' => $subtotal
-];
-
-Utils::sendResponse(true, 'Cart updated successfully', ['cart' => $cart]);
+$conn->close();
 ?>

@@ -83,3 +83,48 @@ if (typeof module !== 'undefined' && module.exports) {
         makeApiCall
     };
 }
+
+/**
+ * FitZone Configuration
+ * Global configuration settings for the application
+ */
+
+// Check if CONFIG is already defined to prevent duplicate declarations
+if (typeof CONFIG === 'undefined') {
+    const CONFIG = {
+        // API URL - change this to your actual API endpoint
+        API_URL: 'http://localhost/site_fitness/backend/api',
+        
+        // Authentication settings
+        AUTH: {
+            TOKEN_STORAGE_KEY: 'fitzone_token',
+            USER_STORAGE_KEY: 'fitzone_user',
+            TOKEN_EXPIRY_DAYS: 7
+        },
+        
+        // Cart settings
+        CART: {
+            STORAGE_KEY: 'fitzone_cart',
+            SESSION_ID_KEY: 'fitzone_cart_session'
+        },
+        
+        // Debug settings
+        DEBUG: true,
+        
+        // Environment
+        ENV: 'development'
+    };
+
+    // Debug log if in development mode
+    if (CONFIG.DEBUG) {
+        console.log('CONFIG initialized');
+    }
+
+    // Make CONFIG available globally
+    window.CONFIG = CONFIG;
+}
+
+// Export for module systems if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.CONFIG;
+}

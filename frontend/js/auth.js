@@ -298,23 +298,27 @@ if (typeof window.FitZoneAuth === 'undefined') {
             }
         }
         
-        // Logout function
+        /**
+         * Logout the user
+         * @returns {boolean} Whether logout was successful
+         */
         function logout() {
-            debug('Logging out user');
-            clearAuthData();
-            
-            // If a logout endpoint exists, call it to invalidate token on server
-            const token = getToken();
-            if (token) {
-                fetch(`${CONFIG.API_URL}/auth/logout.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                }).catch(error => {
-                    console.error('Logout API call failed:', error);
-                });
+            try {
+                console.log('Executing logout');
+                
+                // Clear all authentication data from localStorage
+                localStorage.removeItem('fitzone_token');
+                localStorage.removeItem('fitzone_user');
+                localStorage.removeItem('fitzone_auth_state');
+                
+                // Clear any session cookies
+                document.cookie = "fitzone_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                
+                console.log('Logout successful - auth data cleared');
+                return true;
+            } catch (error) {
+                console.error('Error during logout:', error);
+                return false;
             }
         }
         

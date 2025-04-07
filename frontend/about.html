@@ -8,6 +8,12 @@
     <!-- Add Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - About Us</title>
+    <!-- Load WebSocket fixes early -->
+    <script src="js/global-websocket-fix.js"></script>
+    <!-- Authentication and CORS handlers -->
+    <script src="js/cors-proxy.js"></script>
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
     <!-- Base configuration script must load first -->
     <script src="js/config.js"></script>
     <!-- Optional: LiveReload error handler -->
@@ -41,6 +47,11 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
     </style>
+    <!-- Add near the beginning of the head section -->
+    <script src="js/script-loader.js"></script>
+    <!-- Include cart service script -->
+<script src="js/cart-service.js"></script>
+<script src="js/global-cart.js"></script>
 </head>
 
 <body>
@@ -276,6 +287,8 @@
 
     <!-- Header/navigation functionality -->
     <script src="js/header.js"></script>
+    <!-- Include cart service script -->
+  
 
     <style>
         /* Additional styles for the About page */
@@ -440,9 +453,40 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in and update navigation
+            function updateAuthUI() {
+                const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+                const loginLink = document.getElementById('login-link');
+                const logoutLink = document.getElementById('logout-link');
+                const ordersLink = document.getElementById('orders-link');
+                
+                if (isLoggedIn) {
+                    // User is logged in
+                    if (loginLink) loginLink.innerHTML = 'My Account';
+                    if (loginLink) loginLink.href = 'profile.html';
+                    if (logoutLink) logoutLink.style.display = 'block';
+                    if (ordersLink) ordersLink.style.display = 'block';
+                } else {
+                    // User is not logged in
+                    if (loginLink) loginLink.innerHTML = 'Login';
+                    if (loginLink) loginLink.href = 'login.html';
+                    if (logoutLink) logoutLink.style.display = 'none';
+                    if (ordersLink) ordersLink.style.display = 'none';
+                }
+            }
+            
+            // Handle logout
+            document.getElementById('logout-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof FitZoneAuth !== 'undefined') {
+                    FitZoneAuth.logout();
+                    window.location.href = 'index.html';
+                }
+            });
+            
             // Update cart count
             function updateCartCount() {
-                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                const cartItems = JSON.parse(localStorage.getItem('fitzone_cart'))?.items || [];
                 const cartCountElements = document.querySelectorAll('.cart-count');
                 
                 const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
@@ -458,7 +502,8 @@
                 });
             }
             
-            // Call update cart count when page loads
+            // Call functions on page load
+            updateAuthUI();
             updateCartCount();
         });
 
@@ -524,7 +569,9 @@
             loadProducts();
         });
     </script>
-
+<!-- Add right before </body> -->
+<script src="js/auth-ui.js"></script>
+</body>
 </body>
 
 </html>

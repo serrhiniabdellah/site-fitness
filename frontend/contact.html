@@ -34,6 +34,9 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
     </style>
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
 </head>
 
 <body>
@@ -48,13 +51,25 @@
                 <li><a class="active" href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <input type="text" id="search-input" placeholder="Search for products...">
                 <button id="search-button"><i class="fas fa-search"></i></button>
                 <div id="search-results"></div>
             </div>
@@ -251,12 +266,61 @@
             
             // Call update cart count when page loads
             updateCartCount();
+
+            // Check if user is logged in and update navigation
+            function updateAuthUI() {
+                const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+                const loginLink = document.getElementById('login-link');
+                const logoutLink = document.getElementById('logout-link');
+                const ordersLink = document.getElementById('orders-link');
+                
+                if (isLoggedIn) {
+                    // User is logged in
+                    if (loginLink) loginLink.innerHTML = 'My Account';
+                    if (loginLink) loginLink.href = 'profile.html';
+                    if (logoutLink) logoutLink.style.display = 'block';
+                    if (ordersLink) ordersLink.style.display = 'block';
+                } else {
+                    // User is not logged in
+                    if (loginLink) loginLink.innerHTML = 'Login';
+                    if (loginLink) loginLink.href = 'login.html';
+                    if (logoutLink) logoutLink.style.display = 'none';
+                    if (ordersLink) ordersLink.style.display = 'none';
+                }
+            }
+            
+            // Handle logout
+            document.getElementById('logout-link').addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof FitZoneAuth !== 'undefined') {
+                    FitZoneAuth.logout();
+                    window.location.href = 'index.html';
+                }
+            });
+            
+            // Call functions on page load
+            updateAuthUI();
         });
     </script>
-    <!-- Add auth persistence handler -->
+    
+    <!-- Remove any existing "Déconnexion" button functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide any old déconnexion buttons
+            const oldLogoutBtns = document.querySelectorAll('a[href="javascript:void(0)"]');
+            oldLogoutBtns.forEach(btn => {
+                if (btn.textContent.trim() === 'Déconnexion') {
+                    btn.style.display = 'none';
+                }
+            });
+        });
+    </script>
+    
+    <!-- Scripts -->
     <script src="chrome-extension-fix.js"></script>
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-header.js"></script>
+    <script src="js/header.js"></script>
 
     <style>
         #form-message {
@@ -323,7 +387,108 @@
                 flex: 0 0 100%;
             }
         }
+
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        /* Ensure no bottom margin on last dropdown item */
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        /* Ensure no top margin on first dropdown item */
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        
+        /* Hide any old Déconnexion buttons */
+        a[href="javascript:void(0)"] {
+            display: none !important;
+        }
     </style>
+    <script src="js/auth-ui.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+            
+            // Get the elements
+            const loginMenu = document.getElementById('account-menu-login');
+            const dropdownMenu = document.getElementById('account-menu-dropdown');
+            
+            // Update visibility based on login state
+            if (isLoggedIn) {
+                // User is logged in
+                if (loginMenu) loginMenu.style.display = 'none';
+                if (dropdownMenu) dropdownMenu.style.display = 'block';
+                
+                // Update username in dropdown
+                const user = FitZoneAuth.getCurrentUser();
+                const userNameNav = document.getElementById('user-name-nav');
+                if (userNameNav && user && user.prenom) {
+                    userNameNav.textContent = user.prenom;
+                }
+                
+                // Setup logout functionality
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked');
+                        if (typeof FitZoneAuth !== 'undefined') {
+                            FitZoneAuth.logout();
+                            window.location.href = 'index.html';
+                        }
+                    });
+                }
+                
+                // Hide any old "Déconnexion" buttons
+                const oldLogoutBtns = document.querySelectorAll('a[href="javascript:void(0)"]');
+                oldLogoutBtns.forEach(btn => {
+                    if (btn.textContent.trim() === 'Déconnexion') {
+                        btn.style.display = 'none';
+                    }
+                });
+            } else {
+                // User is not logged in
+                if (loginMenu) loginMenu.style.display = 'block';
+                if (dropdownMenu) dropdownMenu.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 
 </html>

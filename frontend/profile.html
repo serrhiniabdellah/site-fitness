@@ -18,6 +18,10 @@
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
+    
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
     <style>
         .profile-container {
             max-width: 800px;
@@ -183,7 +187,16 @@
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a class="active" href="profile.html">My Account</a></li>
+                <li class="account-menu">
+                    <a href="profile.html" class="account-link active">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
@@ -200,6 +213,55 @@
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
+
+    <!-- Add styles for the dropdown menu -->
+    <style>
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        /* Ensure no bottom margin on last dropdown item */
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        /* Ensure no top margin on first dropdown item */
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+    </style>
 
     <section id="page-header" class="profile-header">
         <h2>#MyAccount</h2>
@@ -330,7 +392,7 @@
             <a href="login.html">Sign In</a>
             <a href="cart.html">View Cart</a>
             <a href="#">My Wishlist</a>
-            <a href="#">Track My Order</a>
+            <a href="orders.html">Track My Order</a>
             <a href="#">Help</a>
         </div>
 
@@ -363,6 +425,9 @@
 
     <!-- Header/navigation functionality -->
     <script src="js/header.js"></script>
+
+    <!-- Before other scripts -->
+    <script src="js/logout-debug.js"></script>
 
     <script>
         // Add debug helper function
@@ -525,11 +590,76 @@
                 }
             });
             
-            // Handle logout
-            document.getElementById('logout-btn').addEventListener('click', function() {
-                FitZoneAuth.logout();
-                window.location.href = 'index.html';
-            });
+            // Handle logout from both profile button and dropdown with a single function
+            function setupLogoutHandlers() {
+                // Handle profile logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked from profile button');
+                        performLogout();
+                    });
+                }
+                
+                // Handle dropdown logout link
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked from dropdown');
+                        performLogout();
+                    });
+                }
+            }
+            
+            // Unified logout function
+            function performLogout() {
+                console.log('Performing logout');
+                
+                // Bypass the prevention logic by directly calling the original function
+                const originalLogoutFunc = FitZoneAuth.logout;
+                
+                // Store current reference to the overridden function
+                const currentLogout = FitZoneAuth.logout;
+                
+                // Temporarily restore original function
+                FitZoneAuth.logout = originalLogout;
+                
+                try {
+                    // Call the logout function directly
+                    const success = FitZoneAuth.logout();
+                    console.log('Direct logout result:', success);
+                    
+                    if (success) {
+                        // Force clear any auth data to be sure
+                        localStorage.removeItem('fitzone_token');
+                        localStorage.removeItem('fitzone_user');
+                        localStorage.removeItem('fitzone_auth_state');
+                        
+                        console.log('Redirecting to home page after logout');
+                        window.location.href = 'index.html';
+                    } else {
+                        console.error('Logout operation returned false');
+                        alert('Logout failed. Please try refreshing the page.');
+                    }
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                    
+                    // Fallback: Force logout by clearing data manually
+                    localStorage.removeItem('fitzone_token');
+                    localStorage.removeItem('fitzone_user');
+                    localStorage.removeItem('fitzone_auth_state');
+                    
+                    window.location.href = 'index.html';
+                } finally {
+                    // Restore the prevention wrapper
+                    FitZoneAuth.logout = currentLogout;
+                }
+            }
+            
+            // Call the setup function to register handlers
+            setupLogoutHandlers();
             
             // Fetch order history
             async function fetchOrderHistory() {
@@ -570,7 +700,7 @@
                     console.error('Error fetching order history:', error);
                 }
             }
-            
+
             // We don't call fetchOrderHistory() yet since the API endpoint might not exist
             // But the function is here ready to be used once the endpoint is created
             
@@ -579,16 +709,34 @@
             FitZoneAuth.logout = function() {
                 console.log('Logout triggered');
                 
-                // Only proceed if it's a user-initiated action (not from script)
-                const isUserAction = (new Error()).stack.includes('onclick');
-                if (!isUserAction) {
-                    console.warn('Prevented automatic logout');
-                    return;
+                // Simpler check that's more reliable across browsers
+                // Check if this was triggered by a recent user event
+                const userInitiated = (Date.now() - (window.lastUserInteraction || 0)) < 10000;
+                
+                if (!userInitiated && window.preventAutoLogout !== false) {
+                    console.warn('Prevented automatic logout - no recent user interaction');
+                    return false;
                 }
                 
                 // Proceed with actual logout
-                originalLogout.apply(this, arguments);
+                console.log('Proceeding with logout');
+                return originalLogout.apply(this, arguments);
             };
+
+            // Track user interactions
+            window.lastUserInteraction = Date.now();
+            document.addEventListener('click', function() {
+                window.lastUserInteraction = Date.now();
+            });
+            document.addEventListener('touchstart', function() {
+                window.lastUserInteraction = Date.now();
+            });
+
+            // Populate user's name in the navbar dropdown
+            const userNameNav = document.getElementById('user-name-nav');
+            if (userNameNav && user && user.prenom) {
+                userNameNav.textContent = user.prenom;
+            }
         });
     </script>
 </body>

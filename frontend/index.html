@@ -21,6 +21,11 @@
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
 
     <link rel="stylesheet" href="style.css">
+    <!-- Other existing stylesheets and meta tags -->
+    
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
     <style>
         .scroll-indicator {
             position: absolute;
@@ -61,7 +66,7 @@
 
 <body>
     <section id="header">
-        <a href="#"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
 
         <div>
             <ul id="navbar">
@@ -69,9 +74,9 @@
                 <li><a href="shop.html">Shop</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
-                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li><a href="login.html" id="login-link">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
@@ -506,6 +511,7 @@
     <script src="js/cart.js"></script>
     <script src="js/add-to-cart.js"></script>
     <script src="script.js"></script>
+    <script src="js/header.js"></script>
     
     <!-- Development only - Fixed reload script with proper WebSocket URL -->
     <script src="reload.js"></script>
@@ -513,23 +519,52 @@
     <!-- Add script to check auth state on page load -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if auth debug is available
-        if (window.AuthDebug) {
+        // Check auth state and update UI
+        function updateAuthUI() {
             console.log('Checking auth state on page load');
-            AuthDebug.checkState();
+            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+            console.log('User is ' + (isLoggedIn ? 'logged in' : 'not logged in'));
+            
+            const loginLink = document.getElementById('login-link');
+            const logoutLink = document.getElementById('logout-link');
+            const ordersLink = document.getElementById('orders-link');
+            
+            if (isLoggedIn) {
+                if (loginLink) {
+                    loginLink.textContent = 'My Account';
+                    loginLink.href = 'profile.html';
+                }
+                if (logoutLink) logoutLink.style.display = 'block';
+                if (ordersLink) ordersLink.style.display = 'block';
+            } else {
+                if (loginLink) {
+                    loginLink.textContent = 'Login';
+                    loginLink.href = 'login.html';
+                }
+                if (logoutLink) logoutLink.style.display = 'none';
+                if (ordersLink) ordersLink.style.display = 'none';
+            }
         }
         
-        // Check if user is logged in
-        if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
-            console.log('User is logged in');
-            // Update any UI elements to reflect logged-in state
-            document.querySelectorAll('[href="login.html"]').forEach(el => {
-                el.textContent = 'My Account';
-                el.href = 'profile.html';
+        // Handle logout
+        const logoutLink = document.getElementById('logout-link');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof FitZoneAuth !== 'undefined') {
+                    FitZoneAuth.logout();
+                    window.location.href = 'index.html';
+                }
             });
         }
+        
+        // Call updateAuthUI when page loads
+        updateAuthUI();
     });
     </script>
+    <!-- Add right before </body> -->
+<script src="js/auth-ui.js"></script>
+</body>
 </body>
 
 </html>

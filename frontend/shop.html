@@ -182,13 +182,62 @@
                 text-align: left;
             }
         }
+        
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        /* Ensure no bottom margin on last dropdown item */
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        /* Ensure no top margin on first dropdown item */
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
     </style>
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
 </head>
 
 <body>
 
     <section id="header">
-        <a href="index.html"><img src="img/logo.png" class="logo" alt=""></a>
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
 
         <div>
             <ul id="navbar">
@@ -198,7 +247,19 @@
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li class="account-menu" id="account-menu-login" style="display:none;">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
@@ -565,8 +626,10 @@
                     const searchNotice = document.createElement('div');
                     searchNotice.className = 'search-notice';
                     searchNotice.innerHTML = `
-                        <p>Search results for: <strong>${searchQuery}</strong></p>
-                        <button id="clear-search" class="normal">Clear Search</button>
+                        <div class="search-notice-content">
+                            <p>Search results for: <strong>${searchQuery}</strong></p>
+                            <button id="clear-search" class="normal">Clear Search</button>
+                        </div>
                     `;
                     shopControls.prepend(searchNotice);
                     
@@ -577,6 +640,55 @@
             }
         });
     </script>
+    <!-- Add right before </body> -->
+<script src="js/auth-ui.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if user is logged in
+        const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+        
+        // Get the elements
+        const loginMenu = document.getElementById('account-menu-login');
+        const dropdownMenu = document.getElementById('account-menu-dropdown');
+        
+        // Update visibility based on login state
+        if (isLoggedIn) {
+            // User is logged in
+            if (loginMenu) loginMenu.style.display = 'none';
+            if (dropdownMenu) dropdownMenu.style.display = 'block';
+            
+            // Update username in dropdown
+            const user = FitZoneAuth.getCurrentUser();
+            const userNameNav = document.getElementById('user-name-nav');
+            if (userNameNav && user && user.prenom) {
+                userNameNav.textContent = user.prenom;
+            }
+            
+            // Setup logout functionality
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Logout clicked from shop page');
+                    
+                    if (typeof FitZoneAuth !== 'undefined') {
+                        // Call the logout function
+                        const success = FitZoneAuth.logout();
+                        
+                        if (success) {
+                            // Force page reload
+                            window.location.href = 'index.html';
+                        }
+                    }
+                });
+            }
+        } else {
+            // User is not logged in
+            if (loginMenu) loginMenu.style.display = 'block';
+            if (dropdownMenu) dropdownMenu.style.display = 'none';
+        }
+    });
+</script>
 </body>
 
 </html>

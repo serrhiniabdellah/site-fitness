@@ -1,127 +1,99 @@
 /**
- * Auth Persistence Handler v1.1
- * Prevents accidental logout and ensures tokens persist across sessions
+ * Auth Persistence Handler
+ * Ensures consistent auth state across pages and prevents token-related issues
  */
-(function() {
-    console.log('Auth persistence handler initialized');
-    
-    // Create global auth debug namespace
-    window.AuthDebug = {
-        // Log authentication events
-        logEvent: function(event, data) {
-            console.log(`[Auth Event] ${event}`, data || '');
-        },
-        
-        // Check auth state
-        checkState: function() {
-            const token = localStorage.getItem('fitzone_token');
-            const userData = localStorage.getItem('fitzone_user');
-            
-            console.group('Auth State Check');
-            console.log('Token exists:', !!token);
-            console.log('User data exists:', !!userData);
-            
-            try {
-                if (userData) {
-                    const user = JSON.parse(userData);
-                    console.log('User ID:', user.id_utilisateur);
-                    console.log('User email:', user.email);
-                }
-            } catch (e) {
-                console.error('Error parsing user data:', e);
-            }
-            
-            console.groupEnd();
-            
-            return {
-                hasToken: !!token,
-                hasUserData: !!userData
-            };
-        },
-        
-        // Fix common issues
-        fixAuthState: function() {
-            const state = this.checkState();
-            if (state.hasToken !== state.hasUserData) {
-                console.warn('Inconsistent auth state detected, clearing for safety');
-                localStorage.removeItem('fitzone_token');
-                localStorage.removeItem('fitzone_user');
-                return false;
-            }
-            return state.hasToken && state.hasUserData;
-        }
-    };
+console.log('Auth persistence handler initialized');
 
-    // Store original localStorage methods
-    const originalSetItem = localStorage.setItem;
-    const originalRemoveItem = localStorage.removeItem;
+// Fix inconsistent state handling logic
+function fixAuthState() {
+    const token = localStorage.getItem('fitzone_token');
+    const userData = localStorage.getItem('fitzone_user');
     
-    // Track the last login/logout action to prevent race conditions
-    let lastAuthAction = {
-        type: null,
-        time: 0
-    };
+    console.log('Auth State Check');
+    console.log('Token exists:', !!token);
+    console.log('User data exists:', !!userData);
     
-    // Intercept localStorage setItem to debug auth token storage
-    localStorage.setItem = function(key, value) {
-        // Call original (must come first to prevent recursion)
-        originalSetItem.call(localStorage, key, value);
-        
-        // Track auth events
-        if (key === 'fitzone_token' && value) {
-            lastAuthAction = { type: 'login', time: Date.now() };
-            AuthDebug.logEvent('Token stored', value ? (value.substring(0, 10) + '...') : 'empty value');
-            
-            // Store login timestamp safely
-            originalSetItem.call(localStorage, 'fitzone_login_timestamp', Date.now().toString());
-        } 
-        else if (key === 'fitzone_user') {
-            AuthDebug.logEvent('User data stored');
+    try {
+        // Only log user details if userData exists
+        if (userData) {
+            const parsedUser = JSON.parse(userData);
+            console.log('User ID:', parsedUser.id_utilisateur);
+            console.log('User email:', parsedUser.email);
         }
-    };
-    
-    // Intercept localStorage removeItem to debug auth token removal
-    localStorage.removeItem = function(key) {
-        // Prevent accidental double logout
-        if ((key === 'fitzone_token' || key === 'fitzone_user') && 
-            lastAuthAction.type === 'logout' &&
-            Date.now() - lastAuthAction.time < 5000) {
-            
-            console.warn('Prevented duplicate logout attempt');
-            return;
-        }
+    } catch (e) {
+        console.error('Error parsing user data:', e);
+    }
+
+    // Handle inconsistent state more gracefully
+    if ((!token && userData) || (token && !userData)) {
+        console.log(' Inconsistent auth state detected');
         
-        // Prevent accidental logout immediately after login
-        if ((key === 'fitzone_token' || key === 'fitzone_user') && 
-            lastAuthAction.type === 'login' &&
-            Date.now() - lastAuthAction.time < 5000) {
-            
-            console.warn('Prevented logout immediately after login');
-            return;
+        // Instead of immediately clearing, try to recover if possible
+        if (!token && userData) {
+            // No token but user data exists - user needs to log in again
+            console.log('Redirecting to login page');
+            // Only redirect if on a protected page
+            if (!window.location.pathname.includes('login.html') && 
+                !window.location.pathname.includes('index.html') &&
+                !window.location.pathname.includes('shop.html')) {
+                // Create a soft redirect - preserve the referrer
+                window.location.href = `login.html?redirect=${encodeURIComponent(window.location.pathname)}`;
+                return;
+            }
         }
         
-        // Record logout event
-        if (key === 'fitzone_token' || key === 'fitzone_user') {
-            lastAuthAction = { type: 'logout', time: Date.now() };
-            AuthDebug.logEvent(`Removing ${key}`);
-        }
+        // If we can't recover or on a public page, clear both to be safe
+        const originalRemoveItem = localStorage.removeItem;
+        localStorage.removeItem = function(key) {
+            console.log('[Auth Event] Removing ' + key);
+            return originalRemoveItem.call(localStorage, key);
+        };
         
-        // Allow removal to proceed
-        originalRemoveItem.call(localStorage, key);
-    };
+        localStorage.removeItem('fitzone_token');
+        localStorage.removeItem('fitzone_user');
+        
+        // Restore original method
+        localStorage.removeItem = originalRemoveItem;
+    }
+}
+
+// Create a safe wrapper for localStorage to prevent accidental logout
+const originalRemoveItem = localStorage.removeItem;
+localStorage.removeItem = function(key) {
+    // Don't interfere with normal localStorage operations for non-auth keys
+    if (key !== 'fitzone_token' && key !== 'fitzone_user') {
+        return originalRemoveItem.call(localStorage, key);
+    }
     
-    // Check auth state on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        AuthDebug.logEvent('Page loaded, checking auth state');
-        AuthDebug.fixAuthState();
-    });
+    // Check if this is part of our own logout flow
+    const isLogoutFlow = window.isLoggingOut === true;
+    const stack = new Error().stack || '';
+    const isFromLogoutFunction = stack.includes('logout');
     
-    // Handle storage events from other tabs/windows
+    if (!isLogoutFlow && !isFromLogoutFunction && key === 'fitzone_token') {
+        console.log(' Prevented duplicate logout attempt');
+        return;
+    }
+    
+    // Allow the operation
+    console.log('[Auth Event] Removing ' + key);
+    return originalRemoveItem.call(localStorage, key);
+};
+
+// Check auth state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[Auth Event] Page loaded, checking auth state');
+    
+    // Delay to ensure other scripts have loaded
+    setTimeout(fixAuthState, 10);
+    
+    // Listen for auth changes
     window.addEventListener('storage', function(event) {
         if (event.key === 'fitzone_token' || event.key === 'fitzone_user') {
-            AuthDebug.logEvent(`Storage event for ${event.key}`, event.newValue ? 'New value set' : 'Value removed');
+            console.log('[Auth Event] Storage changed for ' + event.key);
+            fixAuthState();
         }
     });
-    
-    console.log('Auth persistence protection active');
-})();
+});
+
+console.log('Auth persistence protection active');

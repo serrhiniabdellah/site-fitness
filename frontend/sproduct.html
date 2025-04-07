@@ -6,45 +6,62 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Product Details</title>
+    
+    <!-- Add configuration script first to ensure it's available to other scripts -->
+    <script src="js/config.js"></script>
+    
+    <!-- Load WebSocket fixes early -->
+    <script src="js/global-websocket-fix.js"></script>
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    
+    <!-- Add auth and CORS handlers -->
+    <script src="js/cors-proxy.js"></script>
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
+    
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
+    
     <style>
-        .single-pro-image {
+        #prodetails {
+            display: flex;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        #prodetails .single-pro-image {
             width: 40%;
             margin-right: 50px;
         }
         
-        .small-img-group {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        
-        .small-img-col {
-            flex-basis: 24%;
-            cursor: pointer;
-        }
-        
-        .single-pro-details {
+        #prodetails .single-pro-details {
             width: 50%;
             padding-top: 30px;
         }
         
-        .single-pro-details h4 {
+        #prodetails .single-pro-details h4 {
             padding: 40px 0 20px 0;
         }
         
-        .single-pro-details h2 {
+        #prodetails .single-pro-details h2 {
             font-size: 26px;
         }
         
-        .single-pro-details select {
+        #prodetails .single-pro-details select {
             display: block;
             padding: 5px 10px;
             margin-bottom: 10px;
         }
         
-        .single-pro-details input {
+        #prodetails .single-pro-details input {
             width: 50px;
             height: 47px;
             padding-left: 10px;
@@ -52,130 +69,67 @@
             margin-right: 10px;
         }
         
-        .single-pro-details input:focus {
+        #prodetails .single-pro-details input:focus {
             outline: none;
         }
         
-        .single-pro-details button {
+        #prodetails .single-pro-details button {
             background: #088178;
             color: #fff;
         }
         
-        .single-pro-details span {
+        #prodetails .single-pro-details span {
             line-height: 25px;
         }
         
-        .product-badges {
-            margin: 20px 0;
+        .small-img-group {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            justify-content: space-between;
         }
         
-        .badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 600;
-            color: white;
+        .small-img-col {
+            flex-basis: 24%;
+            cursor: pointer;
         }
         
-        .badge-new {
-            background-color: #088178;
-        }
-        
-        .badge-bestseller {
-            background-color: #ff7e0e;
-        }
-        
-        .badge-sale {
-            background-color: #e74c3c;
+        .product-description {
+            margin: 20px 0;
+            line-height: 1.6;
         }
         
         .product-meta {
             margin: 20px 0;
-            padding-top: 20px;
+            padding: 15px 0;
             border-top: 1px solid #e1e1e1;
-        }
-        
-        .meta-item {
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        
-        .meta-item span {
-            font-weight: 600;
-            margin-right: 10px;
-        }
-        
-        .nutrition-facts {
-            margin: 30px 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        
-        .nutrition-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
             border-bottom: 1px solid #e1e1e1;
         }
         
-        .nutrition-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .nutrition-table tr td {
-            padding: 8px 0;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .nutrition-table tr td:last-child {
-            text-align: right;
-        }
-        
-        .product-description {
-            margin-bottom: 30px;
-        }
-        
-        .tabs {
-            margin-top: 40px;
-        }
-        
-        .tab-list {
-            display: flex;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .tab-button {
-            padding: 10px 20px;
-            cursor: pointer;
-            background: none;
-            border: none;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        
-        .tab-button.active {
-            border-bottom: 2px solid #088178;
-            color: #088178;
-        }
-        
-        .tab-content {
-            padding: 20px 0;
-            display: none;
-        }
-        
-        .tab-content.active {
+        .product-meta span {
             display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #606063;
+        }
+        
+        .variant-selector {
+            margin: 20px 0;
+        }
+        
+        .variant-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .reviews-section {
+            margin: 40px 0;
         }
         
         .review {
-            border-bottom: 1px solid #e1e1e1;
-            padding: 20px 0;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
         }
         
         .review-header {
@@ -184,33 +138,109 @@
             margin-bottom: 10px;
         }
         
-        .reviewer-name {
+        .review-author {
             font-weight: 600;
         }
         
         .review-date {
-            color: #666;
+            color: #606063;
             font-size: 14px;
         }
         
-        .review-text {
-            margin-top: 10px;
-            line-height: 1.6;
+        .review-rating {
+            color: #ffb900;
+            margin-bottom: 10px;
         }
         
-        .related-products {
-            margin-top: 60px;
-        }
-        
-        .related-title {
+        .loading-container {
             text-align: center;
-            margin-bottom: 30px;
+            padding: 40px;
+        }
+        
+        .loading-spinner i {
+            font-size: 40px;
+            color: #088178;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        
+        @media (max-width: 799px) {
+            #prodetails {
+                flex-direction: column;
+            }
+            
+            #prodetails .single-pro-image {
+                width: 100%;
+                margin-right: 0;
+            }
+            
+            #prodetails .single-pro-details {
+                width: 100%;
+                padding-top: 20px;
+            }
         }
     </style>
 </head>
 
 <body>
-
     <section id="header">
         <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
         <div>
@@ -221,13 +251,25 @@
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <input type="text" id="search-input" placeholder="Search for products...">
                 <button id="search-button"><i class="fas fa-search"></i></button>
                 <div id="search-results"></div>
             </div>
@@ -239,92 +281,98 @@
         </div>
     </section>
 
+    <!-- Product Details Section -->
     <section id="prodetails" class="section-p1">
-        <div class="loading-container">
+        <div id="product-loading" class="loading-container">
             <div class="loading-spinner">
                 <i class="fas fa-spinner fa-spin"></i>
-                <span>Loading product details...</span>
+                <p>Loading product details...</p>
             </div>
         </div>
         
-        <div class="product-container" style="display: none;">
+        <div id="product-error" class="error-message" style="display:none">
+            <i class="fas fa-exclamation-circle"></i>
+            <p id="error-message-text">Error loading product details.</p>
+            <button onclick="window.location.reload()" class="normal">Retry</button>
+        </div>
+        
+        <div id="product-container" style="display:none">
             <div class="single-pro-image">
-                <img src="" id="MainImg" alt="">
-    
-                <div class="small-img-group">
-                    <div class="small-img-col">
-                        <img src="" class="small-img" alt="">
-                    </div>
-                    <div class="small-img-col">
-                        <img src="" class="small-img" alt="">
-                    </div>
-                    <div class="small-img-col">
-                        <img src="" class="small-img" alt="">
-                    </div>
-                    <div class="small-img-col">
-                        <img src="" class="small-img" alt="">
-                    </div>
+                <img src="" width="100%" id="MainImg" alt="Product Image">
+                <div class="small-img-group" id="product-thumbnails">
+                    <!-- Thumbnails will be inserted here -->
                 </div>
             </div>
-    
+            
             <div class="single-pro-details">
-                <h6 id="product-category">Category</h6>
+                <h6 id="product-category">Product Category</h6>
                 <h4 id="product-name">Product Name</h4>
-                <div id="product-rating" class="star">
-                    <!-- Rating stars will be inserted here -->
-                </div>
                 <h2 id="product-price">$0.00</h2>
-                <div class="quantity-selector">
-                    <span>Quantity:</span>
-                    <input type="number" value="1" min="1" id="qty">
+                
+                <div id="variant-selector" class="variant-selector" style="display:none">
+                    <label for="product-variant">Select Variant:</label>
+                    <select name="variant" id="product-variant">
+                        <!-- Variants will be inserted here -->
+                    </select>
                 </div>
-                <button id="add-to-cart" class="normal">Add To Cart</button>
-                <h4>Product Details</h4>
-                <p id="product-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                
+                <div class="product-actions">
+                    <label for="product-quantity">Quantity:</label>
+                    <input type="number" id="product-quantity" value="1" min="1">
+                    <button class="normal" id="add-to-cart-btn">Add To Cart</button>
+                </div>
+                
+                <div class="product-description">
+                    <h5>Product Description</h5>
+                    <p id="product-description">Loading product description...</p>
+                </div>
+                
+                <div class="product-meta">
+                    <span id="product-sku">SKU: </span>
+                    <span id="product-stock">Availability: </span>
+                </div>
             </div>
         </div>
     </section>
-
-    <section id="product-reviews" class="section-p1">
-        <h2>Reviews</h2>
-        <div id="reviews-container">
-            <!-- Reviews will be loaded here -->
+    
+    <!-- Reviews Section -->
+    <section id="reviews" class="section-p1 reviews-section">
+        <h2>Customer Reviews</h2>
+        <div id="reviews-loading" class="loading-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading reviews...</p>
+            </div>
         </div>
         
-        <div id="review-form-container" style="display: none;">
-            <h3>Write a Review</h3>
-            <form id="review-form">
-                <div class="rating-selector">
-                    <span>Your Rating:</span>
-                    <div class="star-rating">
-                        <i class="far fa-star" data-rating="1"></i>
-                        <i class="far fa-star" data-rating="2"></i>
-                        <i class="far fa-star" data-rating="3"></i>
-                        <i class="far fa-star" data-rating="4"></i>
-                        <i class="far fa-star" data-rating="5"></i>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="review-text">Your Review:</label>
-                    <textarea id="review-text" rows="5" required></textarea>
-                </div>
-                <button type="submit" class="normal">Submit Review</button>
-            </form>
+        <div id="reviews-container" style="display:none">
+            <!-- Reviews will be inserted here -->
+        </div>
+        
+        <div id="no-reviews" style="display:none">
+            <p>No reviews yet. Be the first to review this product!</p>
         </div>
     </section>
 
+    <!-- Related Products Section -->
     <section id="product1" class="section-p1">
         <h2>Related Products</h2>
         <p>Recommended products based on your interest</p>
-        <div class="pro-container" id="related-products-container">
-            <!-- Related products will be loaded here -->
+        <div id="related-loading" class="loading-container">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading related products...</p>
+            </div>
+        </div>
+        <div class="pro-container" id="related-products">
+            <!-- Related products will be inserted here -->
         </div>
     </section>
 
     <section id="newsletter" class="section-p1 section-m1">
         <div class="newstext">
             <h4>Sign Up For Newsletters</h4>
-            <p>Get E-mail updates about our latest shop and <span>special offers.</span></p>
+            <p>Get E-mail updates about our latest products and <span>special offers.</span></p>
         </div>
         <div class="form">
             <input type="text" placeholder="Your email address">
@@ -366,7 +414,7 @@
             <a href="cart.html">View Cart</a>
             <a href="#">My Wishlist</a>
             <a href="#">Track My Order</a>
-            <a href="contact.html">Help</a>
+            <a href="#">Help</a>
         </div>
 
         <div class="col install">
@@ -385,353 +433,528 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="js/auth-ui.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Get product ID from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const productId = urlParams.get('id');
+            // Initialize product page immediately rather than waiting for CONFIG
+            initProductPage();
             
-            if (!productId) {
-                window.location.href = 'shop.html';
-                return;
-            }
-            
-            // Fetch product data
-            fetch('products.json')
-                .then(response => response.json())
-                .then(data => {
-                    // Find product by ID
-                    const product = data.find(p => p.id === productId);
-                    
-                    if (!product) {
-                        window.location.href = 'shop.html';
-                        return;
+            function initProductPage() {
+                // Get product ID from URL query parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const productId = urlParams.get('id');
+                
+                if (!productId) {
+                    showError('Product ID is missing.');
+                    return;
+                }
+                
+                // Get elements
+                const productLoading = document.getElementById('product-loading');
+                const productContainer = document.getElementById('product-container');
+                const productError = document.getElementById('product-error');
+                const errorText = document.getElementById('error-message-text');
+                const reviewsLoading = document.getElementById('reviews-loading');
+                const reviewsContainer = document.getElementById('reviews-container');
+                const noReviews = document.getElementById('no-reviews');
+                const relatedLoading = document.getElementById('related-loading');
+                const relatedProducts = document.getElementById('related-products');
+                
+                // Show loading, hide other sections initially
+                if (productLoading) productLoading.style.display = 'block';
+                if (productContainer) productContainer.style.display = 'none';
+                if (productError) productError.style.display = 'none';
+                
+                // Setup auth UI
+                setupAuthUI();
+                
+                // Load product details
+                fetchProductDetails(productId)
+                    .then(product => {
+                        displayProductDetails(product);
+                        return product.id_categorie;
+                    })
+                    .then(categoryId => {
+                        fetchRelatedProducts(productId, categoryId);
+                    })
+                    .catch(error => {
+                        console.error('Error loading product details:', error);
+                        showError(error.message || 'Failed to load product details. Please try again.');
+                    });
+                
+                // Load reviews
+                fetchProductReviews(productId)
+                    .catch(error => {
+                        console.error('Error loading reviews:', error);
+                        if (reviewsLoading) reviewsLoading.style.display = 'none';
+                        if (noReviews) {
+                            noReviews.style.display = 'block';
+                            noReviews.innerHTML = '<p>Unable to load reviews at this time. Please try again later.</p>';
+                        }
+                    });
+                
+                // Fetch product details from API
+                async function fetchProductDetails(id) {
+                    try {
+                        const apiBaseUrl = window.CONFIG && window.CONFIG.API_URL ? 
+                            window.CONFIG.API_URL : 'http://localhost/site_fitness/backend/api';
+                        
+                        const apiUrl = `${apiBaseUrl}/products/get.php?id=${id}`;
+                        console.log('Fetching product from:', apiUrl);
+                        
+                        const response = await fetch(apiUrl);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (!data.success) {
+                            throw new Error(data.message || 'Error fetching product details');
+                        }
+                        
+                        return data.product;
+                    } catch (error) {
+                        console.error('Product fetch error:', error);
+                        throw new Error('Failed to load product details. Please try again.');
                     }
+                }
+                
+                // Display product details
+                function displayProductDetails(product) {
+                    // Hide loading, show product
+                    if (productLoading) productLoading.style.display = 'none';
+                    if (productContainer) productContainer.style.display = 'flex';
                     
-                    // Populate product details
-                    document.title = `FitZone - ${product.name}`;
-                    document.getElementById('product-brand').textContent = product.brand;
-                    document.getElementById('product-title').textContent = product.name;
-                    document.getElementById('product-price').textContent = `$${product.price.toFixed(2)}`;
-                    document.getElementById('product-description').textContent = product.description;
-                    document.getElementById('details-content').innerHTML = product.details || product.description;
-                    document.getElementById('product-sku').textContent = product.sku || productId;
-                    document.getElementById('product-categories').textContent = product.categories ? product.categories.join(', ') : '';
-                    document.getElementById('product-tags').textContent = product.tags ? product.tags.join(', ') : '';
+                    // Set product details
+                    document.getElementById('product-name').textContent = product.nom_produit;
+                    document.getElementById('product-category').textContent = product.category_name || 'Fitness Products';
+                    document.getElementById('product-price').textContent = `$${parseFloat(product.prix).toFixed(2)}`;
+                    document.getElementById('product-description').textContent = product.description || 'No description available.';
+                    document.getElementById('product-sku').textContent = `SKU: ${product.id_produit}`;
+                    document.getElementById('product-stock').textContent = `Availability: ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}`;
                     
-                    // Main product image
+                    // Set main image
                     const mainImg = document.getElementById('MainImg');
-                    mainImg.src = product.image;
-                    mainImg.alt = product.name;
+                    mainImg.src = product.image || 'img/products/default.jpg';
+                    mainImg.alt = product.nom_produit;
                     
-                    // Product badges
-                    const badgesContainer = document.getElementById('product-badges');
-                    if (product.isNew) {
-                        const newBadge = document.createElement('span');
-                        newBadge.className = 'badge badge-new';
-                        newBadge.textContent = 'New';
-                        badgesContainer.appendChild(newBadge);
-                    }
+                    // Set thumbnails
+                    const thumbnailsContainer = document.getElementById('product-thumbnails');
+                    thumbnailsContainer.innerHTML = '';
                     
-                    if (product.isBestseller) {
-                        const bestsellerBadge = document.createElement('span');
-                        bestsellerBadge.className = 'badge badge-bestseller';
-                        bestsellerBadge.textContent = 'Bestseller';
-                        badgesContainer.appendChild(bestsellerBadge);
-                    }
-                    
-                    if (product.onSale) {
-                        const saleBadge = document.createElement('span');
-                        saleBadge.className = 'badge badge-sale';
-                        saleBadge.textContent = 'Sale';
-                        badgesContainer.appendChild(saleBadge);
-                    }
-                    
-                    // Handle product variants (flavors)
-                    if (product.flavors && product.flavors.length > 0) {
-                        const flavorSelector = document.getElementById('flavor-selector');
-                        flavorSelector.innerHTML = '<option value="">Select Flavor</option>';
-                        
-                        product.flavors.forEach(flavor => {
-                            const option = document.createElement('option');
-                            option.value = flavor;
-                            option.textContent = flavor;
-                            flavorSelector.appendChild(option);
+                    // If product has additional images
+                    if (product.images && product.images.length > 0) {
+                        product.images.slice(0, 4).forEach(image => {
+                            const imgCol = document.createElement('div');
+                            imgCol.className = 'small-img-col';
+                            
+                            const img = document.createElement('img');
+                            img.src = image.image_url;
+                            img.width = 100;
+                            img.alt = product.nom_produit;
+                            
+                            imgCol.appendChild(img);
+                            thumbnailsContainer.appendChild(imgCol);
                         });
                     } else {
-                        document.getElementById('flavor-selector-container').style.display = 'none';
+                        // Use main image as thumbnail if no additional images
+                        const imgCol = document.createElement('div');
+                        imgCol.className = 'small-img-col';
+                        
+                        const img = document.createElement('img');
+                        img.src = product.image || 'img/products/default.jpg';
+                        img.width = 100;
+                        img.alt = product.nom_produit;
+                        
+                        imgCol.appendChild(img);
+                        thumbnailsContainer.appendChild(imgCol);
                     }
                     
-                    // Handle product sizes
-                    if (product.sizes && product.sizes.length > 0) {
-                        const sizeSelector = document.getElementById('size-selector');
-                        sizeSelector.innerHTML = '<option value="">Select Size</option>';
+                    // Handle variants if available
+                    const variantSelector = document.getElementById('variant-selector');
+                    const variantSelect = document.getElementById('product-variant');
+                    
+                    if (product.variants && product.variants.length > 0) {
+                        variantSelector.style.display = 'block';
+                        variantSelect.innerHTML = '';
                         
-                        product.sizes.forEach(size => {
+                        product.variants.forEach(variant => {
                             const option = document.createElement('option');
-                            option.value = size.value;
-                            option.textContent = size.name;
-                            if (size.price) {
-                                option.textContent += ` (+$${size.price.toFixed(2)})`;
+                            option.value = variant.id_variant;
+                            option.textContent = `${variant.nom} - $${parseFloat(variant.prix).toFixed(2)}`;
+                            variantSelect.appendChild(option);
+                        });
+                        
+                        // Update price when variant changes
+                        variantSelect.addEventListener('change', function() {
+                            const selectedVariant = product.variants.find(v => v.id_variant == this.value);
+                            if (selectedVariant) {
+                                document.getElementById('product-price').textContent = `$${parseFloat(selectedVariant.prix).toFixed(2)}`;
+                                document.getElementById('product-stock').textContent = `Availability: ${selectedVariant.stock > 0 ? 'In Stock' : 'Out of Stock'}`;
                             }
-                            sizeSelector.appendChild(option);
                         });
                     } else {
-                        document.getElementById('size-selector-container').style.display = 'none';
+                        variantSelector.style.display = 'none';
                     }
                     
-                    // Nutrition facts
-                    if (product.nutritionalInfo) {
-                        const nutritionFacts = document.getElementById('nutrition-facts');
-                        nutritionFacts.innerHTML = `
-                            <div class="nutrition-title">Nutrition Facts</div>
-                            <table class="nutrition-table">
-                                <tr>
-                                    <td>Serving Size</td>
-                                    <td>${product.nutritionalInfo.servingSize || 'N/A'}</td>
-                                </tr>
-                                <tr>
-                                    <td>Calories</td>
-                                    <td>${product.nutritionalInfo.calories || '0'}</td>
-                                </tr>
-                                <tr>
-                                    <td>Protein</td>
-                                    <td>${product.nutritionalInfo.protein || '0g'}</td>
-                                </tr>
-                                <tr>
-                                    <td>Carbohydrates</td>
-                                    <td>${product.nutritionalInfo.carbohydrates || '0g'}</td>
-                                </tr>
-                                <tr>
-                                    <td>Fat</td>
-                                    <td>${product.nutritionalInfo.fat || '0g'}</td>
-                                </tr>
-                            </table>
+                    // Add to cart button event handler
+                    const addToCartBtn = document.getElementById('add-to-cart-btn');
+                    if (addToCartBtn) {
+                        addToCartBtn.addEventListener('click', function() {
+                            const quantity = parseInt(document.getElementById('product-quantity').value) || 1;
+                            const variantId = variantSelect && variantSelect.style.display !== 'none' ? 
+                                            parseInt(variantSelect.value) : null;
+                            
+                            addToCart(product, quantity, variantId);
+                        });
+                    }
+                    
+                    // Setup event listeners for product images
+                    document.querySelectorAll('.small-img-col img').forEach(img => {
+                        img.addEventListener('click', function() {
+                            mainImg.src = this.src;
+                        });
+                    });
+                }
+                
+                // Show error message
+                function showError(message) {
+                    if (productLoading) productLoading.style.display = 'none';
+                    if (productContainer) productContainer.style.display = 'none';
+                    if (productError) {
+                        productError.style.display = 'block';
+                        if (errorText) errorText.textContent = message;
+                    }
+                }
+                
+                // Fetch product reviews
+                async function fetchProductReviews(productId) {
+                    try {
+                        if (reviewsLoading) reviewsLoading.style.display = 'block';
+                        
+                        const apiBaseUrl = window.CONFIG && window.CONFIG.API_URL ? 
+                            window.CONFIG.API_URL : 'http://localhost/site_fitness/backend/api';
+                        
+                        const apiUrl = `${apiBaseUrl}/reviews/get.php?product_id=${productId}`;
+                        console.log('Fetching reviews from:', apiUrl);
+                        
+                        const response = await fetch(apiUrl);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            const textResponse = await response.text();
+                            console.error('Received non-JSON response:', textResponse);
+                            throw new Error('Server returned non-JSON response');
+                        }
+                        
+                        const data = await response.json();
+                        if (reviewsLoading) reviewsLoading.style.display = 'none';
+                        
+                        if (data.success && data.reviews && data.reviews.length > 0) {
+                            displayReviews(data.reviews);
+                        } else {
+                            if (noReviews) noReviews.style.display = 'block';
+                        }
+                    } catch (error) {
+                        if (reviewsLoading) reviewsLoading.style.display = 'none';
+                        if (noReviews) {
+                            noReviews.style.display = 'block';
+                            noReviews.innerHTML = '<p>Unable to load reviews at this time. Please try again later.</p>';
+                        }
+                        throw error;
+                    }
+                }
+                
+                // Display reviews
+                function displayReviews(reviews) {
+                    if (!reviewsContainer) return;
+                    
+                    reviewsContainer.innerHTML = '';
+                    reviewsContainer.style.display = 'block';
+                    
+                    reviews.forEach(review => {
+                        const reviewDiv = document.createElement('div');
+                        reviewDiv.className = 'review';
+                        
+                        // Create stars based on rating
+                        let stars = '';
+                        const rating = parseFloat(review.note);
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= rating) {
+                                stars += '<i class="fas fa-star"></i>';
+                            } else if (i - 0.5 <= rating) {
+                                stars += '<i class="fas fa-star-half-alt"></i>';
+                            } else {
+                                stars += '<i class="far fa-star"></i>';
+                            }
+                        }
+                        
+                        // Format date
+                        const reviewDate = new Date(review.date_avis);
+                        const formattedDate = reviewDate.toLocaleDateString();
+                        
+                        reviewDiv.innerHTML = `
+                            <div class="review-header">
+                                <span class="review-author">${review.prenom || 'Anonymous'}</span>
+                                <span class="review-date">${formattedDate}</span>
+                            </div>
+                            <div class="review-rating">
+                                ${stars} ${rating.toFixed(1)}
+                            </div>
+                            <div class="review-content">
+                                <p>${review.commentaire || 'No comment provided.'}</p>
+                            </div>
                         `;
                         
-                        // Populate nutritional info tab
-                        if (product.nutritionalInfo.details) {
-                            document.getElementById('nutritional-info-content').innerHTML = product.nutritionalInfo.details;
+                        reviewsContainer.appendChild(reviewDiv);
+                    });
+                }
+                
+                // Fetch related products
+                async function fetchRelatedProducts(productId, categoryId) {
+                    try {
+                        const apiBaseUrl = window.CONFIG && window.CONFIG.API_URL ? 
+                            window.CONFIG.API_URL : 'http://localhost/site_fitness/backend/api';
+                        
+                        const apiUrl = `${apiBaseUrl}/products/related.php?id=${productId}&category=${categoryId || 0}`;
+                        console.log('Fetching related products from:', apiUrl);
+                        
+                        const response = await fetch(apiUrl);
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        
+                        const data = await response.json();
+                        
+                        if (relatedLoading) relatedLoading.style.display = 'none';
+                        
+                        if (data.success && data.products && data.products.length > 0) {
+                            displayRelatedProducts(data.products);
                         } else {
-                            document.getElementById('nutritional-info-content').innerHTML = '<p>Detailed nutritional information not available for this product.</p>';
+                            if (relatedProducts) {
+                                relatedProducts.innerHTML = '<p>No related products found.</p>';
+                            }
                         }
-                    } else {
-                        document.getElementById('nutrition-facts').style.display = 'none';
+                    } catch (error) {
+                        console.error('Error fetching related products:', error);
+                        if (relatedLoading) relatedLoading.style.display = 'none';
+                        if (relatedProducts) {
+                            relatedProducts.innerHTML = '<p>Error loading related products.</p>';
+                        }
                     }
+                }
+                
+                // Display related products
+                function displayRelatedProducts(products) {
+                    if (!relatedProducts) return;
                     
-                    // Product reviews
-                    if (product.reviews && product.reviews.length > 0) {
-                        const reviewsContainer = document.getElementById('reviews-container');
-                        reviewsContainer.innerHTML = '';
+                    relatedProducts.innerHTML = '';
+                    
+                    products.slice(0, 4).forEach(product => {
+                        const productDiv = document.createElement('div');
+                        productDiv.className = 'pro';
+                        productDiv.setAttribute('data-id', product.id_produit);
                         
-                        product.reviews.forEach(review => {
-                            const reviewElem = document.createElement('div');
-                            reviewElem.className = 'review';
+                        // Create stars based on rating
+                        let stars = '';
+                        const rating = parseFloat(product.rating || 4.5);
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= rating) {
+                                stars += '<i class="fas fa-star"></i>';
+                            } else if (i - 0.5 <= rating) {
+                                stars += '<i class="fas fa-star-half-alt"></i>';
+                            } else {
+                                stars += '<i class="far fa-star"></i>';
+                            }
+                        }
+                        
+                        productDiv.innerHTML = `
+                            <a href="sproduct.html?id=${product.id_produit}">
+                                <img src="${product.image || 'img/products/default.jpg'}" alt="${product.nom_produit}">
+                            </a>
+                            <div class="des">
+                                <span>${product.brand || 'FitZone'}</span>
+                                <h5>${product.nom_produit}</h5>
+                                <div class="star">${stars}</div>
+                                <h4>$${parseFloat(product.prix).toFixed(2)}</h4>
+                            </div>
+                            <a href="#" class="cart add-to-cart-btn" data-id="${product.id_produit}">
+                                <i class="fal fa-shopping-cart"></i>
+                            </a>
+                        `;
+                        
+                        relatedProducts.appendChild(productDiv);
+                    });
+                    
+                    // Add click handlers for add-to-cart buttons
+                    document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const prodId = this.getAttribute('data-id');
                             
-                            const starsHTML = generateStarRating(review.rating);
-                            
-                            reviewElem.innerHTML = `
-                                <div class="review-header">
-                                    <div class="reviewer-name">${review.name}</div>
-                                    <div class="review-date">${review.date}</div>
-                                </div>
-                                <div class="star">${starsHTML}</div>
-                                <p class="review-text">${review.text}</p>
-                            `;
-                            
-                            reviewsContainer.appendChild(reviewElem);
+                            // Find product data from the related products array
+                            const prod = products.find(p => p.id_produit == prodId);
+                            if (prod) {
+                                addToCart(prod, 1);
+                            }
                         });
-                    } else {
-                        document.getElementById('reviews-container').innerHTML = '<p>No reviews yet.</p>';
-                    }
-                    
-                    // Related products
-                    if (product.category) {
-                        fetch('products.json')
-                            .then(response => response.json())
-                            .then(allProducts => {
-                                // Find products in same category
-                                const relatedProducts = allProducts
-                                    .filter(p => p.id !== productId && p.categories && p.categories.includes(product.category))
-                                    .slice(0, 4); // Limit to 4 items
-                                
-                                if (relatedProducts.length > 0) {
-                                    const relatedContainer = document.getElementById('related-products-container');
-                                    relatedContainer.innerHTML = '';
-                                    
-                                    relatedProducts.forEach(relProduct => {
-                                        const productElem = document.createElement('div');
-                                        productElem.className = 'pro';
-                                        
-                                        const starsHTML = generateStarRating(relProduct.rating || 5);
-                                        
-                                        productElem.innerHTML = `
-                                            <img src="${relProduct.image}" alt="${relProduct.name}">
-                                            <div class="des">
-                                                <span>${relProduct.brand}</span>
-                                                <h5>${relProduct.name}</h5>
-                                                <div class="star">${starsHTML}</div>
-                                                <h4>$${relProduct.price.toFixed(2)}</h4>
-                                            </div>
-                                            <a href="sproduct.html?id=${relProduct.id}"><i class="fal fa-shopping-cart cart"></i></a>
-                                        `;
-                                        
-                                        relatedContainer.appendChild(productElem);
-                                    });
-                                } else {
-                                    document.getElementById('related-products').style.display = 'none';
-                                }
-                            });
-                    } else {
-                        document.getElementById('related-products').style.display = 'none';
-                    }
-                    
-                    // Add to cart functionality
-                    document.getElementById('add-to-cart').addEventListener('click', function() {
-                        const quantity = parseInt(document.getElementById('qty').value);
-                        const flavor = document.getElementById('flavor-selector').value;
-                        const size = document.getElementById('size-selector').value;
+                    });
+                }
+                
+                // Add to cart function
+                function addToCart(product, quantity, variantId = null) {
+                    try {
+                        console.log("Adding to cart:", product, quantity, variantId);
                         
-                        // Validate selection
-                        if ((product.flavors && product.flavors.length > 0 && !flavor) || 
-                            (product.sizes && product.sizes.length > 0 && !size)) {
-                            alert('Please select all options before adding to cart');
-                            return;
-                        }
-                        
-                        // Create cart item
-                        const cartItem = {
-                            id: product.id,
-                            name: product.name,
-                            price: product.price,
-                            image: product.image,
-                            quantity: quantity,
-                            flavor: flavor || null,
-                            size: size || null
+                        // Format product for CartService
+                        const cartProduct = {
+                            id: product.id_produit,
+                            name: product.nom_produit,
+                            price: parseFloat(product.prix),
+                            image: product.image || 'img/products/default.jpg'
                         };
                         
-                        // Get cart from localStorage
-                        const cart = JSON.parse(localStorage.getItem('fitzone_cart') || '[]');
-                        
-                        // Check if item is already in cart
-                        const existingItemIndex = cart.findIndex(item => 
-                            item.id === cartItem.id && 
-                            item.flavor === cartItem.flavor && 
-                            item.size === cartItem.size
-                        );
-                        
-                        if (existingItemIndex !== -1) {
-                            // Update quantity of existing item
-                            cart[existingItemIndex].quantity += quantity;
+                        // Use CartService if available
+                        if (window.CartService && typeof window.CartService.addItem === 'function') {
+                            window.CartService.addItem(cartProduct, quantity, variantId)
+                                .then(() => {
+                                    showAddedToCartMessage(product.nom_produit);
+                                })
+                                .catch(err => {
+                                    console.error("Error adding item to cart:", err);
+                                    alert("Failed to add item to cart. Please try again.");
+                                });
                         } else {
-                            // Add new item to cart
-                            cart.push(cartItem);
+                            // Fallback if CartService isn't available
+                            console.warn("CartService not available, using basic cart functionality");
+                            
+                            // Simple cart implementation
+                            let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                            
+                            // Check if item already exists in cart
+                            const existingItemIndex = cartItems.findIndex(item => 
+                                item.id == product.id_produit && item.variant_id == variantId
+                            );
+                            
+                            if (existingItemIndex !== -1) {
+                                cartItems[existingItemIndex].quantity += quantity;
+                            } else {
+                                cartItems.push({
+                                    id: product.id_produit,
+                                    name: product.nom_produit,
+                                    price: parseFloat(product.prix),
+                                    image: product.image || 'img/products/default.jpg',
+                                    quantity: quantity,
+                                    variant_id: variantId
+                                });
+                            }
+                            
+                            localStorage.setItem('cartItems', JSON.stringify(cartItems));
+                            showAddedToCartMessage(product.nom_produit);
+                        }
+                    } catch (err) {
+                        console.error("Error in addToCart:", err);
+                        alert("Failed to add item to cart. Please try again.");
+                    }
+                }
+                
+                // Show added to cart message
+                function showAddedToCartMessage(productName) {
+                    const toast = document.createElement('div');
+                    toast.style.position = 'fixed';
+                    toast.style.bottom = '30px';
+                    toast.style.right = '30px';
+                    toast.style.backgroundColor = '#088178';
+                    toast.style.color = 'white';
+                    toast.style.padding = '15px 25px';
+                    toast.style.borderRadius = '5px';
+                    toast.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+                    toast.style.zIndex = '999';
+                    toast.style.display = 'flex';
+                    toast.style.alignItems = 'center';
+                    toast.style.gap = '10px';
+                    toast.style.transform = 'translateY(20px)';
+                    toast.style.opacity = '0';
+                    toast.style.transition = 'all 0.3s ease-in-out';
+                    
+                    toast.innerHTML = `
+                        <i class="fas fa-check-circle"></i>
+                        <div>
+                            <div style="font-weight:600">${productName} added to cart!</div>
+                            <a href="cart.html" style="color:white;text-decoration:underline;display:inline-block;margin-top:5px;">View Cart</a>
+                        </div>
+                    `;
+                    
+                    document.body.appendChild(toast);
+                    
+                    setTimeout(() => {
+                        toast.style.transform = 'translateY(0)';
+                        toast.style.opacity = '1';
+                    }, 100);
+                    
+                    setTimeout(() => {
+                        toast.style.transform = 'translateY(20px)';
+                        toast.style.opacity = '0';
+                        setTimeout(() => {
+                            document.body.removeChild(toast);
+                        }, 300);
+                    }, 3000);
+                }
+                
+                // Setup auth UI
+                function setupAuthUI() {
+                    const isLoggedIn = typeof window.FitZoneAuth !== 'undefined' && window.FitZoneAuth.isLoggedIn && window.FitZoneAuth.isLoggedIn();
+                    
+                    const loginMenu = document.getElementById('account-menu-login');
+                    const accountMenu = document.getElementById('account-menu-dropdown');
+                    
+                    if (isLoggedIn) {
+                        // User is logged in
+                        if (loginMenu) loginMenu.style.display = 'none';
+                        if (accountMenu) accountMenu.style.display = 'block';
+                        
+                        try {
+                            const user = window.FitZoneAuth.getCurrentUser();
+                            const userNameNav = document.getElementById('user-name-nav');
+                            if (userNameNav && user && user.prenom) {
+                                userNameNav.textContent = user.prenom;
+                            }
+                        } catch (err) {
+                            console.error("Error setting user name:", err);
                         }
                         
-                        // Save cart back to localStorage
-                        localStorage.setItem('fitzone_cart', JSON.stringify(cart));
-                        
-                        alert('Product added to cart!');
-                        
-                        // Update cart count in header
-                        updateCartCount();
-                    });
-                })
-                .catch(error => {
-                    console.error('Error loading product:', error);
-                    alert('Failed to load product details.');
-                });
-            
-            // Tab functionality
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all buttons and contents
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    tabContents.forEach(content => content.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    button.classList.add('active');
-                    
-                    // Show corresponding content
-                    const tabId = button.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Small image click handlers
-            const smallImgs = document.querySelectorAll('.small-img');
-            smallImgs.forEach(img => {
-                img.addEventListener('click', function() {
-                    document.getElementById('MainImg').src = this.src;
-                });
-            });
-        });
-        
-        // Helper function to generate star ratings
-        function generateStarRating(rating) {
-            const fullStars = Math.floor(rating);
-            const halfStar = rating % 1 >= 0.5;
-            const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-            
-            let starsHTML = '';
-            
-            // Add full stars
-            for (let i = 0; i < fullStars; i++) {
-                starsHTML += '<i class="fas fa-star"></i>';
+                        // Setup logout functionality
+                        const logoutLink = document.getElementById('logout-link');
+                        if (logoutLink) {
+                            logoutLink.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                
+                                if (typeof window.FitZoneAuth !== 'undefined' && window.FitZoneAuth.logout) {
+                                    window.FitZoneAuth.logout();
+                                    window.location.href = 'index.html';
+                                }
+                            });
+                        }
+                    } else {
+                        // User is not logged in
+                        if (loginMenu) loginMenu.style.display = 'block';
+                        if (accountMenu) accountMenu.style.display = 'none';
+                    }
+                }
             }
-            
-            // Add half star if needed
-            if (halfStar) {
-                starsHTML += '<i class="fas fa-star-half-alt"></i>';
-            }
-            
-            // Add empty stars
-            for (let i = 0; i < emptyStars; i++) {
-                starsHTML += '<i class="far fa-star"></i>';
-            }
-            
-            return starsHTML;
-        }
-        
-        // Function to update cart count in header
-        function updateCartCount() {
-            const cart = JSON.parse(localStorage.getItem('fitzone_cart') || '[]');
-            const cartCount = cart.reduce((total, item) => total + item.quantity, 0);
-            
-            // Update cart count display if it exists
-            const cartCountElem = document.querySelector('.cart-count');
-            if (cartCountElem) {
-                cartCountElem.textContent = cartCount;
-            }
-        }
-    </script>
-    <!-- Add this to the script that loads product details -->
-    <script>
-        // Add to cart button handler
-        document.getElementById('add-to-cart').addEventListener('click', function() {
-            const quantity = parseInt(document.getElementById('qty').value);
-            const options = {};
-            
-            // If product has flavors
-            const flavorSelector = document.getElementById('flavor-selector');
-            if (flavorSelector && flavorSelector.value) {
-                options.flavor = flavorSelector.value;
-            }
-            
-            // If product has sizes
-            const sizeSelector = document.getElementById('size-selector');
-            if (sizeSelector && sizeSelector.value) {
-                options.size = sizeSelector.value;
-            }
-            
-            // Add to cart using the shared cart module
-            FitZoneCart.addToCart(product.id, quantity, options);
         });
     </script>
+
+    <!-- Basic site scripts -->
+    <script src="script.js"></script>
+    <script src="js/header.js"></script>
 </body>
 
 </html>

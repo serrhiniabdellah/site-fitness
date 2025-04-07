@@ -1,69 +1,113 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
-require_once '../../utils.php';
+// Set response headers
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Only accept GET requests
-Utils::validateMethod('GET');
-
-// Get product ID
-$id = isset($_GET['id']) ? (int)Utils::sanitizeInput($_GET['id']) : 0;
-
-if ($id <= 0) {
-    Utils::sendResponse(false, 'Invalid product ID', null, 400);
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
 }
 
-// Create database connection
-$db = new Database();
+require_once '../config/database.php';
+require_once '../utils/response.php';
 
-// Get product details
-$db->query("SELECT p.*, c.nom_categorie 
-            FROM produits p 
-            LEFT JOIN categories c ON p.id_categorie = c.id_categorie 
-            WHERE p.id_produit = :id");
-$db->bind(':id', $id);
-
-$product = $db->singleArray();
-
-if (!$product) {
-    Utils::sendResponse(false, 'Product not found', null, 404);
+// Check if product ID is provided
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    sendErrorResponse('Product ID is required');
 }
 
-// Get product rating
-$db->query("SELECT ROUND(AVG(note), 1) as average_rating, COUNT(*) as review_count 
-            FROM avis 
-            WHERE id_produit = :id");
-$db->bind(':id', $id);
-$rating = $db->singleArray();
+$productId = $_GET['id']; // Get the product ID from request
 
-$product['average_rating'] = $rating['average_rating'] ? (float)$rating['average_rating'] : 0;
-$product['review_count'] = (int)$rating['review_count'];
+try {
+    // Handle both numeric IDs and string identifiers
+    if (is_numeric($productId)) {
+        $stmt = $conn->prepare("SELECT p.*, c.nom_categorie as category_name 
+                                FROM produits p 
+                                LEFT JOIN categories c ON p.id_categorie = c.id_categorie
+                                WHERE p.id_produit = ?");
+        $stmt->bind_param("i", $productId);
+    } else {
+        // For string identifiers like 'equip1', extract category and id parts
+        preg_match('/^([a-zA-Z]+)(\d+)$/', $productId, $matches);
+        
+        if (count($matches) === 3) {
+            $category = $matches[1];
+            $productNumber = $matches[2];
+            
+            // Map category string to category ID
+            $categoryMap = [
+                'equip' => 4, // Equipment
+                'protein' => 1, // Protein
+                'mass' => 2, // Mass Gainers
+                'bcaa' => 3  // BCAA & Amino Acids
+            ];
+            
+            $categoryId = isset($categoryMap[$category]) ? $categoryMap[$category] : 0;
+            
+            // Find product by category and ranking
+            if ($categoryId > 0) {
+                $stmt = $conn->prepare("SELECT p.*, c.nom_categorie as category_name 
+                                       FROM produits p 
+                                       LEFT JOIN categories c ON p.id_categorie = c.id_categorie
+                                       WHERE p.id_categorie = ?
+                                       ORDER BY p.id_produit ASC
+                                       LIMIT ?, 1");
+                $productOffset = intval($productNumber) - 1;
+                $stmt->bind_param("ii", $categoryId, $productOffset);
+            } else {
+                sendErrorResponse("Invalid product identifier");
+                exit;
+            }
+        } else {
+            sendErrorResponse("Invalid product identifier format");
+            exit;
+        }
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    
+    if ($result->num_rows === 0) {
+        sendErrorResponse('Product not found');
+    }
+    
+    $product = $result->fetch_assoc();
+    
+    // Get product variants if any
+    $variants = [];
+    $variantsStmt = $conn->prepare("SELECT * FROM variants_produit WHERE id_produit = ?");
+    $variantsStmt->bind_param("i", $product['id_produit']);
+    $variantsStmt->execute();
+    $variantsResult = $variantsStmt->get_result();
+    
+    while ($variant = $variantsResult->fetch_assoc()) {
+        $variants[] = $variant;
+    }
+    
+    $product['variants'] = $variants;
+    
+    // Get product images if any
+    $images = [];
+    $imagesStmt = $conn->prepare("SELECT * FROM images_produit WHERE id_produit = ? ORDER BY est_principale DESC, ordre ASC");
+    $imagesStmt->bind_param("i", $product['id_produit']);
+    $imagesStmt->execute();
+    $imagesResult = $imagesStmt->get_result();
+    
+    while ($image = $imagesResult->fetch_assoc()) {
+        $images[] = $image;
+    }
+    
+    $product['images'] = $images;
+    
+    // Send successful response
+    sendResponse(['success' => true, 'product' => $product]);
+    
+} catch (Exception $e) {
+    sendErrorResponse('Error fetching product: ' . $e->getMessage());
+}
 
-// Get product images
-$db->query("SELECT * FROM images_produit WHERE id_produit = :id");
-$db->bind(':id', $id);
-$images = $db->resultSetArray();
-
-$product['images'] = $images;
-
-// Get product variants
-$db->query("SELECT * FROM variants_produit WHERE id_produit = :id");
-$db->bind(':id', $id);
-$variants = $db->resultSetArray();
-
-$product['variants'] = $variants;
-
-// Get related products (same category, excluding current product)
-$db->query("SELECT p.*, c.nom_categorie 
-            FROM produits p 
-            LEFT JOIN categories c ON p.id_categorie = c.id_categorie 
-            WHERE p.id_categorie = :category_id AND p.id_produit != :product_id 
-            LIMIT 4");
-$db->bind(':category_id', $product['id_categorie']);
-$db->bind(':product_id', $id);
-$related = $db->resultSetArray();
-
-$product['related_products'] = $related;
-
-Utils::sendResponse(true, 'Product retrieved successfully', ['product' => $product]);
+$conn->close();
 ?>

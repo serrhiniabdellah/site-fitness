@@ -1,129 +1,137 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
-require_once '../../utils.php';
-require_once '../cors.php';
+require_once '../config/database.php';
+require_once '../utils/auth.php';
+require_once '../utils/response.php';
 
-// Set CORS headers for development
-header("Access-Control-Allow-Origin: http://127.0.0.1:5500");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+// Set response headers
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Handle preflight OPTIONS requests
+// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// Set content type
-header('Content-Type: application/json');
-
-// Only allow POST method
+// Check request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405); // Method Not Allowed
-    echo json_encode([
-        'success' => false,
-        'message' => 'Method not allowed. Please use POST.'
-    ]);
-    exit;
+    sendErrorResponse('Invalid request method', 405);
 }
 
 // Get request data
-$requestBody = file_get_contents('php://input');
-$data = json_decode($requestBody, true);
+$data = json_decode(file_get_contents('php://input'), true);
 
-// If direct POST variables
-if (!$data) {
-    $data = $_POST;
+// Check for required fields
+if (!isset($data['product_id'])) {
+    sendErrorResponse('Product ID is required');
 }
 
-// Check required fields
-if (!isset($data['product_id']) && !isset($data['id'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Product ID is required'
-    ]);
-    exit;
-}
-
-// Get parameters
-$productId = isset($data['product_id']) ? $data['product_id'] : $data['id'];
-$quantity = isset($data['quantity']) ? (int)$data['quantity'] : 1;
+$productId = $data['product_id'];
 $variantId = isset($data['variant_id']) ? $data['variant_id'] : null;
-
-// Get user ID from auth token
+$quantity = isset($data['quantity']) ? max(1, intval($data['quantity'])) : 1;
 $userId = null;
-$authHeader = isset($_SERVER['HTTP_AUTHORIZATION']) ? $_SERVER['HTTP_AUTHORIZATION'] : '';
-if (strpos($authHeader, 'Bearer ') === 0) {
-    $token = substr($authHeader, 7);
-    // For now, use hardcoded test value
-    $userId = 12; // In real app, validate token and extract user ID
+$sessionId = null;
+
+// Check if request is authenticated
+$auth = new Auth($conn);
+$isAuthenticated = $auth->validateToken();
+
+// If authenticated, use user_id from token, otherwise use session_id
+if ($isAuthenticated) {
+    $userId = $auth->getUserId();
 } else {
-    // For demo purposes
-    $userId = 12;
+    // For guest users, require session_id
+    if (isset($data['session_id']) && !empty($data['session_id'])) {
+        $sessionId = $data['session_id'];
+    } else {
+        $sessionId = uniqid('guest_', true);
+    }
+}
+
+// Verify product exists and is active
+$stmt = $conn->prepare("SELECT id_produit, prix, stock FROM produits WHERE id_produit = ? AND est_actif = 1");
+$stmt->bind_param("i", $productId);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    sendErrorResponse('Product not found or is not active');
+}
+
+$product = $result->fetch_assoc();
+
+// Check if product has enough stock
+if ($product['stock'] < $quantity) {
+    sendErrorResponse('Not enough stock available. Max: ' . $product['stock']);
 }
 
 try {
-    // Create database connection
-    $db = new Database();
-    
-    // Check if product exists
-    $db->query("SELECT id_produit FROM produits WHERE id_produit = :product_id");
-    $db->bind(':product_id', $productId);
-    $product = $db->single();
-    
-    if (!$product) {
-        // For demo, just return success
-        echo json_encode([
-            'success' => true,
-            'message' => 'Product added to cart (demo)',
-            'data' => [
-                'product_id' => $productId,
-                'quantity' => $quantity
-            ]
-        ]);
-        exit;
-    }
+    // Start transaction
+    $conn->begin_transaction();
     
     // Check if item already exists in cart
-    $db->query("SELECT * FROM cart WHERE id_utilisateur = :user_id AND id_produit = :product_id");
-    $db->bind(':user_id', $userId);
-    $db->bind(':product_id', $productId);
-    $existingItem = $db->single();
-    
-    if ($existingItem) {
-        // Update quantity
-        $db->query("UPDATE cart SET quantity = quantity + :quantity WHERE id_utilisateur = :user_id AND id_produit = :product_id");
-        $db->bind(':quantity', $quantity);
-        $db->bind(':user_id', $userId);
-        $db->bind(':product_id', $productId);
-        $db->execute();
+    if ($userId) {
+        $stmt = $conn->prepare("SELECT id, quantity FROM cart WHERE id_utilisateur = ? AND id_produit = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))");
+        $stmt->bind_param("iiii", $userId, $productId, $variantId, $variantId);
     } else {
-        // Add new item
-        $db->query("INSERT INTO cart (id_utilisateur, id_produit, variant_id, quantity) VALUES (:user_id, :product_id, :variant_id, :quantity)");
-        $db->bind(':user_id', $userId);
-        $db->bind(':product_id', $productId);
-        $db->bind(':variant_id', $variantId);
-        $db->bind(':quantity', $quantity);
-        $db->execute();
+        $stmt = $conn->prepare("SELECT id, quantity FROM cart WHERE session_id = ? AND id_produit = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))");
+        $stmt->bind_param("siii", $sessionId, $productId, $variantId, $variantId);
     }
     
-    // Return success
-    echo json_encode([
-        'success' => true,
-        'message' => 'Product added to cart',
-        'data' => [
-            'product_id' => $productId,
-            'quantity' => $quantity
-        ]
-    ]);
+    $stmt->execute();
+    $result = $stmt->get_result();
     
+    if ($result->num_rows > 0) {
+        // Item exists, update quantity
+        $item = $result->fetch_assoc();
+        $newQuantity = $item['quantity'] + $quantity;
+        
+        // Check stock again with new quantity
+        if ($product['stock'] < $newQuantity) {
+            $newQuantity = $product['stock'];
+        }
+        
+        $stmt = $conn->prepare("UPDATE cart SET quantity = ? WHERE id = ?");
+        $stmt->bind_param("ii", $newQuantity, $item['id']);
+        $stmt->execute();
+        
+        $response = [
+            'success' => true, 
+            'message' => 'Cart item quantity updated',
+            'item_id' => $item['id'],
+            'quantity' => $newQuantity
+        ];
+    } else {
+        // New item, insert it
+        if ($userId) {
+            $stmt = $conn->prepare("INSERT INTO cart (id_utilisateur, id_produit, variant_id, quantity) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiii", $userId, $productId, $variantId, $quantity);
+        } else {
+            $stmt = $conn->prepare("INSERT INTO cart (session_id, id_produit, variant_id, quantity) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("siii", $sessionId, $productId, $variantId, $quantity);
+        }
+        
+        $stmt->execute();
+        
+        $response = [
+            'success' => true,
+            'message' => 'Item added to cart',
+            'item_id' => $conn->insert_id,
+            'quantity' => $quantity
+        ];
+    }
+    
+    // Commit transaction
+    $conn->commit();
+    
+    sendResponse($response);
 } catch (Exception $e) {
-    // Return error response
-    echo json_encode([
-        'success' => false,
-        'message' => 'Error adding to cart: ' . $e->getMessage()
-    ]);
+    // Rollback transaction on error
+    $conn->rollback();
+    sendErrorResponse('Error adding to cart: ' . $e->getMessage());
 }
+
+$conn->close();
 ?>

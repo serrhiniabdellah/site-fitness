@@ -34,7 +34,126 @@
             color: #fff;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
+        
+        /* Cart styling */
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner i {
+            font-size: 40px;
+            color: #088178;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-cart-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .empty-cart i {
+            font-size: 80px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        
+        .error-message {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .error-message i {
+            font-size: 30px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+        }
+        
+        .quantity-btn {
+            background: #f0f0f0;
+            border: none;
+            width: 25px;
+            height: 25px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .quantity-input {
+            width: 40px;
+            height: 25px;
+            text-align: center;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .remove-btn {
+            color: #e74c3c;
+        }
+        
+        .remove-btn:hover {
+            color: #c0392b;
+        }
+        
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
     </style>
+    
     <!-- Load WebSocket fixes early -->
     <script src="js/global-websocket-fix.js"></script>
     <script src="chrome-extension-fix.js"></script>
@@ -45,13 +164,21 @@
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-header.js"></script>
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
+    
+    <!-- Add near the beginning of the head section -->
+    <script src="js/script-loader.js"></script>
+    <script src="js/config.js"></script>
+    
+    <!-- Include cart service script -->
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
 </head>
 
 <body>
 
+    <!-- Fix the navbar section -->
     <section id="header">
-        <a href="#"><img src="img/logo.png" class="logo" alt=""></a>
-
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
         <div>
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
@@ -60,13 +187,25 @@
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a class="active" href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <input type="text" id="search-input" placeholder="Search for products...">
                 <button id="search-button"><i class="fas fa-search"></i></button>
                 <div id="search-results"></div>
             </div>
@@ -127,7 +266,7 @@
                 <button class="normal">Apply</button>
             </div>
         </div>
-
+        
         <div id="subtotal">
             <h3>Cart Totals</h3>
             <table>
@@ -212,14 +351,10 @@
         </div>
     </footer>
 
-
-    <script src="script.js"></script>
+    <!-- Replace the cart loading script with this improved version -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Update the API URL to use the correct path to the PHP backend
-            const API_URL = 'http://localhost/site_fitness/backend/api';
-            
-            // DOM Elements
+            // Initialize cart related elements
             const cartLoading = document.getElementById('cart-loading');
             const cartEmpty = document.getElementById('cart-empty');
             const cartContainer = document.getElementById('cart-container');
@@ -227,481 +362,263 @@
             const cartSubtotal = document.getElementById('cart-subtotal');
             const cartTotal = document.getElementById('cart-total');
             const checkoutBtn = document.getElementById('checkout-btn');
+            const cartAddSection = document.getElementById('cart-add');
             
-            // Load cart
+            // Load cart on page load
+            loadCart();
+            
+            // Initialize auth UI
+            setupAuthUI();
+            
+            // Load cart data and display it
             async function loadCart() {
                 try {
-                    const user = FitZoneAuth.getCurrentUser();
-                    let cartData;
+                    // Show loading state
+                    if (cartLoading) cartLoading.style.display = 'block';
+                    if (cartContainer) cartContainer.style.display = 'none';
+                    if (cartEmpty) cartEmpty.style.display = 'none';
+                    if (cartAddSection) cartAddSection.style.display = 'none';
                     
-                    if (user) {
-                        // Fetch cart from server
-                        const response = await fetch(`${API_URL}/cart/get.php`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                user_id: user.id_utilisateur,
-                                token: user.token
-                            })
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            cartData = result.cart;
-                        } else {
-                            console.error('Error fetching cart:', result.message);
-                            cartData = { items: [] };
-                        }
-                    } else {
-                        // Get cart from localStorage for non-authenticated users
-                        cartData = {
-                            items: FitZoneCart.getLocalCart() || []
-                        };
-                    }
+                    // Get cart data
+                    const cart = await CartService.getCart();
+                    console.log('Cart loaded:', cart);
                     
-                    // Display cart
-                    displayCart(cartData);
+                    // Display cart based on loaded data
+                    displayCart(cart);
                 } catch (error) {
                     console.error('Error loading cart:', error);
-                    showError('Failed to load cart data');
+                    showError('Failed to load cart data. Please refresh the page.');
                 } finally {
                     // Hide loading spinner
-                    cartLoading.style.display = 'none';
+                    if (cartLoading) cartLoading.style.display = 'none';
                 }
             }
             
-            // Display cart
-            function displayCart(cartData) {
-                if (!cartData.items || cartData.items.length === 0) {
-                    // Show empty cart message
-                    cartEmpty.style.display = 'block';
-                    cartContainer.style.display = 'none';
-                    document.getElementById('cart-add').style.display = 'none';
+            // Display cart contents
+            function displayCart(cart) {
+                // Ensure cart data is properly structured
+                if (!cart || !cart.items) {
+                    cart = { items: [], total: 0 };
+                }
+                
+                // Handle empty cart
+                if (cart.items.length === 0) {
+                    if (cartEmpty) cartEmpty.style.display = 'block';
+                    if (cartContainer) cartContainer.style.display = 'none';
+                    if (cartAddSection) cartAddSection.style.display = 'none';
                     return;
                 }
                 
-                // Show cart container
-                cartContainer.style.display = 'block';
+                // Display cart items
+                if (cartContainer) cartContainer.style.display = 'block';
+                if (cartEmpty) cartEmpty.style.display = 'none';
+                if (cartAddSection) cartAddSection.style.display = 'block';
                 
                 // Clear existing cart items
-                cartItems.innerHTML = '';
+                if (cartItems) cartItems.innerHTML = '';
                 
-                // Calculate totals
                 let subtotal = 0;
                 
-                // Add cart items
-                cartData.items.forEach(item => {
-                    const itemSubtotal = item.prix * item.quantity;
+                // Add items to cart
+                cart.items.forEach(item => {
+                    // Handle different property structures
+                    const id = item.id_produit || item.id;
+                    const name = item.nom_produit || item.name;
+                    const price = parseFloat(item.prix || item.price || 0);
+                    const image = item.image_url || item.image || 'img/products/default.jpg';
+                    const variantId = item.variant_id || '';
+                    const quantity = parseInt(item.quantity || 1);
+                    const itemSubtotal = price * quantity;
+                    
                     subtotal += itemSubtotal;
                     
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><a href="#" class="remove-btn" data-id="${item.id_produit}" data-variant="${item.variant_id || ''}"><i class="far fa-times-circle"></i></td>
-                        <td><img src="${item.image || 'img/products/default.jpg'}" alt="${item.nom_produit}"></td>
-                        <td>${item.nom_produit}</td>
-                        <td>$${parseFloat(item.prix).toFixed(2)}</td>
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><a href="#" class="remove-btn" data-id="${id}" data-variant="${variantId}"><i class="far fa-times-circle"></i></a></td>
+                        <td><img src="${image}" alt="${name}"></td>
+                        <td>${name}</td>
+                        <td>$${price.toFixed(2)}</td>
                         <td>
                             <div class="quantity-controls">
-                                <button class="quantity-btn minus" data-id="${item.id_produit}" data-variant="${item.variant_id || ''}">-</button>
-                                <input type="number" value="${item.quantity}" min="1" data-id="${item.id_produit}" data-variant="${item.variant_id || ''}" class="quantity-input">
-                                <button class="quantity-btn plus" data-id="${item.id_produit}" data-variant="${item.variant_id || ''}">+</button>
+                                <button class="quantity-btn minus" data-id="${id}" data-variant="${variantId}">-</button>
+                                <input type="number" value="${quantity}" min="1" data-id="${id}" data-variant="${variantId}" class="quantity-input">
+                                <button class="quantity-btn plus" data-id="${id}" data-variant="${variantId}">+</button>
                             </div>
                         </td>
                         <td>$${itemSubtotal.toFixed(2)}</td>
                     `;
                     
-                    cartItems.appendChild(tr);
+                    if (cartItems) cartItems.appendChild(row);
                 });
                 
                 // Update totals
-                cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
-                cartTotal.textContent = `$${subtotal.toFixed(2)}`;
+                if (cartSubtotal) cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+                if (cartTotal) cartTotal.textContent = `$${subtotal.toFixed(2)}`;
                 
-                // Add event listeners to remove buttons
+                // Add event listeners for cart interactions
+                setupCartInteractions();
+            }
+            
+            // Setup cart interactions
+            function setupCartInteractions() {
+                // Setup remove buttons
                 document.querySelectorAll('.remove-btn').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
+                    btn.addEventListener('click', async function(e) {
                         e.preventDefault();
                         const productId = this.getAttribute('data-id');
                         const variantId = this.getAttribute('data-variant');
                         
-                        removeCartItem(productId, variantId);
+                        try {
+                            await CartService.removeItem(productId, variantId);
+                            loadCart(); // Reload cart after removal
+                        } catch (error) {
+                            console.error('Error removing item:', error);
+                            alert('Failed to remove item. Please try again.');
+                        }
                     });
                 });
                 
-                // Add event listeners to quantity controls
+                // Setup quantity decrease buttons
                 document.querySelectorAll('.quantity-btn.minus').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const productId = this.getAttribute('data-id');
                         const variantId = this.getAttribute('data-variant');
                         const input = this.parentElement.querySelector('.quantity-input');
-                        const currentValue = parseInt(input.value, 10);
+                        const currentValue = parseInt(input.value);
                         
                         if (currentValue > 1) {
-                            input.value = currentValue - 1;
-                            updateCartItemQuantity(productId, variantId, currentValue - 1);
+                            const newValue = currentValue - 1;
+                            try {
+                                await CartService.updateQuantity(productId, newValue, variantId);
+                                loadCart(); // Reload cart after update
+                            } catch (error) {
+                                console.error('Error updating quantity:', error);
+                            }
                         }
                     });
                 });
                 
+                // Setup quantity increase buttons
                 document.querySelectorAll('.quantity-btn.plus').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.addEventListener('click', async function() {
                         const productId = this.getAttribute('data-id');
                         const variantId = this.getAttribute('data-variant');
                         const input = this.parentElement.querySelector('.quantity-input');
-                        const currentValue = parseInt(input.value, 10);
+                        const currentValue = parseInt(input.value);
                         
-                        input.value = currentValue + 1;
-                        updateCartItemQuantity(productId, variantId, currentValue + 1);
+                        const newValue = currentValue + 1;
+                        try {
+                            await CartService.updateQuantity(productId, newValue, variantId);
+                            loadCart(); // Reload cart after update
+                        } catch (error) {
+                            console.error('Error updating quantity:', error);
+                        }
                     });
                 });
                 
+                // Setup direct quantity inputs
                 document.querySelectorAll('.quantity-input').forEach(input => {
-                    input.addEventListener('change', function() {
+                    input.addEventListener('change', async function() {
                         const productId = this.getAttribute('data-id');
                         const variantId = this.getAttribute('data-variant');
-                        const newValue = parseInt(this.value, 10);
+                        let newValue = parseInt(this.value);
                         
-                        if (newValue < 1) {
+                        if (isNaN(newValue) || newValue < 1) {
+                            newValue = 1;
                             this.value = 1;
-                            updateCartItemQuantity(productId, variantId, 1);
-                        } else {
-                            updateCartItemQuantity(productId, variantId, newValue);
+                        }
+                        
+                        try {
+                            await CartService.updateQuantity(productId, newValue, variantId);
+                            loadCart(); // Reload cart after update
+                        } catch (error) {
+                            console.error('Error updating quantity:', error);
                         }
                     });
                 });
-            }
-            
-            // Remove cart item
-            async function removeCartItem(productId, variantId) {
-                const user = FitZoneAuth.getCurrentUser();
                 
-                if (user) {
-                    // Remove from server
-                    try {
-                        const response = await fetch(`${API_URL}/cart/remove.php`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                user_id: user.id_utilisateur,
-                                token: user.token,
-                                product_id: productId,
-                                variant_id: variantId || null
-                            })
-                        });
+                // Setup checkout button
+                if (checkoutBtn) {
+                    checkoutBtn.addEventListener('click', function() {
+                        const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
                         
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            // Reload cart
-                            loadCart();
-                        } else {
-                            alert(result.message || 'Failed to remove item from cart');
+                        if (!isLoggedIn) {
+                            alert('Please log in to proceed with checkout');
+                            window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html');
+                            return;
                         }
-                    } catch (error) {
-                        console.error('Error removing item from cart:', error);
-                        alert('Error removing item from cart. Please try again.');
-                    }
-                } else {
-                    // Remove from localStorage
-                    const cart = FitZoneCart.getLocalCart();
-                    const updatedCart = cart.filter(item => item.id !== productId || (variantId && item.variant_id !== variantId));
-                    
-                    FitZoneCart.saveLocalCart(updatedCart);
-                    
-                    // Reload cart
-                    loadCart();
+                        
+                        window.location.href = 'checkout.html';
+                    });
                 }
             }
             
-            // Update cart item quantity
-            async function updateCartItemQuantity(productId, variantId, quantity) {
-                const user = FitZoneAuth.getCurrentUser();
+            // Setup auth UI
+            function setupAuthUI() {
+                const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
                 
-                if (user) {
-                    // Update on server
-                    try {
-                        const response = await fetch(`${API_URL}/cart/update.php`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                user_id: user.id_utilisateur,
-                                token: user.token,
-                                product_id: productId,
-                                variant_id: variantId || null,
-                                quantity: quantity
-                            })
+                const loginMenu = document.getElementById('account-menu-login');
+                const accountMenu = document.getElementById('account-menu-dropdown');
+                
+                if (isLoggedIn) {
+                    // User is logged in
+                    const user = FitZoneAuth.getCurrentUser();
+                    
+                    if (loginMenu) loginMenu.style.display = 'none';
+                    if (accountMenu) accountMenu.style.display = 'block';
+                    
+                    const userNameNav = document.getElementById('user-name-nav');
+                    if (userNameNav && user && user.prenom) {
+                        userNameNav.textContent = user.prenom;
+                    }
+                    
+                    // Setup logout functionality
+                    const logoutLink = document.getElementById('logout-link');
+                    if (logoutLink) {
+                        logoutLink.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            
+                            if (typeof FitZoneAuth !== 'undefined') {
+                                FitZoneAuth.logout();
+                                window.location.href = 'index.html';
+                            }
                         });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            // Reload cart
-                            loadCart();
-                        } else {
-                            alert(result.message || 'Failed to update cart');
-                        }
-                    } catch (error) {
-                        console.error('Error updating cart:', error);
-                        alert('Error updating cart. Please try again.');
                     }
                 } else {
-                    // Update in localStorage
-                    const cart = FitZoneCart.getLocalCart();
-                    
-                    const itemIndex = cart.findIndex(item => 
-                        item.id === productId && (!variantId || item.variant_id === variantId)
-                    );
-                    
-                    if (itemIndex !== -1) {
-                        cart[itemIndex].quantity = quantity;
-                        FitZoneCart.saveLocalCart(cart);
-                        
-                        // Reload cart
-                        loadCart();
-                    }
+                    // User is not logged in
+                    if (loginMenu) loginMenu.style.display = 'block';
+                    if (accountMenu) accountMenu.style.display = 'none';
                 }
             }
             
-            // Show error message
+            // Display error message
             function showError(message) {
-                cartLoading.style.display = 'none';
-                cartContainer.innerHTML = `
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <p>${message}</p>
-                        <a href="shop.html" class="normal">Continue Shopping</a>
-                    </div>
-                `;
-                cartContainer.style.display = 'block';
+                if (cartLoading) cartLoading.style.display = 'none';
+                if (cartEmpty) cartEmpty.style.display = 'none';
+                
+                if (cartContainer) {
+                    cartContainer.style.display = 'block';
+                    cartContainer.innerHTML = `
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>${message}</p>
+                            <button onclick="window.location.reload()" class="normal">Retry</button>
+                        </div>
+                    `;
+                }
             }
             
-            // Checkout button click handler
-            checkoutBtn.addEventListener('click', function() {
-                const user = FitZoneAuth.getCurrentUser();
-                
-                if (!user) {
-                    alert('Please log in to proceed to checkout');
-                    window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html');
-                    return;
-                }
-                
-                window.location.href = 'checkout.html';
+            // Listen for auth changes
+            document.addEventListener('auth:stateChanged', function() {
+                setupAuthUI();
+                loadCart();
             });
             
-            // Load cart on page load
-            loadCart();
+            // Listen for cart updates
+            document.addEventListener('cart:updated', function() {
+                loadCart();
+            });
         });
     </script>
-    <!-- Important: Load core scripts in correct order -->
-    <script src="js/config.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/cart.js"></script>
-    <script src="js/products.js"></script>
-    <script src="script.js"></script>
-
-    <script>
-    // Safe cart loading function
-    async function loadCart() {
-        try {
-            // Display loading state
-            const cartContainer = document.querySelector('.cart-items-container');
-            if (cartContainer) {
-                cartContainer.innerHTML = '<p class="loading">Loading cart items...</p>';
-            }
-            
-            // Check if we're logged in
-            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-            
-            // Try to get cart data from localStorage first
-            let cartData = null;
-            try {
-                const localCart = localStorage.getItem('fitzone_cart');
-                if (localCart) {
-                    cartData = JSON.parse(localCart);
-                }
-            } catch (e) {
-                console.warn('Error reading cart from localStorage:', e);
-            }
-            
-            // If no local cart data or user is logged in, try API
-            if (!cartData && isLoggedIn) {
-                try {
-                    // Make API request with auth token
-                    const token = FitZoneAuth.getToken();
-                    const userId = FitZoneAuth.getCurrentUser()?.id_utilisateur;
-                    
-                    // Use fetch with error handling
-                    const response = await fetch(`${CONFIG.API_URL}/cart/get.php`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({ user_id: userId })
-                    });
-                    
-                    // Handle empty responses
-                    const text = await response.text();
-                    if (!text) {
-                        throw new Error('Empty response from server');
-                    }
-                    
-                    // Parse response
-                    const data = JSON.parse(text);
-                    
-                    if (data.success) {
-                        cartData = data.data;
-                    } else {
-                        throw new Error(data.message || 'Failed to load cart');
-                    }
-                } catch (e) {
-                    console.error('Error loading cart from API:', e);
-                    
-                    // Fallback to local cart if API fails
-                    if (!cartData) {
-                        cartData = { items: [], total: 0 };
-                    }
-                }
-            } else if (!cartData) {
-                // Default empty cart
-                cartData = { items: [], total: 0 };
-            }
-            
-            // Now render the cart
-            renderCart(cartData);
-            
-            return cartData;
-        } catch (error) {
-            console.error('Error loading cart:', error);
-            
-            // Show error message
-            const cartContainer = document.querySelector('.cart-items-container');
-            if (cartContainer) {
-                cartContainer.innerHTML = '<p class="error">Failed to load cart. Please try again later.</p>';
-            }
-            
-            // Return empty cart as fallback
-            return { items: [], total: 0 };
-        }
-    }
-    
-    // Function to render cart data
-    function renderCart(cartData) {
-        const cartContainer = document.querySelector('.cart-items-container');
-        if (!cartContainer) return;
-        
-        if (!cartData.items || cartData.items.length === 0) {
-            cartContainer.innerHTML = '<tr><td colspan="6" class="empty-cart">Your cart is empty</td></tr>';
-            document.getElementById('subtotal').textContent = '$0.00';
-            document.getElementById('total').textContent = '$0.00';
-            
-            // Hide checkout button
-            const checkoutBtn = document.getElementById('checkout-btn');
-            if (checkoutBtn) checkoutBtn.style.display = 'none';
-            return;
-        }
-        
-        // Reset container
-        cartContainer.innerHTML = '';
-        
-        // Add cart items
-        cartData.items.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><a href="#" class="remove-item" data-id="${item.id}"><i class="far fa-times-circle"></i></a></td>
-                <td><img src="${item.image || 'img/products/f1.jpg'}" alt="${item.name}"></td>
-                <td>${item.name}</td>
-                <td>$${item.price.toFixed(2)}</td>
-                <td>
-                    <input type="number" value="${item.quantity}" min="1" data-id="${item.id}" class="item-quantity">
-                </td>
-                <td>$${(item.price * item.quantity).toFixed(2)}</td>
-            `;
-            cartContainer.appendChild(row);
-        });
-        
-        // Update totals
-        document.getElementById('subtotal').textContent = `$${cartData.total.toFixed(2)}`;
-        document.getElementById('total').textContent = `$${cartData.total.toFixed(2)}`;
-        
-        // Show checkout button
-        const checkoutBtn = document.getElementById('checkout-btn');
-        if (checkoutBtn) checkoutBtn.style.display = 'block';
-        
-        // Add event listeners for quantity change and removal
-        setupCartInteractions();
-    }
-    
-    // Handle cart interactions
-    function setupCartInteractions() {
-        // Handle quantity changes
-        document.querySelectorAll('.item-quantity').forEach(input => {
-            input.addEventListener('change', handleQuantityChange);
-        });
-        
-        // Handle item removal
-        document.querySelectorAll('.remove-item').forEach(btn => {
-            btn.addEventListener('click', handleRemoveItem);
-        });
-    }
-    
-    // Handle quantity changes
-    function handleQuantityChange(e) {
-        const itemId = e.target.getAttribute('data-id');
-        const newQuantity = parseInt(e.target.value);
-        
-        // Update cart
-        if (typeof FitZoneCart !== 'undefined' && FitZoneCart.updateQuantity) {
-            FitZoneCart.updateQuantity(itemId, newQuantity);
-            
-            // Reload cart display
-            loadCart();
-        }
-    }
-    
-    // Handle item removal
-    function handleRemoveItem(e) {
-        e.preventDefault();
-        
-        const itemId = e.currentTarget.getAttribute('data-id');
-        
-        // Remove from cart
-        if (typeof FitZoneCart !== 'undefined' && FitZoneCart.removeItem) {
-            FitZoneCart.removeItem(itemId);
-            
-            // Reload cart display
-            loadCart();
-        }
-    }
-
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Make sure FitZoneAuth is defined
-        if (typeof FitZoneAuth === 'undefined') {
-            console.error('FitZoneAuth is not defined! Loading auth.js manually');
-            
-            // Create and append auth.js script as fallback
-            const authScript = document.createElement('script');
-            authScript.src = 'js/auth.js';
-            authScript.onload = function() {
-                console.log('Auth.js loaded manually');
-                loadCart();
-            };
-            document.body.appendChild(authScript);
-        } else {
-            console.log('FitZoneAuth already loaded');
-            loadCart();
-        }
-    });
-</script>
-
 </body>
-
 </html>
