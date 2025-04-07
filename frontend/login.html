@@ -2,75 +2,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Load Chrome extension fix early -->
+    <script src="chrome-extension-fix.js"></script>
+    <!-- Add auth persistence handler -->
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
+    <!-- CSP that allows API and WebSocket connections -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
     <title>FitZone - Login</title>
-    <!-- Load browser patches first -->
-    <script src="js/browser-patches.js"></script>
-    <script src="js/config.js"></script>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <style>
-        .error-message {
-            color: #e74c3c;
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-        }
-        
         .success-message {
-            color: #2ecc71;
+            color: #28a745;
             text-align: center;
             margin-top: 10px;
             font-size: 14px;
         }
-        
-        .debug-info {
-            margin-top: 15px;
-            padding: 10px;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            color: #333;
-            max-height: 150px;
-            overflow-y: auto;
-            display: none;
-        }
-        
-        .show-debug-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 12px;
-            text-decoration: underline;
-            cursor: pointer;
-            margin-top: 10px;
-            padding: 0;
-        }
-        
-        .message {
+        .error-message {
+            color: #dc3545;
             text-align: center;
-            padding: 10px;
             margin-top: 10px;
-            border-radius: 4px;
-        }
-        
-        .message.error {
-            background-color: #fae5e5;
-            color: #e74c3c;
-        }
-        
-        .message.success {
-            background-color: #e6f3f2;
-            color: #088178;
+            font-size: 14px;
         }
     </style>
-</head> 
+</head>
+
 <body>
     <section id="header">
         <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
@@ -81,17 +41,26 @@
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
+                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
                 <li><a class="active" href="login.html">Login</a></li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" placeholder="Search for products...">
+                <button id="search-button"><i class="fas fa-search"></i></button>
+                <div id="search-results"></div>
+            </div>
+        </div>
         <div id="mobile">
             <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
 
-    <section class="wrapper-section">
+    <div class="wrapper-section">
         <div class="wrapper">
             <form id="loginForm">
                 <h1>Login</h1>
@@ -104,19 +73,18 @@
                     <i class='bx bxs-lock-alt'></i>
                 </div>
                 <div class="remember-forgot">
-                    <label><input type="checkbox" id="remember-me"> Remember me</label>
+                    <label><input type="checkbox"> Remember me</label>
                     <a href="#">Forgot password?</a>
                 </div>
                 <button type="submit" class="btn" id="loginButton">Login</button>
-                <div id="login-message" class="message"></div>
-                <button type="button" id="show-debug-btn" class="show-debug-btn" style="display:none">Show debug info</button>
-                <div id="debug-info" class="debug-info"></div>
+                <div id="login-error" class="error-message"></div>
+                <div id="login-success" class="success-message"></div>
                 <div class="register-link">
-                    <p>Don't have an account? <a href="register.html">Register now!</a></p>
+                    <p>Don't have an account? <a href="register.html">Register</a></p>
                 </div>
             </form>
         </div>
-    </section>
+    </div>
 
     <footer class="section-p1">
         <div class="col">
@@ -171,96 +139,137 @@
         </div>
     </footer>
 
+    <!-- Base configuration -->
+    <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
-
+    <script src="script.js"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is already logged in
+            // Debug auth state
+            if (window.AuthDebug) {
+                console.log('Using Auth Debug tools on login page');
+                AuthDebug.checkState();
+            }
+        
+            // If user is already logged in, redirect to profile
             if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
-                console.log("User is already logged in, redirecting...");
-                // Get redirect URL from query params or default to homepage
-                const urlParams = new URLSearchParams(window.location.search);
-                const redirectUrl = urlParams.get('redirect') || 'profile.html';
-                window.location.href = redirectUrl;
+                console.log('User already logged in, redirecting to profile');
+                window.location.href = 'profile.html';
                 return;
             }
-
-            // Login form submission
-            const loginForm = document.getElementById('loginForm');
-            const loginMessage = document.getElementById('login-message');
             
+            // Check for registration success or other URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect') || 'index.html';
+            const registeredEmail = urlParams.get('email') || '';
+            const justRegistered = urlParams.get('registered') === 'true';
+            
+            // Pre-fill email if provided in URL (e.g., after registration)
+            if (registeredEmail) {
+                document.getElementById('email').value = registeredEmail;
+                
+                // If just registered, show success message
+                if (justRegistered) {
+                    document.getElementById('login-success').textContent = 
+                        'Registration successful! Please log in with your credentials.';
+                }
+            }
+            
+            // Handle login form submission
+            const loginForm = document.getElementById('loginForm');
             if (loginForm) {
                 loginForm.addEventListener('submit', async function(e) {
                     e.preventDefault();
                     
-                    // Clear previous messages
-                    loginMessage.textContent = '';
-                    loginMessage.className = 'message';
+                    const email = document.getElementById('email').value;
+                    const password = document.getElementById('password').value;
+                    const errorElement = document.getElementById('login-error');
+                    const successElement = document.getElementById('login-success');
                     
-                    // Show loading state
+                    // Clear previous messages
+                    errorElement.textContent = '';
+                    successElement.textContent = '';
+                    
+                    // Disable submit button during login
                     const submitBtn = document.getElementById('loginButton');
-                    const originalBtnText = submitBtn.textContent;
                     submitBtn.disabled = true;
                     submitBtn.textContent = 'Logging in...';
                     
                     try {
-                        // Get form data
-                        const email = document.getElementById('email').value;
-                        const password = document.getElementById('password').value;
-                        
                         console.log('Login attempt for:', email);
                         
-                        const result = await FitZoneAuth.login(email, password);
+                        // Log the response to debug
+                        const response = await fetch(`${CONFIG.API_URL}/auth/login.php`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({email, password})
+                        });
                         
-                        if (result.success) {
-                            // Debug to ensure login worked
-                            console.log("Login successful, user data:", FitZoneAuth.getCurrentUser());
-                            console.log("isLoggedIn() returns:", FitZoneAuth.isLoggedIn());
+                        const responseText = await response.text();
+                        console.log('Login raw response:', responseText);
+                        
+                        // Parse the response to debug exact structure
+                        try {
+                            const data = JSON.parse(responseText);
+                            console.log('Login structured response:', data);
                             
-                            // Show success message
-                            loginMessage.textContent = 'Login successful! Redirecting...';
-                            loginMessage.className = 'message success';
-                            
-                            // Show debug info in development mode
-                            if (window.CONFIG && window.CONFIG.DEBUG_MODE) {
-                                document.getElementById('show-debug-btn').style.display = 'block';
-                                document.getElementById('debug-info').textContent = JSON.stringify({
-                                    user: FitZoneAuth.getCurrentUser(),
-                                    token: FitZoneAuth.getToken() ? 'Present' : 'Missing',
-                                    loggedIn: FitZoneAuth.isLoggedIn()
-                                }, null, 2);
+                            if (data.success) {
+                                // Try to manually extract token and user data
+                                let token = null;
+                                let userData = null;
                                 
-                                document.getElementById('show-debug-btn').addEventListener('click', function() {
-                                    const debugInfo = document.getElementById('debug-info');
-                                    debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
-                                });
+                                // Check all possible locations for token, including the specific structure
+                                if (data.data?.user?.token) {
+                                    token = data.data.user.token; // This matches your API's structure
+                                }
+                                else if (data.data?.token) token = data.data.token;
+                                else if (data.token) token = data.token;
+                                else if (data.data?.access_token) token = data.data.access_token;
+                                else if (data.access_token) token = data.access_token;
+                                
+                                // Check all possible locations for user data
+                                if (data.data?.user) userData = data.data.user;
+                                else if (data.user) userData = data.user;
+                                
+                                console.log('Extracted token:', token ? 'Found' : 'Not found');
+                                console.log('Extracted user data:', userData ? 'Found' : 'Not found');
+                                
+                                if (token && userData) {
+                                    // Manually store auth data
+                                    localStorage.setItem('fitzone_token', token);
+                                    localStorage.setItem('fitzone_user', JSON.stringify(userData));
+                                    localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
+                                    
+                                    successElement.textContent = 'Login successful! Redirecting...';
+                                    
+                                    // Redirect with delay
+                                    setTimeout(() => {
+                                        window.location.href = redirectUrl;
+                                    }, 1000);
+                                } else {
+                                    errorElement.textContent = 'Login response missing required data';
+                                    submitBtn.disabled = false;
+                                    submitBtn.textContent = 'Login';
+                                }
+                            } else {
+                                errorElement.textContent = data.message || 'Login failed';
+                                submitBtn.disabled = false;
+                                submitBtn.textContent = 'Login';
                             }
-                            
-                            // Get redirect URL or go to profile by default
-                            const urlParams = new URLSearchParams(window.location.search);
-                            const redirectUrl = urlParams.get('redirect') || 'profile.html';
-                            
-                            // Wait a moment before redirecting to ensure state is saved
-                            setTimeout(() => {
-                                // Add cachebuster to force a fresh load of the profile page
-                                window.location.href = redirectUrl + '?t=' + Date.now();
-                            }, 1000);
-                        } else {
-                            loginMessage.textContent = result.message || 'Login failed';
-                            loginMessage.className = 'message error';
-                            
-                            // Re-enable login button
+                        } catch (e) {
+                            console.error('Error parsing response:', e);
+                            errorElement.textContent = 'Invalid response from server';
                             submitBtn.disabled = false;
-                            submitBtn.textContent = originalBtnText;
+                            submitBtn.textContent = 'Login';
                         }
                     } catch (error) {
                         console.error('Login error:', error);
-                        loginMessage.textContent = error.message || 'An error occurred. Please try again.';
-                        loginMessage.className = 'message error';
-                        
-                        // Re-enable login button
+                        errorElement.textContent = error.message || 'An unexpected error occurred';
                         submitBtn.disabled = false;
-                        submitBtn.textContent = originalBtnText;
+                        submitBtn.textContent = 'Login';
                     }
                 });
             }

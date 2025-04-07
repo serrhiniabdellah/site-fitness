@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Register</title>
+    <!-- Load Chrome extension fix early -->
+    <script src="chrome-extension-fix.js"></script>
+    <!-- Add auth persistence handler -->
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -158,6 +163,12 @@
     <script src="script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if auth debug is available and use it
+            if (window.AuthDebug) {
+                console.log('Using Auth Debug tools on registration page');
+                AuthDebug.checkState();
+            }
+            
             // Redirect if user is already logged in
             if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
                 window.location.href = 'profile.html';
@@ -225,27 +236,20 @@
                         // Call registration method
                         const result = await FitZoneAuth.register(userData);
                         
-                        if (result.success) {
+                        if (result && result.success) {
                             console.log("Registration successful");
                             
                             // Show success message
-                            successElement.textContent = 'Account created successfully! Redirecting to your profile...';
+                            successElement.textContent = 'Account created successfully! Redirecting to login page...';
                             
-                            // Force UI update
-                            if (typeof updateAuthUI === 'function') {
-                                updateAuthUI();
-                            }
-                            
-                            // Add logged-in class to body
-                            document.body.classList.add('logged-in');
-                            
-                            // Redirect to profile page after short delay
+                            // Safe login - don't auto-login to prevent race conditions
                             setTimeout(() => {
-                                window.location.href = 'profile.html';
+                                // Redirect to login page with email pre-filled
+                                window.location.href = `login.html?email=${encodeURIComponent(email)}&registered=true`;
                             }, 1500);
                         } else {
                             // Show error message
-                            errorElement.textContent = result.message || 'Registration failed';
+                            errorElement.textContent = result?.message || 'Registration failed';
                             resetSubmitButton();
                         }
                     } catch (error) {

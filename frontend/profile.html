@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Load Chrome extension fixes early -->
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    <!-- Add CORS proxy for development -->
+    <script src="js/cors-proxy.js"></script>
+    <!-- Add auth persistence handler -->
+    <script src="js/auth-persistence.js"></script>
     <!-- Updated CSP to allow API and WebSocket connections -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - My Profile</title>
@@ -358,7 +365,39 @@
     <script src="js/header.js"></script>
 
     <script>
+        // Add debug helper function
+        function debugAuth() {
+            console.group('Auth Debug Info');
+            console.log('Is logged in:', typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn());
+            
+            const userData = localStorage.getItem('fitzone_user');
+            const tokenData = localStorage.getItem('fitzone_token');
+            
+            console.log('User data exists:', !!userData);
+            console.log('Token exists:', !!tokenData);
+            
+            try {
+                if (userData) {
+                    const parsedUser = JSON.parse(userData);
+                    console.log('User ID:', parsedUser.id_utilisateur);
+                    console.log('User email:', parsedUser.email);
+                }
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
+            console.groupEnd();
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
+            // Run debug at startup
+            debugAuth();
+            
+            // Check if auth debug is available and use it
+            if (window.AuthDebug) {
+                console.log('Using Auth Debug tools');
+                AuthDebug.checkState();
+            }
+            
             // Check if user is logged in
             if (typeof FitZoneAuth === 'undefined' || !FitZoneAuth.isLoggedIn()) {
                 console.log('Not logged in, redirecting to login page');
@@ -379,6 +418,7 @@
             }
             
             console.log('User is logged in, showing profile page');
+            console.log('Current user data:', user); // Add debug output to check user data
             
             // Keep forcing auth check to maintain session
             const keepAliveInterval = setInterval(function() {
@@ -390,21 +430,19 @@
                 console.log('Auth check:', FitZoneAuth.isLoggedIn());
             }, 30000);
             
-            // Get user data
-            const user = FitZoneAuth.getCurrentUser();
-            
             // Populate user info in the header
-            document.getElementById('user-name').textContent = user.prenom;
-            document.getElementById('user-email').textContent = user.email;
+            document.getElementById('user-name').textContent = user.prenom || 'User';
+            document.getElementById('user-email').textContent = user.email || '';
             
-            // Set user initials in the avatar
-            const initials = (user.prenom.charAt(0) + user.nom.charAt(0)).toUpperCase();
+            // Set user initials in the avatar - add safety checks
+            const initials = ((user.prenom ? user.prenom.charAt(0) : '') + 
+                             (user.nom ? user.nom.charAt(0) : '')).toUpperCase() || 'U';
             document.getElementById('user-initials').textContent = initials;
             
-            // Populate the form fields
-            document.getElementById('firstName').value = user.prenom;
-            document.getElementById('lastName').value = user.nom;
-            document.getElementById('email').value = user.email;
+            // Populate the form fields with safety checks
+            document.getElementById('firstName').value = user.prenom || '';
+            document.getElementById('lastName').value = user.nom || '';
+            document.getElementById('email').value = user.email || '';
             document.getElementById('phone').value = user.telephone || '';
             
             // Handle profile form submission
@@ -535,6 +573,22 @@
             
             // We don't call fetchOrderHistory() yet since the API endpoint might not exist
             // But the function is here ready to be used once the endpoint is created
+            
+            // Prevent accidental logout
+            const originalLogout = FitZoneAuth.logout;
+            FitZoneAuth.logout = function() {
+                console.log('Logout triggered');
+                
+                // Only proceed if it's a user-initiated action (not from script)
+                const isUserAction = (new Error()).stack.includes('onclick');
+                if (!isUserAction) {
+                    console.warn('Prevented automatic logout');
+                    return;
+                }
+                
+                // Proceed with actual logout
+                originalLogout.apply(this, arguments);
+            };
         });
     </script>
 </body>

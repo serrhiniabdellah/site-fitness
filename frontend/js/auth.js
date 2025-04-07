@@ -1,463 +1,396 @@
 /**
- * FitZone Authentication Module
- * Handles authentication across the site
+ * FitZone Auth Module v1.3
+ * Handles user authentication, registration, and session management
  */
-const FitZoneAuth = (function() {
-    // API URL from config or fallback
-    const API_URL = (window.CONFIG && window.CONFIG.API_URL) || 'http://localhost/site_fitness/backend/api';
-    
-    // Storage keys
-    const USER_KEY = 'fitzone_user';
-    const TOKEN_KEY = 'fitzone_token';
-    
-    // Authentication state
-    let authenticated = false;
-    let currentUser = null;
-    let lastRefreshTime = 0;
-    
-    // Debug logger
-    function logDebug(...args) {
-        if (window.CONFIG && window.CONFIG.DEBUG_MODE) {
-            console.log('[AUTH]', ...args);
-        }
-    }
-    
-    // Get current user from localStorage
-    function getCurrentUser() {
-        if (currentUser) return currentUser;
+
+// Prevent duplicate initialization
+if (typeof window.FitZoneAuth === 'undefined') {
+    window.FitZoneAuth = (function() {
+        // Constants
+        const AUTH_TOKEN_KEY = 'fitzone_token';
+        const USER_DATA_KEY = 'fitzone_user';
+        const AUTH_EVENT = 'auth:stateChanged';
         
-        try {
-            const userJSON = localStorage.getItem(USER_KEY);
-            currentUser = userJSON ? JSON.parse(userJSON) : null;
-            return currentUser;
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-            // Clear corrupted data
-            localStorage.removeItem(USER_KEY);
-            currentUser = null;
+        // Debug output function - can be enabled/disabled
+        const debug = function(message, data) {
+            if (CONFIG && CONFIG.DEBUG_MODE) {
+                console.log('[AUTH]', message, data || '');
+            }
+        };
+        
+        // Get current user data from localStorage
+        function getCurrentUser() {
+            try {
+                const userData = localStorage.getItem(USER_DATA_KEY);
+                if (!userData) return null;
+                
+                return JSON.parse(userData);
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                // Clear corrupt data
+                localStorage.removeItem(USER_DATA_KEY);
+                return null;
+            }
+        }
+        
+        // Get auth token from localStorage
+        function getToken() {
+            return localStorage.getItem(AUTH_TOKEN_KEY);
+        }
+        
+        // Check if user is logged in
+        function isLoggedIn() {
+            const token = getToken();
+            const user = getCurrentUser();
+            return !!(token && user);
+        }
+        
+        // Set authentication data
+        function setAuthData(token, userData) {
+            if (!token) {
+                debug('Invalid auth data - missing token');
+                return false;
+            }
+            
+            if (!userData) {
+                debug('Invalid auth data - missing user data');
+                return false;
+            }
+            
+            try {
+                // Store token
+                localStorage.setItem(AUTH_TOKEN_KEY, token);
+                
+                // Store user data as JSON string
+                if (typeof userData === 'object') {
+                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+                } else {
+                    // Handle non-object user data
+                    debug('User data is not an object', typeof userData);
+                    return false;
+                }
+                
+                // Trigger auth event
+                triggerAuthEvent(true);
+                return true;
+            } catch (error) {
+                console.error('Failed to set auth data:', error);
+                return false;
+            }
+        }
+        
+        // Clear authentication data on logout
+        function clearAuthData() {
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            localStorage.removeItem(USER_DATA_KEY);
+            triggerAuthEvent(false);
+        }
+        
+        // Trigger authentication state change event
+        function triggerAuthEvent(isLoggedIn) {
+            debug('Auth state changed - User logged in: ' + isLoggedIn);
+            
+            const event = new CustomEvent(AUTH_EVENT, {
+                detail: { isLoggedIn, user: isLoggedIn ? getCurrentUser() : null }
+            });
+            
+            document.dispatchEvent(event);
+        }
+        
+        // Login function
+        async function login(credentials) {
+            try {
+                debug('Logging in user:', credentials.email);
+                
+                // Make API request to login
+                const response = await fetch(`${CONFIG.API_URL}/auth/login.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(credentials)
+                });
+                
+                // Fallback for non-JSON responses
+                let responseText = await response.text();
+                let data;
+                
+                try {
+                    // Try to parse JSON
+                    data = JSON.parse(responseText);
+                } catch (error) {
+                    console.error('Invalid JSON response:', responseText);
+                    throw new Error('Invalid response from server');
+                }
+                
+                debug('Login response:', data);
+                
+                // Check if login was successful
+                if (data && data.success) {
+                    // FLEXIBLE TOKEN HANDLING - Handle different response formats
+                    const token = extractToken(data);
+                    
+                    // Get user data from the response
+                    const user = extractUserData(data);
+                    
+                    // Check that we have both token and user data
+                    if (!token) {
+                        throw new Error('Missing token in response');
+                    }
+                    
+                    if (!user) {
+                        throw new Error('Missing user data in response');
+                    }
+                    
+                    // Set authentication data
+                    const success = setAuthData(token, user);
+                    
+                    if (!success) {
+                        throw new Error('Failed to store authentication data');
+                    }
+                    
+                    return data;
+                }
+                
+                // Return error response
+                return data || { success: false, message: 'Unknown error occurred' };
+            } catch (error) {
+                console.error('Login error:', error);
+                throw error;
+            }
+        }
+        
+        // Helper to extract token from different response formats
+        function extractToken(data) {
+            // Check various possible locations for the token
+            if (data.data && data.data.token) {
+                return data.data.token;
+            } 
+            else if (data.token) {
+                return data.token;
+            } 
+            else if (data.data && data.data.user && data.data.user.token) {
+                return data.data.user.token;  // This matches your API's structure
+            } 
+            else if (data.user && data.user.token) {
+                return data.user.token;
+            }
+            else if (data.data && data.data.access_token) {
+                return data.data.access_token;
+            }
+            else if (data.access_token) {
+                return data.access_token;
+            }
+            // If token can't be found, log detailed response for debugging
+            console.warn('Token not found in response. Response structure:', JSON.stringify(data));
             return null;
         }
-    }
-    
-    // Check if user is logged in
-    function isLoggedIn() {
-        // Check cache first to avoid excessive localStorage reads
-        if (Date.now() - lastRefreshTime < 5000) {
-            return authenticated;
+        
+        // Helper to extract user data from different response formats
+        function extractUserData(data) {
+            // Check various possible locations for user data
+            if (data.data && data.data.user) {
+                return data.data.user;
+            } 
+            else if (data.user) {
+                return data.user;
+            }
+            else if (data.data && data.data.userData) {
+                return data.data.userData;
+            }
+            else if (data.userData) {
+                return data.userData;
+            }
+            // If user data can't be found, log detailed response for debugging
+            console.warn('User data not found in response. Response structure:', JSON.stringify(data));
+            return null;
         }
         
-        // Otherwise check from localStorage
-        const user = getCurrentUser();
-        const token = getToken();
-        
-        authenticated = !!(user && token);
-        lastRefreshTime = Date.now();
-        
-        // Update body attributes for CSS targeting
-        if (authenticated) {
-            document.body.classList.add('logged-in');
-        } else {
-            document.body.classList.remove('logged-in');
-        }
-        
-        return authenticated;
-    }
-    
-    // Get authentication token
-    function getToken() {
-        return localStorage.getItem(TOKEN_KEY);
-    }
-    
-    // Register a new user
-    async function register(userData) {
-        try {
-            logDebug('Registering user:', userData);
-            
-            const response = await fetch(`${API_URL}/auth/register.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            if (!response.ok) {
-                if (response.status === 409) {
-                    throw new Error('This email is already registered. Please use a different email.');
+        // Register function
+        async function register(userData) {
+            try {
+                // Make API request to register
+                const response = await fetch(`${CONFIG.API_URL}/auth/register.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                // Fallback for non-JSON responses
+                let responseText = await response.text();
+                let data;
+                
+                try {
+                    data = JSON.parse(responseText);
+                } catch (error) {
+                    console.error('Invalid JSON response:', responseText);
+                    throw new Error('Invalid response from server');
                 }
-                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            logDebug('Registration response:', data);
-            
-            if (data.success) {
-                // Store user data and token in localStorage
-                localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-                localStorage.setItem(TOKEN_KEY, data.token);
                 
-                // Update memory cache
-                currentUser = data.user;
-                authenticated = true;
-                lastRefreshTime = Date.now();
-                
-                // Refresh session state
-                refreshAuthState();
-                
-                // Redirect to profile page
-                window.location.href = 'profile.html';
-            } else {
-                throw new Error(data.message || 'Registration failed');
-            }
-        } catch (error) {
-            console.error('Registration error:', error);
-            throw error;
-        }
-    }
-    
-    // Login user
-    async function login(email, password) {
-        try {
-            logDebug('Logging in user:', email);
-            
-            const response = await fetch(`${API_URL}/auth/login.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ email, password })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-            }
-            
-            // Check for non-JSON responses
-            const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                const text = await response.text();
-                logDebug('Server returned non-JSON response:', text);
-                return { success: false, message: 'Invalid server response' };
-            }
-            
-            const data = await response.json();
-            logDebug('Login response:', data);
-            
-            if (data.success) {
-                // Store user data and token in localStorage
-                localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-                localStorage.setItem(TOKEN_KEY, data.token);
-                
-                // Set a login timestamp to help with validation
-                localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
-                
-                // Update memory cache
-                currentUser = data.user;
-                authenticated = true;
-                lastRefreshTime = Date.now();
-                
-                // Explicitly set body class for CSS targeting
-                document.body.classList.add('logged-in');
-                
-                // Refresh session state
-                refreshAuthState();
-                
-                // IMPORTANT: Return success instead of redirecting
-                return {
-                    success: true,
-                    message: 'Login successful',
-                    user: data.user
-                };
-            } else {
-                throw new Error(data.message || 'Invalid credentials');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            throw error;
-        }
-    }
-    
-    // Logout user
-    function logout() {
-        logDebug('Logging out user');
-        
-        // Store previous state to see if we need to dispatch an event
-        const wasLoggedIn = authenticated;
-        
-        // Clear user data and token
-        localStorage.removeItem(USER_KEY);
-        localStorage.removeItem(TOKEN_KEY);
-        
-        // Update memory cache
-        currentUser = null;
-        authenticated = false;
-        lastRefreshTime = Date.now();
-        
-        // Update body class for CSS targeting
-        document.body.classList.remove('logged-in');
-        
-        // Only dispatch logout event if user was logged in
-        if (wasLoggedIn) {
-            dispatchLogoutEvent();
-        }
-        
-        window.location.href = 'index.html';
-        
-        return true;
-    }
-    
-    // Force refresh of auth state
-    function refreshAuthState() {
-        const wasLoggedIn = authenticated;
-        
-        // Clear memory cache to force localStorage check
-        currentUser = null;
-        lastRefreshTime = 0;
-        
-        // Check if user is logged in
-        const nowLoggedIn = isLoggedIn();
-        
-        // If state changed, dispatch event
-        if (wasLoggedIn !== nowLoggedIn) {
-            if (nowLoggedIn) {
-                dispatchLoginEvent();
-            } else {
-                dispatchLogoutEvent();
+                // Return response data
+                return data || { success: false, message: 'Unknown error occurred' };
+            } catch (error) {
+                console.error('Registration error:', error);
+                throw error;
             }
         }
         
-        return nowLoggedIn;
-    }
-    
-    // Helper to dispatch login event
-    function dispatchLoginEvent() {
-        const event = new CustomEvent('user:login', {
-            detail: { user: currentUser }
-        });
-        window.dispatchEvent(event);
-        console.log('Dispatched login event');
-    }
-    
-    // Helper to dispatch logout event
-    function dispatchLogoutEvent() {
-        window.dispatchEvent(new CustomEvent('user:logout'));
-        console.log('Dispatched logout event');
-    }
-    
-    // Update profile
-    async function updateProfile(userData) {
-        try {
-            if (!isLoggedIn()) {
-                return { success: false, message: 'Not authenticated' };
-            }
-            
-            const response = await fetch(`${API_URL}/users/update.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`
-                },
-                body: JSON.stringify(userData)
-            });
-            
-            const data = await response.json();
-            
-            if (data.success && data.user) {
-                // Update stored user data
-                localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-                currentUser = data.user;
-                
-                return { success: true, message: 'Profile updated', user: data.user };
-            } else {
-                return { success: false, message: data.message || 'Failed to update profile' };
-            }
-        } catch (error) {
-            console.error('Profile update error:', error);
-            return { success: false, message: `Failed to update profile: ${error.message}` };
-        }
-    }
-    
-    // Change password
-    async function changePassword(passwordData) {
-        try {
-            if (!isLoggedIn()) {
-                return { success: false, message: 'Not authenticated' };
-            }
-            
-            const response = await fetch(`${API_URL}/users/change-password.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken()}`
-                },
-                body: JSON.stringify(passwordData)
-            });
-            
-            const data = await response.json();
-            
-            return {
-                success: data.success,
-                message: data.message || (data.success ? 'Password changed' : 'Failed to change password')
-            };
-        } catch (error) {
-            console.error('Password change error:', error);
-            return { success: false, message: `Failed to change password: ${error.message}` };
-        }
-    }
-    
-    // Initialize on module load
-    function init() {
-        // Check if user is logged in
-        const loggedIn = isLoggedIn();
-        console.log('Auth state changed - User logged in:', loggedIn);
-    }
-    
-    // Call init when the script loads
-    init();
-    
-    // Listen for storage events from other tabs
-    window.addEventListener('storage', function(event) {
-        if (event.key === USER_KEY || event.key === TOKEN_KEY) {
-            refreshAuthState();
-        }
-    });
-    
-    // Return public API
-    return {
-        getCurrentUser,
-        isLoggedIn,
-        getToken,
-        register,
-        login,
-        logout,
-        refreshAuthState,
-        updateProfile,
-        changePassword
-    };
-})();
-
-console.log('FitZoneAuth initialized');
-
-/* 
-   Ensure token handling is consistent so users remain logged in across pages.
-   Store and retrieve the token from localStorage, and keep the "logged in" state 
-   unless the user explicitly logs out.
-*/
-
-// Example snippet to retain login state:
-function setToken(token) {
-    localStorage.setItem('fitzone_token', token);
-}
-
-// On initialization, load token from localStorage
-function initAuth() {
-    const savedToken = localStorage.getItem('fitzone_token');
-    if (savedToken) {
-        // Validate token or assume user is logged in; dispatch login event
-        window.dispatchEvent(new Event('user:login'));
-    }
-    // Check if user is logged in
-    const loggedIn = isLoggedIn();
-    console.log('Auth state changed - User logged in:', loggedIn);
-}
-
-// Logout should clear token
-function logout() {
-    localStorage.removeItem('fitzone_token');
-    window.dispatchEvent(new Event('user:logout'));
-}
-
-/**
- * Update UI based on auth state - fixed to handle missing elements
- */
-document.addEventListener('DOMContentLoaded', function() {
-    updateAuthUI();
-    window.addEventListener('user:login', updateAuthUI);
-    window.addEventListener('user:logout', updateAuthUI);
-    document.addEventListener('userLoggedIn', updateAuthUI);
-    document.addEventListener('userLoggedOut', updateAuthUI);
-});
-
-/**
- * Update UI elements based on auth state - with null checking
- */
-function updateAuthUI() {
-    const isLoggedIn = FitZoneAuth.isLoggedIn();
-    const user = FitZoneAuth.getCurrentUser();
-    
-    console.log('Auth state changed - User logged in:', isLoggedIn);
-    
-    // Update login/account links - with safe element checks
-    const loginLinks = document.querySelectorAll('a[href="login.html"]');
-    
-    if (loginLinks && loginLinks.length > 0) {
-        loginLinks.forEach(link => {
-            const parentLi = link.closest('li');
-            
-            if (!parentLi) return; // Skip if no parent li element
-            
-            if (isLoggedIn && user) {
-                // Change login link to account link
-                link.textContent = user.prenom || 'My Account';
-                link.href = 'profile.html';
-                
-                // Safely add logout option (if it doesn't already exist)
-                const existingLogout = parentLi.parentNode.querySelector('.logout-link');
-                
-                if (!existingLogout && parentLi.parentNode) {
-                    const logoutItem = document.createElement('li');
-                    logoutItem.innerHTML = `<a href="#" class="logout-link">Logout</a>`;
-                    
-                    // Add event listener to the logout link
-                    const logoutLink = logoutItem.querySelector('.logout-link');
-                    if (logoutLink) {
-                        logoutLink.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            FitZoneAuth.logout();
-                            window.location.href = 'index.html';
-                        });
-                    }
-                    
-                    // Insert after parent li
-                    if (parentLi.nextSibling) {
-                        parentLi.parentNode.insertBefore(logoutItem, parentLi.nextSibling);
-                    } else {
-                        parentLi.parentNode.appendChild(logoutItem);
-                    }
+        // Update user profile
+        async function updateProfile(userData) {
+            try {
+                const token = getToken();
+                if (!token) {
+                    return { success: false, message: 'Not authenticated' };
                 }
-            } else {
-                // Make sure it's a login link
-                link.textContent = 'Login';
-                link.href = 'login.html';
                 
-                // Remove any logout links (safely)
-                const logoutLinks = parentLi.parentNode ? parentLi.parentNode.querySelectorAll('.logout-link') : [];
-                logoutLinks.forEach(logoutLink => {
-                    const logoutLi = logoutLink.closest('li');
-                    if (logoutLi && logoutLi.parentNode) {
-                        logoutLi.parentNode.removeChild(logoutLi);
+                // Make API request to update profile
+                const response = await fetch(`${CONFIG.API_URL}/profile/update.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                let data = await response.json();
+                
+                // If successful, update stored user data
+                if (data.success && data.data && data.data.user) {
+                    const currentUser = getCurrentUser();
+                    const updatedUser = { ...currentUser, ...data.data.user };
+                    
+                    localStorage.setItem(USER_DATA_KEY, JSON.stringify(updatedUser));
+                    triggerAuthEvent(true);
+                }
+                
+                return data;
+            } catch (error) {
+                console.error('Profile update error:', error);
+                throw error;
+            }
+        }
+        
+        // Change password
+        async function changePassword(passwordData) {
+            try {
+                const token = getToken();
+                if (!token) {
+                    return { success: false, message: 'Not authenticated' };
+                }
+                
+                // Make API request to change password
+                const response = await fetch(`${CONFIG.API_URL}/auth/change-password.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(passwordData)
+                });
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Password change error:', error);
+                throw error;
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            debug('Logging out user');
+            clearAuthData();
+            
+            // If a logout endpoint exists, call it to invalidate token on server
+            const token = getToken();
+            if (token) {
+                fetch(`${CONFIG.API_URL}/auth/logout.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     }
+                }).catch(error => {
+                    console.error('Logout API call failed:', error);
                 });
             }
-        });
-    }
-    
-    // Update any user-specific elements
-    const userNameElements = document.querySelectorAll('.user-name');
-    if (userNameElements) {
-        userNameElements.forEach(element => {
-            element.textContent = isLoggedIn && user ? (user.prenom || 'User') : '';
-        });
-    }
-    
-    // Add logged-in class to body for CSS targeting
-    if (isLoggedIn) {
-        document.body.classList.add('logged-in');
-    } else {
-        document.body.classList.remove('logged-in');
-    }
-}
+        }
+        
+        // Check if token is expired
+        function isTokenExpired() {
+            try {
+                const token = getToken();
+                if (!token) return true;
+                
+                // Check if token is JWT and decode expiration time
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    if (payload.exp) {
+                        return Date.now() >= payload.exp * 1000;
+                    }
+                }
+                
+                // For non-JWT tokens or no expiration in JWT
+                // Check against login timestamp if available
+                const loginTimestamp = localStorage.getItem('fitzone_login_timestamp');
+                if (loginTimestamp) {
+                    const expireTime = parseInt(loginTimestamp) + (CONFIG.LOGIN_EXPIRES || 24 * 60 * 60 * 1000);
+                    return Date.now() >= expireTime;
+                }
+                
+                return false; // Can't determine if expired
+            } catch (error) {
+                console.error('Error checking token expiration:', error);
+                return true; // Assume expired on error
+            }
+        }
+        
+        // Initialize the module
+        function init() {
+            // Check for token expiration
+            if (isLoggedIn() && isTokenExpired()) {
+                debug('Token expired, logging out');
+                logout();
+            }
+            
+            // Update the UI
+            triggerAuthEvent(isLoggedIn());
+            
+            // Listen for storage events (for multi-tab logout)
+            window.addEventListener('storage', function(event) {
+                if (event.key === AUTH_TOKEN_KEY || event.key === USER_DATA_KEY) {
+                    triggerAuthEvent(isLoggedIn());
+                    
+                    // Update UI if available
+                    if (typeof updateAuthUI === 'function') {
+                        updateAuthUI();
+                    }
+                }
+            });
+        }
+        
+        // Public API
+        const api = {
+            init,
+            login,
+            register,
+            logout,
+            isLoggedIn,
+            getCurrentUser,
+            getToken,
+            updateProfile,
+            changePassword
+        };
+        
+        // Initialize on creation
+        init();
+        
+        // Return the public API
+        return api;
+    })();
 
-// Log auth module init
-console.log('FitZoneAuth initialized');
+    console.log('FitZoneAuth initialized');
+}

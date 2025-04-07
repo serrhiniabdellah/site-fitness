@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone</title>
+    <!-- Load Chrome extension fix early -->
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    <!-- Add CORS proxy for development -->
+    <script src="js/cors-proxy.js"></script>
+    <!-- Add auth persistence handler -->
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
     <!-- Updated Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:*;">
     <title>FitZone - Premium Fitness Products</title>
@@ -497,6 +506,27 @@
     
     <!-- Development only - Fixed reload script with proper WebSocket URL -->
     <script src="reload.js"></script>
+    
+    <!-- Add script to check auth state on page load -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if auth debug is available
+        if (window.AuthDebug) {
+            console.log('Checking auth state on page load');
+            AuthDebug.checkState();
+        }
+        
+        // Check if user is logged in
+        if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
+            console.log('User is logged in');
+            // Update any UI elements to reflect logged-in state
+            document.querySelectorAll('[href="login.html"]').forEach(el => {
+                el.textContent = 'My Account';
+                el.href = 'profile.html';
+            });
+        }
+    });
+    </script>
 </body>
 
 </html>

@@ -2,6 +2,26 @@
 require_once '../config.php';
 require_once '../utils.php';
 
-// Send a simple response
-Utils::sendResponse(true, 'Backend connection successful', ['timestamp' => time()]);
+// Enable CORS for development
+header("Access-Control-Allow-Origin: http://127.0.0.1:5500");
+header("Access-Control-Allow-Methods: GET, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+header("Content-Type: application/json");
+
+// Handle preflight OPTIONS request
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Simple endpoint to test API connectivity
+echo json_encode([
+    'success' => true,
+    'message' => 'API connection successful',
+    'data' => [
+        'timestamp' => time(),
+        'server' => $_SERVER['SERVER_NAME'],
+        'php_version' => phpversion()
+    ]
+]);
 ?>

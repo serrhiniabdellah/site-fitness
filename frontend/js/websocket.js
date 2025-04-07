@@ -144,13 +144,52 @@ const FitZoneWebSocket = (function() {
         clearReconnectInterval();
     }
     
+    /**
+     * Get a properly formatted WebSocket URL
+     * @param {string} url - WebSocket URL to format
+     * @returns {string} Formatted WebSocket URL
+     */
+    function formatUrl(url) {
+        if (!url) return url;
+        
+        // Fix specific problematic pattern: ws127.0.0.1 → ws://127.0.0.1
+        if (url.match(/^ws[0-9]/)) {
+            url = url.replace(/^ws/, 'ws://');
+            console.log('Fixed WebSocket URL with missing protocol separator:', url);
+        }
+        
+        // Fix specific problematic pattern: wss127.0.0.1 → wss://127.0.0.1
+        if (url.match(/^wss[0-9]/)) {
+            url = url.replace(/^wss/, 'wss://');
+            console.log('Fixed WebSocket URL with missing protocol separator:', url);
+        }
+        
+        // First, fix missing "://" after protocol (more general case)
+        url = url.replace(/^(ws|wss)(?!\:\/\/)(.)/i, '$1://$2');
+        
+        // If URL already has proper protocol, return as is
+        if (url.startsWith('ws://') || url.startsWith('wss://')) {
+            return url;
+        }
+        
+        // For relative URLs, use the current host with appropriate protocol
+        if (url.startsWith('/')) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            return `${protocol}//${window.location.host}${url}`;
+        }
+        
+        // For all other cases (IP addresses, localhost, etc.), add ws:// protocol
+        return `ws://${url}`;
+    }
+    
     // Return public API
     return {
         init,
         send,
         on,
         off,
-        close
+        close,
+        formatUrl
     };
 })();
 

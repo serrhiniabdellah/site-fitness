@@ -157,204 +157,209 @@ if (typeof FitZoneAuth === 'undefined') {
     })();
 }
 
-// FitZone Cart Module 
-const FitZoneCart = (function() {
-    const API_URL = 'http://127.0.0.1:5500/backend/api';
-    
-    // Initialize cart from localStorage
-    function getLocalCart() {
-        const cart = localStorage.getItem('fitzone_cart');
-        return cart ? JSON.parse(cart) : [];
-    }
-    
-    // Save cart to localStorage
-    function saveLocalCart(cart) {
-        localStorage.setItem('fitzone_cart', JSON.stringify(cart));
-    }
-    
-    // Add item to cart
-    function addToCart(product, quantity = 1, variantId = null) {
-        const cart = getLocalCart();
+// If FitZoneCart is already defined, don't redefine it
+if (typeof FitZoneCart === 'undefined') {
+    // Create the FitZoneCart global object
+    const FitZoneCart = (function() {
+        const API_URL = 'http://127.0.0.1:5500/backend/api';
         
-        // Check if product is already in cart
-        const existingItem = cart.find(item => 
-            item.id === product.id && 
-            ((!variantId && !item.variant_id) || (item.variant_id === variantId))
-        );
-        
-        if (existingItem) {
-            existingItem.quantity += quantity;
-        } else {
-            cart.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.image,
-                quantity: quantity,
-                variant_id: variantId
-            });
+        // Initialize cart from localStorage
+        function getLocalCart() {
+            const cart = localStorage.getItem('fitzone_cart');
+            return cart ? JSON.parse(cart) : [];
         }
         
-        // Save updated cart
-        saveLocalCart(cart);
-        
-        // Update cart count in UI
-        updateCartCount();
-        
-        return { success: true };
-    }
-    
-    // Update cart count in UI
-    function updateCartCount() {
-        const cart = getLocalCart();
-        const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
-        
-        const cartCountElements = document.querySelectorAll('.cart-count');
-        if (cartCountElements) {
-            cartCountElements.forEach(element => {
-                element.textContent = totalItems;
-                element.style.display = totalItems > 0 ? 'block' : 'none';
-            });
-        }
-    }
-    
-    // Get user's cart from server
-    async function getUserCart() {
-        const user = FitZoneAuth.getCurrentUser();
-        
-        if (!user) {
-            return { success: false, message: 'User not logged in' };
+        // Save cart to localStorage
+        function saveLocalCart(cart) {
+            localStorage.setItem('fitzone_cart', JSON.stringify(cart));
         }
         
-        try {
-            const response = await fetch(`${API_URL}/cart/get.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: user.id_utilisateur,
-                    token: user.token
-                })
-            });
-            
-            return await response.json();
-        } catch (error) {
-            console.error('Error fetching cart:', error);
-            return { success: false, message: error.message };
-        }
-    }
-    
-    // Add item to cart
-    async function addItem(productId, quantity = 1) {
-        // If user is logged in, add to server cart
-        const user = FitZoneAuth.getCurrentUser();
-        
-        if (user) {
-            try {
-                const response = await fetch(`${API_URL}/cart/add.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id_utilisateur,
-                        token: user.token,
-                        product_id: productId,
-                        quantity: quantity
-                    })
-                });
-                
-                const result = await response.json();
-                
-                // Update cart count in UI
-                if (result.success) {
-                    updateCartCount(result.cart.item_count);
-                }
-                
-                return result;
-            } catch (error) {
-                console.error('Error adding to cart:', error);
-                return { success: false, message: error.message };
-            }
-        } else {
-            // For non-authenticated users, use localStorage
+        // Add item to cart
+        function addToCart(product, quantity = 1, variantId = null) {
             const cart = getLocalCart();
             
-            // Check if item already exists
-            const existingItem = cart.find(item => item.id === productId);
+            // Check if product is already in cart
+            const existingItem = cart.find(item => 
+                item.id === product.id && 
+                ((!variantId && !item.variant_id) || (item.variant_id === variantId))
+            );
             
             if (existingItem) {
                 existingItem.quantity += quantity;
             } else {
-                // Fetch product details
-                try {
-                    const productResponse = await fetch(`${API_URL}/product.php?id=${productId}`);
-                    const productData = await productResponse.json();
-                    
-                    if (productData.success) {
-                        cart.push({
-                            id: productId,
-                            name: productData.product.nom_produit,
-                            price: productData.product.prix,
-                            image: productData.product.image,
-                            quantity: quantity
-                        });
-                    } else {
-                        return { success: false, message: 'Product not found' };
-                    }
-                } catch (error) {
-                    console.error('Error fetching product details:', error);
-                    return { success: false, message: error.message };
-                }
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: quantity,
+                    variant_id: variantId
+                });
             }
             
             // Save updated cart
             saveLocalCart(cart);
             
             // Update cart count in UI
-            updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+            updateCartCount();
             
-            return { success: true, message: 'Product added to cart' };
+            return { success: true };
         }
-    }
-    
-    // Initialize cart
-    async function initCart() {
-        // If user is logged in, get cart from server
-        const user = FitZoneAuth.getCurrentUser();
         
-        if (user) {
-            const result = await getUserCart();
-            
-            if (result.success) {
-                updateCartCount(result.cart.item_count);
-            }
-        } else {
-            // For non-authenticated users, use localStorage
+        // Update cart count in UI
+        function updateCartCount() {
             const cart = getLocalCart();
-            updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+            const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+            
+            const cartCountElements = document.querySelectorAll('.cart-count');
+            if (cartCountElements) {
+                cartCountElements.forEach(element => {
+                    element.textContent = totalItems;
+                    element.style.display = totalItems > 0 ? 'block' : 'none';
+                });
+            }
         }
-    }
-    
-    // Initialize module
-    function init() {
-        document.addEventListener('DOMContentLoaded', initCart);
-    }
-    
-    // Call init function
-    init();
-    
-    // Public API
-    return {
-        addItem,
-        getUserCart,
-        getLocalCart,
-        saveLocalCart,
-        addToCart,
-        updateCartCount
-    };
-})();
+        
+        // Get user's cart from server
+        async function getUserCart() {
+            const user = FitZoneAuth.getCurrentUser();
+            
+            try {
+                const response = await fetch(`${API_URL}/cart/get.php`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: user.id_utilisateur,
+                        token: user.token
+                    })
+                });
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching cart:', error);
+                return { success: false, message: error.message };
+            }
+        }
+        
+        // Add item to cart
+        async function addItem(productId, quantity = 1) {
+            // If user is logged in, add to server cart
+            const user = FitZoneAuth.getCurrentUser();
+            
+            if (user) {
+                try {
+                    const response = await fetch(`${API_URL}/cart/add.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            user_id: user.id_utilisateur,
+                            token: user.token,
+                            product_id: productId,
+                            quantity: quantity
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    // Update cart count in UI
+                    if (result.success) {
+                        updateCartCount(result.cart.item_count);
+                    }
+                    
+                    return result;
+                } catch (error) {
+                    console.error('Error adding to cart:', error);
+                    return { success: false, message: error.message };
+                }
+            } else {
+                // For non-authenticated users, use localStorage
+                const cart = getLocalCart();
+                
+                // Check if item already exists
+                const existingItem = cart.find(item => item.id === productId);
+                
+                if (existingItem) {
+                    existingItem.quantity += quantity;
+                } else {
+                    // Fetch product details
+                    try {
+                        const productResponse = await fetch(`${API_URL}/product.php?id=${productId}`);
+                        const productData = await productResponse.json();
+                        
+                        if (productData.success) {
+                            cart.push({
+                                id: productId,
+                                name: productData.product.nom_produit,
+                                price: productData.product.prix,
+                                image: productData.product.image,
+                                quantity: quantity
+                            });
+                        } else {
+                            return { success: false, message: 'Product not found' };
+                        }
+                    } catch (error) {
+                        console.error('Error fetching product details:', error);
+                        return { success: false, message: error.message };
+                    }
+                }
+                
+                // Save updated cart
+                saveLocalCart(cart);
+                
+                // Update cart count in UI
+                updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+                
+                return { success: true, message: 'Product added to cart' };
+            }
+        }
+        
+        // Initialize cart
+        async function initCart() {
+            // If user is logged in, get cart from server
+            const user = FitZoneAuth.getCurrentUser();
+            
+            if (user) {
+                (async function() {
+                    try {
+                        const result = await getUserCart();
+                        
+                        if (result.success) {
+                            updateCartCount(result.cart.item_count);
+                        }
+                    } catch (error) {
+                        console.error('Error loading cart:', error);
+                    }
+                })();
+            } else {
+                // For non-authenticated users, use localStorage
+                const cart = getLocalCart();
+                updateCartCount(cart.reduce((total, item) => total + item.quantity, 0));
+            }
+        }
+        
+        // Initialize module
+        function init() {
+            document.addEventListener('DOMContentLoaded', initCart);
+        }
+        
+        // Call init function
+        init();
+        
+        // Public API
+        return {
+            addItem,
+            getUserCart,
+            getLocalCart,
+            saveLocalCart,
+            addToCart,
+            updateCartCount
+        };
+    })();
+}
 
 // FitZone Search Module
 const FitZoneSearch = (function() {

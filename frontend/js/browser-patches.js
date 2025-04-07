@@ -9,6 +9,12 @@
     const OriginalWebSocket = window.WebSocket;
     window.WebSocket = function(url, protocols) {
         if (typeof url === 'string') {
+            // Fix the specific case causing errors in Chrome extension
+            if (url.match(/^ws[0-9]/)) {
+                url = url.replace(/^ws/, 'ws://');
+                console.log('Fixed critical WebSocket URL format (ws + digits):', url);
+            }
+            
             // Force scheme for any 'ws' or 'wss' missing '://'
             url = url.replace(/^((ws|wss))([^:])/, '$1://$3');
             // Fix common URL format errors
