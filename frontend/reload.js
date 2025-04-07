@@ -4,7 +4,7 @@
 (function() {
     // Configuration
     const config = {
-        // Proper WebSocket URL format
+        // WebSocket URL for LiveReload
         websocketUrl: 'ws://127.0.0.1:35729/livereload',
         // Max reconnection attempts
         maxReconnectAttempts: 3,
@@ -16,6 +16,27 @@
     
     let socket = null;
     
+    /**
+     * Ensure WebSocket URL has proper format with ws:// protocol
+     */
+    function fixWebSocketUrl(url) {
+        if (typeof url !== 'string') return url;
+        
+        // Fix missing protocol in WebSocket URLs
+        if (url.match(/^ws[0-9]/)) {
+            // URLs like ws127.0.0.1 should be ws://127.0.0.1
+            return url.replace(/^ws/, 'ws://');
+        } else if (url.match(/^wss[0-9]/)) {
+            // URLs like wss127.0.0.1 should be wss://127.0.0.1
+            return url.replace(/^wss/, 'wss://');
+        } else if (url.startsWith('ws') && !url.includes('://')) {
+            // Any other URLs starting with ws but missing ://
+            return 'ws://' + url.substring(2);
+        }
+        
+        return url;
+    }
+    
     function initWebSocket() {
         // Stop trying if we've reached max attempts
         if (config.currentReconnectAttempt >= config.maxReconnectAttempts) {
@@ -24,8 +45,11 @@
         }
         
         try {
-            console.log('Connecting to reload WebSocket:', config.websocketUrl);
-            socket = new WebSocket(config.websocketUrl);
+            // Fix URL format before creating WebSocket
+            const safeUrl = fixWebSocketUrl(config.websocketUrl);
+            console.log('Connecting to reload WebSocket:', safeUrl);
+            
+            socket = new WebSocket(safeUrl);
             
             socket.onopen = function() {
                 console.log('Reload WebSocket connected');
@@ -58,8 +82,8 @@
             };
             
             socket.onerror = function(error) {
-                console.error('Reload WebSocket error:', error);
-                socket.close();
+                console.log('Reload WebSocket error:', error);
+                // Don't close since onclose will be called automatically
             };
         } catch (error) {
             console.error('Failed to initialize reload WebSocket:', error);

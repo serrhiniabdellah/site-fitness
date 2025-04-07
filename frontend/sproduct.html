@@ -709,6 +709,29 @@
             }
         }
     </script>
+    <!-- Add this to the script that loads product details -->
+    <script>
+        // Add to cart button handler
+        document.getElementById('add-to-cart').addEventListener('click', function() {
+            const quantity = parseInt(document.getElementById('qty').value);
+            const options = {};
+            
+            // If product has flavors
+            const flavorSelector = document.getElementById('flavor-selector');
+            if (flavorSelector && flavorSelector.value) {
+                options.flavor = flavorSelector.value;
+            }
+            
+            // If product has sizes
+            const sizeSelector = document.getElementById('size-selector');
+            if (sizeSelector && sizeSelector.value) {
+                options.size = sizeSelector.value;
+            }
+            
+            // Add to cart using the shared cart module
+            FitZoneCart.addToCart(product.id, quantity, options);
+        });
+    </script>
 </body>
 
 </html>

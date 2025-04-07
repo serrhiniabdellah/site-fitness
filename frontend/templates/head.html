@@ -1,0 +1,28 @@
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitZone - Premium Fitness Products</title>
+<!-- Updated CSP to properly handle WebSocket and eval -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; 
+    script-src 'self' 'nonce-random123' https://pro.fontawesome.com https://unpkg.com; 
+    style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; 
+    font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; 
+    img-src 'self' data:; 
+    connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:*;">
+
+<!-- Load browser patches first -->
+<script src="js/browser-patches.js" nonce="random123"></script>
+
+<!-- Base configuration -->
+<script src="js/config.js" nonce="random123"></script>
+
+<!-- Load other scripts -->
+<script src="js/auth.js" nonce="random123"></script>
+<script src="js/auth-ui.js" nonce="random123"></script>
+
+<!-- LiveReload handler -->
+<script src="js/livereload-handler.js"></script>
+
+<!-- Stylesheets -->
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css">

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Login</title>
+    <!-- Load browser patches first -->
+    <script src="js/browser-patches.js"></script>
+    <script src="js/config.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
@@ -48,6 +51,23 @@
             cursor: pointer;
             margin-top: 10px;
             padding: 0;
+        }
+        
+        .message {
+            text-align: center;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        
+        .message.error {
+            background-color: #fae5e5;
+            color: #e74c3c;
+        }
+        
+        .message.success {
+            background-color: #e6f3f2;
+            color: #088178;
         }
     </style>
 </head> 
@@ -151,105 +171,99 @@
         </div>
     </footer>
 
-    <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if user is already logged in
-            if (FitZoneAuth.isLoggedIn()) {
-                // Redirect to previously attempted page or homepage
-                const redirect = new URLSearchParams(window.location.search).get('redirect');
-                window.location.href = redirect || 'index.html';
+            if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
+                console.log("User is already logged in, redirecting...");
+                // Get redirect URL from query params or default to homepage
+                const urlParams = new URLSearchParams(window.location.search);
+                const redirectUrl = urlParams.get('redirect') || 'profile.html';
+                window.location.href = redirectUrl;
                 return;
             }
-            
-            // Elements
-            const loginForm = document.getElementById('loginForm');
-            const messageElement = document.getElementById('login-message');
-            const debugInfo = document.getElementById('debug-info');
-            const showDebugBtn = document.getElementById('show-debug-btn');
-            
-            // Show/hide debug info button
-            showDebugBtn.addEventListener('click', function() {
-                if (debugInfo.style.display === 'none') {
-                    debugInfo.style.display = 'block';
-                    showDebugBtn.textContent = 'Hide debug info';
-                } else {
-                    debugInfo.style.display = 'none';
-                    showDebugBtn.textContent = 'Show debug info';
-                }
-            });
-            
+
             // Login form submission
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                // Reset UI
-                messageElement.textContent = '';
-                messageElement.className = '';
-                debugInfo.style.display = 'none';
-                debugInfo.textContent = '';
-                showDebugBtn.style.display = 'none';
-                
-                // Get form data
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const rememberMe = document.getElementById('remember-me').checked;
-                
-                if (!email || !password) {
-                    messageElement.textContent = 'Please enter both email and password';
-                    messageElement.className = 'error-message';
-                    return;
-                }
-                
-                // Login button state
-                const loginButton = document.getElementById('loginButton');
-                const originalButtonText = loginButton.textContent;
-                loginButton.textContent = 'Logging in...';
-                loginButton.disabled = true;
-                
-                try {
-                    // Log debug info
-                    debugInfo.textContent += `Attempting login with email: ${email}\n`;
+            const loginForm = document.getElementById('loginForm');
+            const loginMessage = document.getElementById('login-message');
+            
+            if (loginForm) {
+                loginForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
                     
-                    const result = await FitZoneAuth.login({
-                        email: email,
-                        password: password,
-                        remember_me: rememberMe
-                    });
+                    // Clear previous messages
+                    loginMessage.textContent = '';
+                    loginMessage.className = 'message';
                     
-                    debugInfo.textContent += `Login result: ${JSON.stringify(result)}\n`;
+                    // Show loading state
+                    const submitBtn = document.getElementById('loginButton');
+                    const originalBtnText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Logging in...';
                     
-                    if (result.success) {
-                        // Show success message
-                        messageElement.textContent = 'Login successful! Redirecting...';
-                        messageElement.className = 'success-message';
+                    try {
+                        // Get form data
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
                         
-                        // Redirect to previously attempted page or homepage
-                        const redirect = new URLSearchParams(window.location.search).get('redirect');
-                        setTimeout(() => {
-                            window.location.href = redirect || 'index.html';
-                        }, 1000);
-                    } else {
-                        throw new Error(result.message || 'Login failed with unknown error');
+                        console.log('Login attempt for:', email);
+                        
+                        const result = await FitZoneAuth.login(email, password);
+                        
+                        if (result.success) {
+                            // Debug to ensure login worked
+                            console.log("Login successful, user data:", FitZoneAuth.getCurrentUser());
+                            console.log("isLoggedIn() returns:", FitZoneAuth.isLoggedIn());
+                            
+                            // Show success message
+                            loginMessage.textContent = 'Login successful! Redirecting...';
+                            loginMessage.className = 'message success';
+                            
+                            // Show debug info in development mode
+                            if (window.CONFIG && window.CONFIG.DEBUG_MODE) {
+                                document.getElementById('show-debug-btn').style.display = 'block';
+                                document.getElementById('debug-info').textContent = JSON.stringify({
+                                    user: FitZoneAuth.getCurrentUser(),
+                                    token: FitZoneAuth.getToken() ? 'Present' : 'Missing',
+                                    loggedIn: FitZoneAuth.isLoggedIn()
+                                }, null, 2);
+                                
+                                document.getElementById('show-debug-btn').addEventListener('click', function() {
+                                    const debugInfo = document.getElementById('debug-info');
+                                    debugInfo.style.display = debugInfo.style.display === 'none' ? 'block' : 'none';
+                                });
+                            }
+                            
+                            // Get redirect URL or go to profile by default
+                            const urlParams = new URLSearchParams(window.location.search);
+                            const redirectUrl = urlParams.get('redirect') || 'profile.html';
+                            
+                            // Wait a moment before redirecting to ensure state is saved
+                            setTimeout(() => {
+                                // Add cachebuster to force a fresh load of the profile page
+                                window.location.href = redirectUrl + '?t=' + Date.now();
+                            }, 1000);
+                        } else {
+                            loginMessage.textContent = result.message || 'Login failed';
+                            loginMessage.className = 'message error';
+                            
+                            // Re-enable login button
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = originalBtnText;
+                        }
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        loginMessage.textContent = error.message || 'An error occurred. Please try again.';
+                        loginMessage.className = 'message error';
+                        
+                        // Re-enable login button
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
                     }
-                } catch (error) {
-                    // Show error and debug info
-                    messageElement.textContent = error.message || 'Login failed. Please check your credentials.';
-                    messageElement.className = 'error-message';
-                    showDebugBtn.style.display = 'block';
-                    
-                    // Add error to debug info
-                    debugInfo.textContent += `Error: ${error.message}\n`;
-                    if (error.stack) {
-                        debugInfo.textContent += `Stack: ${error.stack}\n`;
-                    }
-                    
-                    // Reset button
-                    loginButton.textContent = originalButtonText;
-                    loginButton.disabled = false;
-                }
-            });
+                });
+            }
         });
     </script>
 </body>

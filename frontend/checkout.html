@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Content Security Policy that allows API calls and WebSocket connections -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - Checkout</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
@@ -488,10 +490,29 @@
         </div>
     </footer>
 
+    <!-- Base configuration -->
+    <script src="js/config.js"></script>
+
+    <!-- Core modules -->
+    <script src="js/auth.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/cart.js"></script>
+
+    <!-- Additional modules as needed -->
     <script src="script.js"></script>
+
+    <!-- Header/navigation functionality -->
+    <script src="js/header.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is logged in
+            if (!FitZoneAuth.isLoggedIn()) {
+                // Redirect to login page with return URL
+                window.location.href = `login.html?redirect=${encodeURIComponent('checkout.html')}`;
+                return;
+            }
+            
             // Update the API URL to use the correct path to PHP
             const API_URL = 'http://localhost/site_fitness/backend/api';
             

@@ -65,7 +65,11 @@
             <form id="registerForm">
                 <h1>Create Account</h1>
                 <div class="input-box">
-                    <input type="text" id="name" placeholder="Full Name" required>  
+                    <input type="text" id="name" placeholder="First Name" required>  
+                    <i class='bx bxs-user'></i>
+                </div>
+                <div class="input-box">
+                    <input type="text" id="lastName" placeholder="Last Name" required>  
                     <i class='bx bxs-user'></i>
                 </div>
                 <div class="input-box">
@@ -88,6 +92,7 @@
                 </div>
                 <button type="submit" class="btn" id="registerButton">Register</button>
                 <div id="register-error" class="error-message"></div>
+                <div id="register-success" class="success-message"></div>
                 <div class="register-link">
                     <p>Already have an account? <a href="login.html">Login now!</a></p>
                 </div>
@@ -153,92 +158,109 @@
     <script src="script.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is already logged in
-            if (FitZoneAuth.isLoggedIn()) {
-                window.location.href = 'index.html';
+            // Redirect if user is already logged in
+            if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
+                window.location.href = 'profile.html';
                 return;
             }
             
             const registerForm = document.getElementById('registerForm');
             const errorElement = document.getElementById('register-error');
+            const successElement = document.getElementById('register-success');
             
-            registerForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                errorElement.textContent = '';
-                
-                // Get form values
-                const name = document.getElementById('name').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                const terms = document.getElementById('terms').checked;
-                
-                // Validation
-                if (!name || !email || !password || !confirmPassword) {
-                    errorElement.textContent = 'All fields are required';
-                    return;
-                }
-                
-                if (password.length < 8) {
-                    errorElement.textContent = 'Password should be at least 8 characters long';
-                    return;
-                }
-                
-                if (password !== confirmPassword) {
-                    errorElement.textContent = 'Passwords do not match';
-                    return;
-                }
-                
-                if (!terms) {
-                    errorElement.textContent = 'You must agree to the Terms & Conditions';
-                    return;
-                }
-                
-                try {
-                    const submitButton = document.getElementById('registerButton');
-                    submitButton.textContent = 'Creating account...';
-                    submitButton.disabled = true;
+            if (registerForm) {
+                registerForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
                     
-                    // Extract first and last name
-                    const nameParts = name.split(' ');
-                    const firstName = nameParts[0];
-                    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+                    // Clear previous messages
+                    errorElement.textContent = '';
+                    successElement.textContent = '';
                     
-                    console.log('Sending registration data:', {
-                        first_name: firstName,
-                        last_name: lastName,
-                        email: email
-                    });
+                    // Show loading state
+                    const submitBtn = registerForm.querySelector('button[type="submit"]');
+                    const originalBtnText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Creating account...';
                     
-                    const result = await FitZoneAuth.register({
-                        first_name: firstName,
-                        last_name: lastName,
-                        email: email,
-                        password: password
-                    });
-                    
-                    if (result.success) {
-                        // Show success message and redirect to home page
-                        registerForm.innerHTML = `
-                            <div class="success-message">
-                                <h2>Registration Successful!</h2>
-                                <p>Redirecting to home page...</p>
-                            </div>
-                        `;
-                        setTimeout(() => {
-                            window.location.href = 'index.html';
-                        }, 2000);
-                    } else {
-                        throw new Error(result.message || 'Registration failed');
+                    try {
+                        // Get form data
+                        const firstName = document.getElementById('name').value;
+                        const lastName = document.getElementById('lastName').value;
+                        const email = document.getElementById('email').value;
+                        const password = document.getElementById('password').value;
+                        const confirmPassword = document.getElementById('confirmPassword').value;
+                        const termsChecked = document.getElementById('terms').checked;
+                        
+                        // Validation
+                        if (!firstName || !lastName || !email || !password || !confirmPassword) {
+                            errorElement.textContent = 'All fields are required';
+                            resetSubmitButton();
+                            return;
+                        }
+                        
+                        if (password !== confirmPassword) {
+                            errorElement.textContent = 'Passwords do not match';
+                            resetSubmitButton();
+                            return;
+                        }
+                        
+                        if (!termsChecked) {
+                            errorElement.textContent = 'You must agree to the terms and conditions';
+                            resetSubmitButton();
+                            return;
+                        }
+                        
+                        // Prepare registration data
+                        const userData = {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: email,
+                            password: password,
+                            confirm_password: confirmPassword,
+                            terms_accepted: termsChecked
+                        };
+                        
+                        console.log('Registering user:', email);
+                        
+                        // Call registration method
+                        const result = await FitZoneAuth.register(userData);
+                        
+                        if (result.success) {
+                            console.log("Registration successful");
+                            
+                            // Show success message
+                            successElement.textContent = 'Account created successfully! Redirecting to your profile...';
+                            
+                            // Force UI update
+                            if (typeof updateAuthUI === 'function') {
+                                updateAuthUI();
+                            }
+                            
+                            // Add logged-in class to body
+                            document.body.classList.add('logged-in');
+                            
+                            // Redirect to profile page after short delay
+                            setTimeout(() => {
+                                window.location.href = 'profile.html';
+                            }, 1500);
+                        } else {
+                            // Show error message
+                            errorElement.textContent = result.message || 'Registration failed';
+                            resetSubmitButton();
+                        }
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        errorElement.textContent = error.message || 'An error occurred during registration';
+                        resetSubmitButton();
                     }
-                } catch (error) {
-                    errorElement.textContent = error.message || 'Registration failed. Please try again.';
-                    document.getElementById('registerButton').textContent = 'Register';
-                    document.getElementById('registerButton').disabled = false;
                     
-                    console.error('Registration error:', error);
-                }
-            });
+                    // Helper function to reset the submit button
+                    function resetSubmitButton() {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalBtnText;
+                    }
+                });
+            }
         });
     </script>
 </body>

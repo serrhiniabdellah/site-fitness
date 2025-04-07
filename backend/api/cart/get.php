@@ -1,59 +1,58 @@
 <?php
-/**
- * Get Cart API Endpoint
- * 
- * This endpoint retrieves the user's cart contents
- */
+require_once '../../config.php';
+require_once '../../db.php';
+require_once '../../utils.php';
 
-// Allow cross-origin requests
-header('Access-Control-Allow-Origin: *');
-header('Content-Type: application/json');
-header('Access-Control-Allow-Methods: GET, POST');
-header('Access-Control-Allow-Headers: Access-Control-Allow-Headers, Content-Type, Access-Control-Allow-Methods, Authorization, X-Requested-With');
+// Only accept POST requests
+Utils::validateMethod('POST');
 
-// Include necessary files
-require_once '../../config/config.php';
-require_once '../../includes/Cart.php';
-require_once '../../includes/User.php';
+// Get request data
+$data = Utils::getJsonData();
 
-// Get request data (support both GET and POST)
-$method = $_SERVER['REQUEST_METHOD'];
-if ($method === 'GET') {
-    $userId = isset($_GET['user_id']) ? intval($_GET['user_id']) : 0;
-    $token = isset($_GET['token']) ? $_GET['token'] : '';
-} else if ($method === 'POST') {
-    $data = json_decode(file_get_contents('php://input'), true);
-    $userId = isset($data['user_id']) ? intval($data['user_id']) : 0;
-    $token = isset($data['token']) ? $data['token'] : '';
-} else {
-    http_response_code(405); // Method Not Allowed
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
-    exit;
-}
-
-// Validate required parameters
-if (!$userId || empty($token)) {
-    http_response_code(400); // Bad Request
-    echo json_encode(['success' => false, 'message' => 'Missing user ID or token']);
-    exit;
+// Validate required fields
+if (!isset($data['user_id']) || !isset($data['token'])) {
+    Utils::sendResponse(false, 'User ID and token are required', null, 400);
 }
 
 // Validate token
-$user = new User();
-if (!$user->validateToken($token, $userId)) {
-    http_response_code(401); // Unauthorized
-    echo json_encode(['success' => false, 'message' => 'Invalid authentication']);
-    exit;
+$tokenData = Utils::validateToken($data['token']);
+if (!$tokenData || $tokenData['sub'] != $data['user_id']) {
+    Utils::sendResponse(false, 'Invalid or expired token', null, 401);
 }
 
-// Create cart instance
-$cart = new Cart();
+// Create database connection
+$db = new Database();
 
-// Get cart contents
-$cartData = $cart->getUserCart($userId);
+// Get cart items
+$db->query("SELECT c.*, p.nom_produit, p.prix, p.image, p.stock,
+            v.nom as variant_nom, v.prix as variant_prix
+            FROM cart c
+            JOIN produits p ON c.id_produit = p.id_produit
+            LEFT JOIN variants_produit v ON c.variant_id = v.id_variant
+            WHERE c.id_utilisateur = :user_id");
+$db->bind(':user_id', $data['user_id']);
 
-// Return cart data
-echo json_encode([
-    'success' => true,
-    'cart' => $cartData
-]);
+$items = $db->resultSetArray();
+
+// Calculate cart totals
+$itemCount = 0;
+$subtotal = 0;
+
+foreach ($items as &$item) {
+    $itemCount += $item['quantity'];
+    
+    // Use variant price if available, otherwise use product price
+    $price = $item['variant_prix'] ? $item['variant_prix'] : $item['prix'];
+    $item['prix'] = $price;
+    
+    $subtotal += $price * $item['quantity'];
+}
+
+$cart = [
+    'items' => $items,
+    'item_count' => $itemCount,
+    'subtotal' => $subtotal
+];
+
+Utils::sendResponse(true, 'Cart retrieved successfully', ['cart' => $cart]);
+?>

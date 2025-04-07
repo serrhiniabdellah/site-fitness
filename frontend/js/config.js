@@ -1,17 +1,49 @@
-/**
- * Global configuration
- */
-const CONFIG = {
-    // Main API URL (adjust based on your PHP server)
-    API_URL: 'http://127.0.0.1:5500/backend/api',
-    UPLOAD_URL: 'http://127.0.0.1:5500/uploads',
-    DEFAULT_ERROR_MESSAGE: 'An error occurred. Please try again.',
-    // Fixed WebSocket URL with proper scheme
-    WEBSOCKET_URL: 'ws://127.0.0.1:5500'
-};
+// Global configuration for FitZone application
+// Using window.CONFIG to prevent redeclaration errors
+if (typeof window.CONFIG === 'undefined') {
+    window.CONFIG = {
+        API_URL: 'http://localhost/site_fitness/backend/api',
+        UPLOAD_URL: 'http://localhost/site_fitness/backend/uploads',
+        DEBUG_MODE: true,
+        DEFAULT_ERROR_MESSAGE: 'Something went wrong. Please try again later.',
+        CURRENCY: '€',
+        
+        // Auth settings
+        AUTH_TOKEN_KEY: 'fitzone_token',
+        USER_DATA_KEY: 'fitzone_user',
+        
+        // WebSocket settings - explicitly formatted with protocol
+        WS_URL: 'ws://127.0.0.1:8080',
+        LIVERELOAD_URL: 'ws://127.0.0.1:35729/livereload',
+        
+        // Cart settings
+        CART_KEY: 'fitzone_cart',
+        
+        // Login settings
+        REDIRECT_DELAY: 1000,  // Wait 1 second before redirecting after login
+        LOGIN_EXPIRES: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+    };
+    
+    // Prevent accidental overwriting
+    Object.freeze(window.CONFIG);
+    
+    console.log('CONFIG initialized');
+}
 
-// Export for consistency
-const API_BASE_URL = CONFIG.API_URL;
+// For backward compatibility with existing code using API_BASE_URL
+// Only define if it doesn't already exist
+if (typeof window.API_BASE_URL === 'undefined') {
+    window.API_BASE_URL = window.CONFIG.API_URL;
+}
+
+// Helper for logging in debug mode only
+if (typeof CONFIG.log === 'undefined') {
+    CONFIG.log = function(...args) {
+        if (CONFIG.DEBUG_MODE) {
+            console.log(...args);
+        }
+    };
+}
 
 // Function to make standardized API calls
 async function makeApiCall(endpoint, method = 'GET', data = null) {
@@ -71,28 +103,19 @@ async function makeApiCall(endpoint, method = 'GET', data = null) {
 // Initialize WebSocket connection with proper URL format
 function initWebSocket() {
     try {
-        // Proper WebSocket URL format with ws:// scheme
-        const wsUrl = CONFIG.WEBSOCKET_URL;
+        // Use proper URL with protocol already included
+        const wsUrl = CONFIG.WS_URL;
+        
         console.log('Initializing WebSocket connection to:', wsUrl);
         
-        // Return without connecting if not using WebSockets
         if (!wsUrl) return null;
         
-        const socket = new WebSocket(wsUrl);
-        
-        socket.onopen = function() {
-            console.log('WebSocket connection established');
-        };
-        
-        socket.onclose = function() {
-            console.log('WebSocket connection closed');
-        };
-        
-        socket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-        };
-        
-        return socket;
+        // Use our helper if available, otherwise native WebSocket
+        if (window.FitZoneWebSocket) {
+            return window.FitZoneWebSocket.connect(wsUrl);
+        } else {
+            return new WebSocket(wsUrl);
+        }
     } catch (error) {
         console.error('Error initializing WebSocket:', error);
         return null;

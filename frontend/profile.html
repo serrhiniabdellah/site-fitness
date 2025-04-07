@@ -5,255 +5,162 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Updated CSP to include all required sources -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:*;">
+    <!-- Updated CSP to allow API and WebSocket connections -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - My Profile</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
     <style>
         .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .profile-header {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin-top: 20px;
+            align-items: center;
+            margin-bottom: 30px;
         }
-        
-        .profile-sidebar {
-            width: 25%;
-            min-width: 250px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-        
-        .profile-content {
-            width: 70%;
-            padding: 20px;
-        }
-        
+
         .profile-avatar {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
-            margin: 0 auto 20px;
+            background-color: #088178;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #088178;
-            color: white;
-            font-size: 48px;
-            font-weight: 600;
+            font-size: 40px;
+            margin-right: 20px;
         }
-        
-        .profile-name {
-            text-align: center;
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-        
-        .profile-menu {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .profile-menu li {
-            padding: 10px 0;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .profile-menu li:last-child {
-            border-bottom: none;
-        }
-        
-        .profile-menu a {
-            color: #333;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            transition: 0.3s;
-        }
-        
-        .profile-menu a i {
-            margin-right: 10px;
-            width: 20px;
-        }
-        
-        .profile-menu a:hover {
+
+        .profile-welcome h2 {
+            margin-bottom: 5px;
             color: #088178;
         }
-        
-        .profile-menu a.active {
-            color: #088178;
-            font-weight: 600;
+
+        .profile-welcome p {
+            color: #666;
         }
-        
+
         .profile-section {
             margin-bottom: 30px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
-        
-        .profile-section h2 {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+
+        .section-title {
             border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #333;
         }
-        
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
+
+        .profile-form-group {
             margin-bottom: 15px;
         }
-        
-        .form-group {
-            width: 48%;
-            margin-right: 4%;
-            margin-bottom: 15px;
-        }
-        
-        .form-group:nth-child(2n) {
-            margin-right: 0;
-        }
-        
-        .form-group label {
+
+        .profile-form-group label {
             display: block;
             margin-bottom: 5px;
             font-weight: 500;
         }
-        
-        .form-group input,
-        .form-group textarea {
+
+        .profile-form-group input {
             width: 100%;
             padding: 10px;
             border: 1px solid #e1e1e1;
             border-radius: 4px;
         }
-        
-        .form-group input:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #088178;
+
+        .profile-action {
+            margin-top: 20px;
         }
-        
-        .order-card {
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid #e1e1e1;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-        
-        .order-card:hover {
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        }
-        
-        .order-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .order-date {
-            color: #666;
-        }
-        
-        .order-status {
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .status-processing {
-            background: #fff8dd;
-            color: #ffc107;
-        }
-        
-        .status-shipped {
-            background: #e8f4fd;
-            color: #0d6efd;
-        }
-        
-        .status-delivered {
-            background: #e6f7ee;
-            color: #198754;
-        }
-        
-        .order-products {
-            margin: 15px 0;
-        }
-        
-        .order-product {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .order-product-image {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-        
-        .order-product-details {
-            flex-grow: 1;
-        }
-        
-        .order-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e1e1e1;
-        }
-        
-        .order-total {
-            font-weight: 600;
-        }
-        
-        .btn {
-            padding: 8px 20px;
-            background: #088178;
+
+        .profile-btn {
+            padding: 10px 20px;
+            background-color: #088178;
             color: white;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            transition: 0.3s;
+            font-weight: 500;
         }
-        
-        .btn:hover {
-            background: #066960;
+
+        .profile-btn:hover {
+            opacity: 0.9;
         }
-        
-        .btn-outline {
-            background: transparent;
-            color: #088178;
-            border: 1px solid #088178;
+
+        .profile-btn.secondary {
+            background-color: #6c757d;
         }
-        
-        .btn-outline:hover {
-            background: #088178;
-            color: white;
+
+        .profile-btn.danger {
+            background-color: #dc3545;
         }
-        
-        @media (max-width: 768px) {
-            .profile-sidebar,
-            .profile-content {
-                width: 100%;
-            }
-            
-            .profile-sidebar {
-                margin-bottom: 20px;
-            }
-            
-            .form-group {
-                width: 100%;
-                margin-right: 0;
-            }
+
+        .order-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .order-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .order-number {
+            font-weight: bold;
+        }
+
+        .order-date {
+            color: #666;
+        }
+
+        .order-status {
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+
+        .status-pending {
+            background-color: #ffeeba;
+            color: #856404;
+        }
+
+        .status-delivered {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .notification-toggle {
+            margin-top: 15px;
+        }
+
+        .notification-toggle label {
+            margin-left: 10px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .success-message {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -287,99 +194,90 @@
         </div>
     </section>
 
-    <section id="page-header" class="about-header">
+    <section id="page-header" class="profile-header">
         <h2>#MyAccount</h2>
-        <p>Manage your profile and orders</p>
+        <p>Manage your account details and check your order history</p>
     </section>
 
-    <section id="profile" class="section-p1">
-        <div class="profile-container">
-            <div class="profile-sidebar">
-                <div class="profile-avatar" id="profile-avatar">
-                    <!-- Initial will be set by JavaScript -->
-                </div>
-                <div class="profile-name" id="profile-name">
-                    <!-- Name will be set by JavaScript -->
-                </div>
-                <ul class="profile-menu">
-                    <li><a href="#" class="active" data-section="profile-info"><i class="fas fa-user"></i> Profile Information</a></li>
-                    <li><a href="#" data-section="orders"><i class="fas fa-shopping-bag"></i> My Orders</a></li>
-                    <li><a href="#" data-section="addresses"><i class="fas fa-map-marker-alt"></i> My Addresses</a></li>
-                    <li><a href="#" data-section="security"><i class="fas fa-shield-alt"></i> Security</a></li>
-                    <li><a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
-                </ul>
+    <div class="profile-container">
+        <div class="profile-header">
+            <div class="profile-avatar" id="user-initials">
+                <!-- User initials will be inserted here -->
             </div>
-            
-            <div class="profile-content">
-                <!-- Profile Information Section -->
-                <div class="profile-section" id="profile-info">
-                    <h2>Profile Information</h2>
-                    <form id="profile-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="first-name">First Name</label>
-                                <input type="text" id="first-name" name="first_name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="last-name">Last Name</label>
-                                <input type="text" id="last-name" name="last_name" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" name="email" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" name="phone">
-                            </div>
-                        </div>
-                        <div id="profile-message" style="margin-bottom: 15px;"></div>
-                        <button type="submit" class="btn">Save Changes</button>
-                    </form>
-                </div>
-                
-                <!-- Orders Section -->
-                <div class="profile-section" id="orders" style="display: none;">
-                    <h2>My Orders</h2>
-                    <div id="orders-list">
-                        <p>Loading orders...</p>
-                    </div>
-                </div>
-                
-                <!-- Addresses Section -->
-                <div class="profile-section" id="addresses" style="display: none;">
-                    <h2>My Addresses</h2>
-                    <div id="addresses-list">
-                        <p>No saved addresses yet.</p>
-                    </div>
-                    <button class="btn" id="add-address-btn" style="margin-top: 15px;">Add New Address</button>
-                </div>
-                
-                <!-- Security Section -->
-                <div class="profile-section" id="security" style="display: none;">
-                    <h2>Security</h2>
-                    <form id="password-form">
-                        <div class="form-group">
-                            <label for="current-password">Current Password</label>
-                            <input type="password" id="current-password" name="current_password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="new-password">New Password</label>
-                            <input type="password" id="new-password" name="new_password" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirm-password">Confirm New Password</label>
-                            <input type="password" id="confirm-password" name="confirm_password" required>
-                        </div>
-                        <div id="password-message" style="margin-bottom: 15px;"></div>
-                        <button type="submit" class="btn">Change Password</button>
-                    </form>
-                </div>
+            <div class="profile-welcome">
+                <h2>Welcome, <span id="user-name">User</span>!</h2>
+                <p id="user-email">user@example.com</p>
             </div>
         </div>
-    </section>
+
+        <div class="profile-section">
+            <h3 class="section-title">Personal Information</h3>
+            <form id="profile-form">
+                <div class="profile-form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="profile-form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+                <div class="profile-form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required readonly>
+                </div>
+                <div class="profile-form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+                <div class="profile-action">
+                    <button type="submit" class="profile-btn">Save Changes</button>
+                    <div id="profile-message"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Change Password</h3>
+            <form id="password-form">
+                <div class="profile-form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" name="currentPassword" required>
+                </div>
+                <div class="profile-form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" required>
+                </div>
+                <div class="profile-form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div class="profile-action">
+                    <button type="submit" class="profile-btn">Update Password</button>
+                    <div id="password-message"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Order History</h3>
+            <div id="order-history">
+                <!-- Order history will be loaded here -->
+                <p>You don't have any orders yet.</p>
+            </div>
+        </div>
+
+        <div class="profile-section">
+            <h3 class="section-title">Settings</h3>
+            <div class="notification-toggle">
+                <input type="checkbox" id="newsletter" name="newsletter">
+                <label for="newsletter">Subscribe to newsletter</label>
+            </div>
+            
+            <div class="profile-action">
+                <button id="logout-btn" class="profile-btn danger">Logout</button>
+            </div>
+        </div>
+    </div>
 
     <section id="newsletter" class="section-p1 section-m1">
         <div class="newstext">
@@ -445,230 +343,198 @@
         </div>
     </footer>
 
+    <!-- Base configuration -->
     <script src="js/config.js"></script>
+
+    <!-- Core modules -->
     <script src="js/auth.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/cart.js"></script>
+
+    <!-- Additional modules as needed -->
     <script src="script.js"></script>
+
+    <!-- Header/navigation functionality -->
+    <script src="js/header.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Authentication check
-            if (!FitZoneAuth.isLoggedIn()) {
-                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+            // Check if user is logged in
+            if (typeof FitZoneAuth === 'undefined' || !FitZoneAuth.isLoggedIn()) {
+                console.log('Not logged in, redirecting to login page');
+                window.location.href = 'login.html?redirect=profile.html';
+                return;
+            }
+
+            // Verify auth data exists
+            const user = FitZoneAuth.getCurrentUser();
+            const token = FitZoneAuth.getToken();
+            
+            if (!user || !token) {
+                console.error('Auth data missing despite isLoggedIn() returning true');
+                localStorage.removeItem('fitzone_user');
+                localStorage.removeItem('fitzone_token');
+                window.location.href = 'login.html?redirect=profile.html&error=auth_data_missing';
                 return;
             }
             
+            console.log('User is logged in, showing profile page');
+            
+            // Keep forcing auth check to maintain session
+            const keepAliveInterval = setInterval(function() {
+                if (!FitZoneAuth.isLoggedIn()) {
+                    clearInterval(keepAliveInterval);
+                    window.location.href = 'login.html?redirect=profile.html&session_expired=true';
+                    return;
+                }
+                console.log('Auth check:', FitZoneAuth.isLoggedIn());
+            }, 30000);
+            
+            // Get user data
             const user = FitZoneAuth.getCurrentUser();
             
-            // Set up profile avatar and name
-            const profileAvatar = document.getElementById('profile-avatar');
-            const profileName = document.getElementById('profile-name');
+            // Populate user info in the header
+            document.getElementById('user-name').textContent = user.prenom;
+            document.getElementById('user-email').textContent = user.email;
             
-            if (user) {
-                // Get initials for avatar
-                const firstName = user.prenom || '';
-                const lastName = user.nom || '';
-                const initials = (firstName.charAt(0) + (lastName ? lastName.charAt(0) : '')).toUpperCase();
-                
-                profileAvatar.textContent = initials;
-                profileName.textContent = `${firstName} ${lastName}`;
-                
-                // Fill in profile form
-                document.getElementById('first-name').value = firstName;
-                document.getElementById('last-name').value = lastName;
-                document.getElementById('email').value = user.email || '';
-                document.getElementById('phone').value = user.telephone || '';
-            }
+            // Set user initials in the avatar
+            const initials = (user.prenom.charAt(0) + user.nom.charAt(0)).toUpperCase();
+            document.getElementById('user-initials').textContent = initials;
             
-            // Profile menu navigation
-            const menuItems = document.querySelectorAll('.profile-menu a[data-section]');
-            const sections = document.querySelectorAll('.profile-section');
+            // Populate the form fields
+            document.getElementById('firstName').value = user.prenom;
+            document.getElementById('lastName').value = user.nom;
+            document.getElementById('email').value = user.email;
+            document.getElementById('phone').value = user.telephone || '';
             
-            menuItems.forEach(item => {
-                item.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Remove active class from all menu items
-                    menuItems.forEach(item => item.classList.remove('active'));
-                    
-                    // Add active class to clicked menu item
-                    this.classList.add('active');
-                    
-                    // Show the corresponding section
-                    const sectionId = this.getAttribute('data-section');
-                    
-                    sections.forEach(section => {
-                        section.style.display = section.id === sectionId ? 'block' : 'none';
-                    });
-                    
-                    // Load section-specific data
-                    if (sectionId === 'orders') {
-                        loadOrders();
-                    } else if (sectionId === 'addresses') {
-                        loadAddresses();
-                    }
-                });
-            });
-            
-            // Logout button
-            document.getElementById('logout-button').addEventListener('click', function(e) {
-                e.preventDefault();
-                FitZoneAuth.logout();
-            });
-            
-            // Profile form submission
+            // Handle profile form submission
             document.getElementById('profile-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                const profileMessage = document.getElementById('profile-message');
-                profileMessage.textContent = '';
-                profileMessage.className = '';
+                const messageElement = document.getElementById('profile-message');
+                messageElement.className = '';
+                messageElement.textContent = '';
+                
+                const updatedData = {
+                    first_name: document.getElementById('firstName').value,
+                    last_name: document.getElementById('lastName').value,
+                    phone: document.getElementById('phone').value,
+                    user_id: user.id_utilisateur,
+                    token: FitZoneAuth.getToken()
+                };
                 
                 try {
-                    const result = await FitZoneAuth.updateProfile({
-                        first_name: document.getElementById('first-name').value,
-                        last_name: document.getElementById('last-name').value,
-                        email: document.getElementById('email').value,
-                        phone: document.getElementById('phone').value
-                    });
+                    const result = await FitZoneAuth.updateProfile(updatedData);
                     
-                    profileMessage.textContent = 'Profile updated successfully!';
-                    profileMessage.className = 'success-message';
-                    
-                    // Update display name and avatar
-                    const firstName = document.getElementById('first-name').value;
-                    const lastName = document.getElementById('last-name').value;
-                    const initials = (firstName.charAt(0) + (lastName ? lastName.charAt(0) : '')).toUpperCase();
-                    
-                    profileAvatar.textContent = initials;
-                    profileName.textContent = `${firstName} ${lastName}`;
+                    if (result.success) {
+                        messageElement.className = 'success-message';
+                        messageElement.textContent = 'Profile updated successfully!';
+                        
+                        // Update displayed name if changed
+                        document.getElementById('user-name').textContent = updatedData.first_name;
+                        
+                        // Update initials if name changed
+                        const newInitials = (updatedData.first_name.charAt(0) + updatedData.last_name.charAt(0)).toUpperCase();
+                        document.getElementById('user-initials').textContent = newInitials;
+                    } else {
+                        messageElement.className = 'error-message';
+                        messageElement.textContent = result.message || 'Failed to update profile.';
+                    }
                 } catch (error) {
-                    profileMessage.textContent = error.message || 'Failed to update profile';
-                    profileMessage.className = 'error-message';
+                    messageElement.className = 'error-message';
+                    messageElement.textContent = error.message || 'An error occurred while updating profile.';
                 }
             });
             
-            // Password form submission
+            // Handle password form submission
             document.getElementById('password-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
-                const passwordMessage = document.getElementById('password-message');
-                passwordMessage.textContent = '';
-                passwordMessage.className = '';
+                const messageElement = document.getElementById('password-message');
+                messageElement.className = '';
+                messageElement.textContent = '';
                 
-                const currentPassword = document.getElementById('current-password').value;
-                const newPassword = document.getElementById('new-password').value;
-                const confirmPassword = document.getElementById('confirm-password').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
                 
                 if (newPassword !== confirmPassword) {
-                    passwordMessage.textContent = 'New passwords do not match';
-                    passwordMessage.className = 'error-message';
+                    messageElement.className = 'error-message';
+                    messageElement.textContent = 'New passwords do not match.';
                     return;
                 }
                 
-                if (newPassword.length < 8) {
-                    passwordMessage.textContent = 'Password should be at least 8 characters long';
-                    passwordMessage.className = 'error-message';
-                    return;
-                }
+                const passwordData = {
+                    current_password: document.getElementById('currentPassword').value,
+                    new_password: newPassword,
+                    user_id: user.id_utilisateur,
+                    token: FitZoneAuth.getToken()
+                };
                 
                 try {
-                    const result = await FitZoneAuth.changePassword({
-                        current_password: currentPassword,
-                        new_password: newPassword
-                    });
+                    const result = await FitZoneAuth.changePassword(passwordData);
                     
-                    // Clear form
-                    document.getElementById('current-password').value = '';
-                    document.getElementById('new-password').value = '';
-                    document.getElementById('confirm-password').value = '';
-                    
-                    passwordMessage.textContent = 'Password updated successfully!';
-                    passwordMessage.className = 'success-message';
+                    if (result.success) {
+                        messageElement.className = 'success-message';
+                        messageElement.textContent = 'Password changed successfully!';
+                        document.getElementById('password-form').reset();
+                    } else {
+                        messageElement.className = 'error-message';
+                        messageElement.textContent = result.message || 'Failed to change password.';
+                    }
                 } catch (error) {
-                    passwordMessage.textContent = error.message || 'Failed to change password';
-                    passwordMessage.className = 'error-message';
+                    messageElement.className = 'error-message';
+                    messageElement.textContent = error.message || 'An error occurred while changing password.';
                 }
             });
             
-            // Load orders
-            async function loadOrders() {
-                const ordersList = document.getElementById('orders-list');
-                ordersList.innerHTML = '<p>Loading orders...</p>';
-                
+            // Handle logout
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                FitZoneAuth.logout();
+                window.location.href = 'index.html';
+            });
+            
+            // Fetch order history
+            async function fetchOrderHistory() {
                 try {
-                    const API_URL = CONFIG.API_URL;
-                    
-                    const response = await fetch(`${API_URL}/orders/user.php`, {
-                        method: 'POST',
+                    const response = await fetch(`${CONFIG.API_URL}/orders/history.php`, {
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_id: user.id_utilisateur,
-                            token: user.token
-                        })
+                            'Authorization': `Bearer ${FitZoneAuth.getToken()}`
+                        }
                     });
                     
-                    const result = await response.json();
+                    const data = await response.json();
                     
-                    if (result.success) {
-                        if (result.orders && result.orders.length > 0) {
-                            let ordersHtml = '';
+                    if (data.success && data.data.orders && data.data.orders.length > 0) {
+                        const orderHistoryElement = document.getElementById('order-history');
+                        let ordersHtml = '<ul class="order-list">';
+                        
+                        data.data.orders.forEach(order => {
+                            const statusClass = order.status === 'delivered' ? 'status-delivered' : 'status-pending';
                             
-                            result.orders.forEach(order => {
-                                const orderDate = new Date(order.date_commande).toLocaleDateString();
-                                let statusClass = '';
-                                
-                                switch (order.statut_commande) {
-                                    case 'processing':
-                                        statusClass = 'status-processing';
-                                        break;
-                                    case 'shipped':
-                                        statusClass = 'status-shipped';
-                                        break;
-                                    case 'delivered':
-                                        statusClass = 'status-delivered';
-                                        break;
-                                    default:
-                                        statusClass = '';
-                                }
-                                
-                                ordersHtml += `
-                                    <div class="order-card">
-                                        <div class="order-header">
-                                            <div>
-                                                <strong>Order #${order.id_commande}</strong>
-                                                <div class="order-date">${orderDate}</div>
-                                            </div>
-                                            <div class="order-status ${statusClass}">${order.statut_commande}</div>
-                                        </div>
-                                        <div class="order-footer">
-                                            <div class="order-total">Total: $${parseFloat(order.total).toFixed(2)}</div>
-                                            <a href="order-detail.html?id=${order.id_commande}" class="btn btn-outline">View Details</a>
-                                        </div>
+                            ordersHtml += `
+                                <li class="order-item">
+                                    <div>
+                                        <div class="order-number">Order #${order.id}</div>
+                                        <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
                                     </div>
-                                `;
-                            });
-                            
-                            ordersList.innerHTML = ordersHtml;
-                        } else {
-                            ordersList.innerHTML = '<p>You have no orders yet.</p>';
-                        }
-                    } else {
-                        ordersList.innerHTML = `<p>Error loading orders: ${result.message}</p>`;
+                                    <div>
+                                        <div>$${order.total.toFixed(2)}</div>
+                                        <span class="order-status ${statusClass}">${order.status}</span>
+                                    </div>
+                                </li>
+                            `;
+                        });
+                        
+                        ordersHtml += '</ul>';
+                        orderHistoryElement.innerHTML = ordersHtml;
                     }
                 } catch (error) {
-                    console.error('Error loading orders:', error);
-                    ordersList.innerHTML = '<p>Failed to load orders. Please try again later.</p>';
+                    console.error('Error fetching order history:', error);
                 }
             }
             
-            // Load addresses
-            function loadAddresses() {
-                // This would be implemented similar to loadOrders, fetching from the backend
-                // For now, we just show a placeholder
-                const addressesList = document.getElementById('addresses-list');
-                addressesList.innerHTML = '<p>No saved addresses yet.</p>';
-            }
+            // We don't call fetchOrderHistory() yet since the API endpoint might not exist
+            // But the function is here ready to be used once the endpoint is created
         });
     </script>
 </body>

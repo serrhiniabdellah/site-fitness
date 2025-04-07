@@ -1,4 +1,3 @@
--- Active: 1743970933967@@127.0.0.1@3307@fitzone_db
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,7 +5,14 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Add Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - About Us</title>
+    <!-- Base configuration script must load first -->
+    <script src="js/config.js"></script>
+    <!-- Optional: LiveReload error handler -->
+    <script src="js/livereload-handler.js"></script>
+    <!-- External stylesheets -->
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <style>
@@ -260,7 +266,16 @@
         </div>
     </footer>
 
+    <!-- Core modules -->
+    <script src="js/auth.js"></script>
+    <script src="js/products.js"></script>
+    <script src="js/cart.js"></script>
+
+    <!-- Additional modules as needed -->
     <script src="script.js"></script>
+
+    <!-- Header/navigation functionality -->
+    <script src="js/header.js"></script>
 
     <style>
         /* Additional styles for the About page */

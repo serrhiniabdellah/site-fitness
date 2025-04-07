@@ -1,0 +1,6 @@
+# MySQL Management Instructions
+
+## Option 1: Using PowerShell (Windows)
+
+When using PowerShell, you need to reference executables in the current directory with .\ prefix:
+
