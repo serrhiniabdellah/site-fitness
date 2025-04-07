@@ -220,26 +220,24 @@ if (typeof FitZoneCart === 'undefined') {
             }
         }
         
-        // Get user's cart from server
+        // Fix getUserCart function to use CartAPI
         async function getUserCart() {
-            const user = FitZoneAuth.getCurrentUser();
-            
             try {
-                const response = await fetch(`${API_URL}/cart/get.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id_utilisateur,
-                        token: user.token
-                    })
-                });
+                // Use CartAPI if available, otherwise fall back to local storage
+                if (typeof CartAPI !== 'undefined') {
+                    return await CartAPI.getCart();
+                }
                 
-                return await response.json();
+                // Fallback to localStorage
+                const cartData = localStorage.getItem('fitzone_cart');
+                if (cartData) {
+                    return JSON.parse(cartData);
+                }
+                
+                return { items: [], total: 0 };
             } catch (error) {
                 console.error('Error fetching cart:', error);
-                return { success: false, message: error.message };
+                return { items: [], total: 0 };
             }
         }
         
@@ -317,6 +315,65 @@ if (typeof FitZoneCart === 'undefined') {
             }
         }
         
+        // Add to cart functionality
+        function addToCart(productId, quantity = 1) {
+            try {
+                // Use CartAPI if available
+                if (typeof CartAPI !== 'undefined') {
+                    CartAPI.addToCart({
+                        product_id: productId,
+                        quantity: quantity
+                    }).then(result => {
+                        if (result.success) {
+                            // Show success message
+                            showToast(`Product added to cart!`);
+                            // Update cart count
+                            updateCartCount();
+                        } else {
+                            // Show error
+                            showToast(`Failed to add product: ${result.message}`, 'error');
+                        }
+                    });
+                    return;
+                }
+                
+                // Fallback to local storage
+                let cart = JSON.parse(localStorage.getItem('fitzone_cart')) || { items: [], total: 0 };
+                
+                // Check if item already exists
+                const existingItemIndex = cart.items.findIndex(item => item.id === productId);
+                
+                if (existingItemIndex !== -1) {
+                    // Increase quantity
+                    cart.items[existingItemIndex].quantity += quantity;
+                } else {
+                    // Add new item
+                    cart.items.push({
+                        id: productId,
+                        name: `Product ${productId}`,
+                        price: 49.99, // Default price
+                        quantity: quantity,
+                        image: 'img/products/f1.jpg' // Default image
+                    });
+                }
+                
+                // Recalculate total
+                cart.total = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                // Save cart
+                localStorage.setItem('fitzone_cart', JSON.stringify(cart));
+                
+                // Show success message
+                showToast(`Product added to cart!`);
+                
+                // Update cart count
+                updateCartCount();
+            } catch (error) {
+                console.error('Error adding to cart:', error);
+                showToast('Failed to add product to cart', 'error');
+            }
+        }
+        
         // Initialize cart
         async function initCart() {
             // If user is logged in, get cart from server
@@ -361,151 +418,157 @@ if (typeof FitZoneCart === 'undefined') {
     })();
 }
 
-// FitZone Search Module
-const FitZoneSearch = (function() {
-    const API_URL = 'http://localhost/site%20fitness/backend/api';
-    let searchTimeout = null;
-    
-    // Toggle search bar
-    function toggleSearchBar() {
-        const searchContainer = document.getElementById('search-container');
-        searchContainer.classList.toggle('active');
+// Check if FitZoneSearch already exists before declaring it
+if (typeof FitZoneSearch === 'undefined') {
+    /**
+     * FitZone Search Module
+     * Handles product search functionality
+     */
+    const FitZoneSearch = (function() {
+        const API_URL = 'http://localhost/site%20fitness/backend/api';
+        let searchTimeout = null;
         
-        if (searchContainer.classList.contains('active')) {
-            document.getElementById('search-input').focus();
-        } else {
-            document.getElementById('search-input').value = '';
-            document.getElementById('search-results').classList.remove('show');
-        }
-    }
-    
-    // Search products
-    async function searchProducts(query) {
-        try {
-            const response = await fetch(`${API_URL}/search.php?q=${encodeURIComponent(query)}&limit=5`);
-            return await response.json();
-        } catch (error) {
-            console.error('Search error:', error);
-            return { success: false, message: error.message, results: [] };
-        }
-    }
-    
-    // Handle search input
-    function handleSearchInput(event) {
-        const query = event.target.value.trim();
-        const searchResults = document.getElementById('search-results');
-        
-        // Clear previous timeout
-        clearTimeout(searchTimeout);
-        
-        // Hide results if query too short
-        if (query.length < 2) {
-            searchResults.classList.remove('show');
-            return;
-        }
-        
-        // Set timeout to avoid making requests on each keystroke
-        searchTimeout = setTimeout(async () => {
-            const results = await searchProducts(query);
+        // Toggle search bar
+        function toggleSearchBar() {
+            const searchContainer = document.getElementById('search-container');
+            searchContainer.classList.toggle('active');
             
-            if (results.success && results.results.length > 0) {
-                // Render search results
-                searchResults.innerHTML = results.results.map(product => `
-                    <div class="search-item" data-id="${product.id_produit}">
-                        <img src="${product.image || 'img/products/default.jpg'}" alt="${product.nom_produit}">
-                        <div class="search-item-details">
-                            <div class="search-item-name">${product.nom_produit}</div>
-                            <div class="search-item-category">${product.nom_categorie}</div>
-                            <div class="search-item-price">$${parseFloat(product.prix).toFixed(2)}</div>
-                        </div>
-                    </div>
-                `).join('');
+            if (searchContainer.classList.contains('active')) {
+                document.getElementById('search-input').focus();
+            } else {
+                document.getElementById('search-input').value = '';
+                document.getElementById('search-results').classList.remove('show');
+            }
+        }
+        
+        // Search products
+        async function searchProducts(query) {
+            try {
+                const response = await fetch(`${API_URL}/search.php?q=${encodeURIComponent(query)}&limit=5`);
+                return await response.json();
+            } catch (error) {
+                console.error('Search error:', error);
+                return { success: false, message: error.message, results: [] };
+            }
+        }
+        
+        // Handle search input
+        function handleSearchInput(event) {
+            const query = event.target.value.trim();
+            const searchResults = document.getElementById('search-results');
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Hide results if query too short
+            if (query.length < 2) {
+                searchResults.classList.remove('show');
+                return;
+            }
+            
+            // Set timeout to avoid making requests on each keystroke
+            searchTimeout = setTimeout(async () => {
+                const results = await searchProducts(query);
                 
-                // Add click event to search items
-                document.querySelectorAll('.search-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        window.location.href = `sproduct.html?id=${item.getAttribute('data-id')}`;
+                if (results.success && results.results.length > 0) {
+                    // Render search results
+                    searchResults.innerHTML = results.results.map(product => `
+                        <div class="search-item" data-id="${product.id_produit}">
+                            <img src="${product.image || 'img/products/default.jpg'}" alt="${product.nom_produit}">
+                            <div class="search-item-details">
+                                <div class="search-item-name">${product.nom_produit}</div>
+                                <div class="search-item-category">${product.nom_categorie}</div>
+                                <div class="search-item-price">$${parseFloat(product.prix).toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Add click event to search items
+                    document.querySelectorAll('.search-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            window.location.href = `sproduct.html?id=${item.getAttribute('data-id')}`;
+                        });
+                    });
+                    
+                    searchResults.classList.add('show');
+                } else {
+                    searchResults.innerHTML = '<div class="search-item no-results">No products found</div>';
+                    searchResults.classList.add('show');
+                }
+            }, 300);
+        }
+        
+        // Search button click handler
+        function handleSearchButtonClick() {
+            const searchInput = document.getElementById('search-input');
+            const query = searchInput.value.trim();
+            
+            if (query.length >= 2) {
+                window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
+            }
+        }
+        
+        // Close search when clicking outside
+        function handleDocumentClick(event) {
+            const searchContainer = document.getElementById('search-container');
+            const searchToggle = document.querySelector('.fa-search');
+            
+            if (searchContainer && searchContainer.classList.contains('active')) {
+                // If click is outside search container and not on search toggle
+                if (!searchContainer.contains(event.target) && 
+                    event.target !== searchToggle && 
+                    !searchToggle.contains(event.target)) {
+                    toggleSearchBar();
+                }
+            }
+        }
+        
+        // Initialize module
+        function init() {
+            document.addEventListener('DOMContentLoaded', () => {
+                // Set up search functionality
+                const searchInput = document.getElementById('search-input');
+                const searchButton = document.getElementById('search-button');
+                
+                if (searchInput) {
+                    searchInput.addEventListener('input', handleSearchInput);
+                    
+                    // Handle Enter key press
+                    searchInput.addEventListener('keypress', (event) => {
+                        if (event.key === 'Enter') {
+                            handleSearchButtonClick();
+                        }
+                    });
+                }
+                
+                if (searchButton) {
+                    searchButton.addEventListener('click', handleSearchButtonClick);
+                }
+                
+                // Close search when clicking outside
+                document.addEventListener('click', handleDocumentClick);
+                
+                // Set up search toggle
+                const searchToggles = document.querySelectorAll('.fa-search');
+                searchToggles.forEach(toggle => {
+                    toggle.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        toggleSearchBar();
                     });
                 });
-                
-                searchResults.classList.add('show');
-            } else {
-                searchResults.innerHTML = '<div class="search-item no-results">No products found</div>';
-                searchResults.classList.add('show');
-            }
-        }, 300);
-    }
-    
-    // Search button click handler
-    function handleSearchButtonClick() {
-        const searchInput = document.getElementById('search-input');
-        const query = searchInput.value.trim();
-        
-        if (query.length >= 2) {
-            window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
-        }
-    }
-    
-    // Close search when clicking outside
-    function handleDocumentClick(event) {
-        const searchContainer = document.getElementById('search-container');
-        const searchToggle = document.querySelector('.fa-search');
-        
-        if (searchContainer && searchContainer.classList.contains('active')) {
-            // If click is outside search container and not on search toggle
-            if (!searchContainer.contains(event.target) && 
-                event.target !== searchToggle && 
-                !searchToggle.contains(event.target)) {
-                toggleSearchBar();
-            }
-        }
-    }
-    
-    // Initialize module
-    function init() {
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set up search functionality
-            const searchInput = document.getElementById('search-input');
-            const searchButton = document.getElementById('search-button');
-            
-            if (searchInput) {
-                searchInput.addEventListener('input', handleSearchInput);
-                
-                // Handle Enter key press
-                searchInput.addEventListener('keypress', (event) => {
-                    if (event.key === 'Enter') {
-                        handleSearchButtonClick();
-                    }
-                });
-            }
-            
-            if (searchButton) {
-                searchButton.addEventListener('click', handleSearchButtonClick);
-            }
-            
-            // Close search when clicking outside
-            document.addEventListener('click', handleDocumentClick);
-            
-            // Set up search toggle
-            const searchToggles = document.querySelectorAll('.fa-search');
-            searchToggles.forEach(toggle => {
-                toggle.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    toggleSearchBar();
-                });
             });
-        });
-    }
-    
-    // Call init function
-    init();
-    
-    // Public API
-    return {
-        toggleSearchBar,
-        searchProducts
-    };
-})();
+        }
+        
+        // Call init function
+        init();
+        
+        // Public API
+        return {
+            toggleSearchBar,
+            searchProducts
+        };
+    })();
+}
 
 // Mobile navigation
 document.addEventListener('DOMContentLoaded', () => {
@@ -567,6 +630,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelector('.filter-container')) {
         initializeFilters();
     }
+    
+    // Update cart count safely
+    if (typeof FitZoneCart !== 'undefined' && typeof FitZoneCart.updateCartCount === 'function') {
+        try {
+            FitZoneCart.updateCartCount();
+        } catch(e) {
+            console.warn('Error updating cart count:', e);
+        }
+    }
 });
 
 // Global search toggle function
@@ -590,4 +662,57 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make toggleSearchBar available globally
     window.toggleSearchBar = toggleSearchBar;
+});
+
+// Add to cart functionality
+function addToCart(productId, quantity = 1) {
+    try {
+        // Check which function is available in FitZoneCart
+        if (FitZoneCart && typeof FitZoneCart.addToCart === 'function') {
+            FitZoneCart.addToCart(productId, quantity);
+        } else if (FitZoneCart && typeof FitZoneCart.addItem === 'function') {
+            FitZoneCart.addItem(productId, quantity);
+        } else {
+            console.error('Cart add function not available');
+        }
+        
+        // Show success message
+        showToast(`Product added to cart!`);
+        
+        // Update cart count
+        if (typeof FitZoneCart.updateCartCount === 'function') {
+            FitZoneCart.updateCartCount();
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+        showToast('Failed to add product to cart', 'error');
+    }
+}
+
+// Add event listener for all "Add to Cart" buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click event for all cart buttons
+    document.querySelectorAll('.add-to-cart, .cart, button[data-action="add-to-cart"]').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Get product container
+            const productElement = e.currentTarget.closest('.pro') || e.currentTarget.closest('#prodetails');
+            if (!productElement) return;
+            
+            // Get product ID
+            const productId = productElement.getAttribute('data-id');
+            if (!productId) return;
+            
+            // Get quantity (default to 1)
+            let quantity = 1;
+            const quantityInput = productElement.querySelector('input[type="number"]');
+            if (quantityInput) {
+                quantity = parseInt(quantityInput.value) || 1;
+            }
+            
+            // Call addToCart function
+            addToCart(productId, quantity);
+        });
+    });
 });

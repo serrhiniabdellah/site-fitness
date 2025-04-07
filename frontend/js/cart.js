@@ -1,357 +1,286 @@
 /**
- * FitZone Cart Module
- * Handles shopping cart functionality for both guest and logged-in users
+ * FitZone Cart Module v1.3
+ * Handles shopping cart operations
  */
 const FitZoneCart = (function() {
-    const API_URL = CONFIG?.API_URL || 'http://localhost/site_fitness/backend/api';
-    const CART_KEY = 'fitzone_cart';
+    // Constants
+    const CART_STORAGE_KEY = 'fitzone_cart';
+    const CART_COUNT_SELECTOR = '.cart-count';
     
-    // Get cart from localStorage
-    function getLocalCart() {
-        const cartJSON = localStorage.getItem(CART_KEY);
-        return cartJSON ? JSON.parse(cartJSON) : [];
-    }
+    // The cart data structure
+    let cart = {
+        items: [],
+        total: 0
+    };
     
-    // Save cart to localStorage
-    function saveLocalCart(cart) {
-        localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    }
-    
-    // Update cart count in UI
-    function updateCartCount() {
-        const cart = getLocalCart();
-        const totalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
+    /**
+     * Initialize cart from local storage
+     */
+    function init() {
+        loadCart();
+        updateCartCountDisplay();
         
-        const cartCountElements = document.querySelectorAll('.cart-count');
-        if (cartCountElements) {
-            cartCountElements.forEach(element => {
-                element.textContent = totalItems;
-                element.style.display = totalItems > 0 ? 'block' : 'none';
-            });
-        }
-    }
-    
-    // Add item to cart (works for both logged in and guest users)
-    async function addToCart(productId, quantity = 1, options = {}) {
-        try {
-            // Check if user is logged in
-            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-            
-            if (isLoggedIn) {
-                // Add to server-side cart
-                const user = FitZoneAuth.getCurrentUser();
-                const token = FitZoneAuth.getToken();
+        // Add event listeners to cart icons
+        document.addEventListener('click', function(event) {
+            // Check if the click was on an add to cart icon
+            if (event.target.classList.contains('cart') || 
+                event.target.closest('.fa-shopping-cart') || 
+                event.target.closest('.cart')) {
                 
-                const response = await fetch(`${API_URL}/cart/add.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id_utilisateur,
-                        product_id: productId,
-                        quantity: quantity,
-                        ...options
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('Product added to cart!');
-                    
-                    // Update local cart count based on server response
-                    if (result.cart && result.cart.total_items) {
-                        updateServerCartCount(result.cart.total_items);
-                    } else {
-                        // Fallback to local count update
-                        updateCartCount();
+                // Find the closest product container
+                const productElement = event.target.closest('.pro');
+                if (productElement) {
+                    event.preventDefault();
+                    // Extract product ID and add to cart
+                    const productId = productElement.getAttribute('data-id');
+                    if (productId) {
+                        addToCart(productId);
                     }
-                    
-                    return { success: true };
-                } else {
-                    throw new Error(result.message || 'Failed to add item to cart');
                 }
-            } else {
-                // Add to local cart
-                const product = await getProductDetails(productId);
-                
-                if (!product) {
-                    throw new Error('Product not found');
-                }
-                
-                addToLocalCart(product, quantity, options);
-                alert('Product added to cart!');
-                updateCartCount();
-                
-                return { success: true };
             }
-        } catch (error) {
-            console.error('Error adding to cart:', error);
-            alert('Failed to add product to cart: ' + error.message);
-            return { success: false, message: error.message };
-        }
-    }
-    
-    // Get product details by ID
-    async function getProductDetails(productId) {
-        try {
-            // First try to get product from local products.js
-            if (typeof getProductById === 'function') {
-                return getProductById(productId);
-            }
-            
-            // If not found locally, try to get from API
-            const response = await fetch(`${API_URL}/products/get.php?id=${productId}`);
-            const result = await response.json();
-            
-            if (result.success) {
-                return result.product;
-            } else {
-                throw new Error(result.message || 'Product not found');
-            }
-        } catch (error) {
-            console.error('Error getting product details:', error);
-            throw error;
-        }
-    }
-    
-    // Add item to local cart
-    function addToLocalCart(product, quantity, options = {}) {
-        const cart = getLocalCart();
+        });
         
-        // Check if product is already in cart with same options
-        const existingItemIndex = cart.findIndex(item => {
-            if (item.id !== product.id) return false;
+        // Log initial cart state
+        console.log('Cart initialized:', cart);
+    }
+    
+    /**
+     * Load cart from local storage
+     */
+    function loadCart() {
+        try {
+            const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+            if (savedCart) {
+                cart = JSON.parse(savedCart);
+                if (!cart.items) cart.items = []; // Ensure items array exists
+                if (typeof cart.total !== 'number') cart.total = calculateTotal(); // Recalculate if missing
+            }
+        } catch (error) {
+            console.error('Failed to load cart from storage:', error);
+            resetCart();
+        }
+    }
+    
+    /**
+     * Save cart to local storage
+     */
+    function saveCart() {
+        try {
+            localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+        } catch (error) {
+            console.error('Failed to save cart to storage:', error);
+        }
+    }
+    
+    /**
+     * Reset cart to empty state
+     */
+    function resetCart() {
+        cart = {
+            items: [],
+            total: 0
+        };
+        saveCart();
+    }
+    
+    /**
+     * Add item to cart or increase quantity if exists
+     */
+    async function addToCart(productId, quantity = 1) {
+        if (!productId) return false;
+        
+        try {
+            // Fetch product details if not provided
+            const product = await getProductDetails(productId);
+            if (!product) return false;
             
-            // Check if options match (e.g., size, flavor, etc.)
-            for (const key in options) {
-                if (item.options?.[key] !== options[key]) {
-                    return false;
-                }
+            // Find if product already exists in cart
+            const existingItem = cart.items.find(item => item.id === productId);
+            
+            if (existingItem) {
+                // Update quantity
+                existingItem.quantity += quantity;
+            } else {
+                // Add new item
+                cart.items.push({
+                    id: productId,
+                    name: product.name,
+                    price: product.price,
+                    image: product.image,
+                    quantity: quantity
+                });
             }
             
+            // Recalculate total
+            cart.total = calculateTotal();
+            
+            // Save updated cart
+            saveCart();
+            
+            // Update UI
+            updateCartCountDisplay();
+            
+            // Show success message
+            showAddToCartMessage(product.name);
+            
+            console.log(`Added product ${productId} to cart`);
             return true;
-        });
-        
-        if (existingItemIndex !== -1) {
-            // Update quantity if item exists
-            cart[existingItemIndex].quantity += quantity;
-        } else {
-            // Add new item
-            cart.push({
-                id: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.image,
-                quantity: quantity,
-                options: Object.keys(options).length > 0 ? options : undefined
-            });
-        }
-        
-        saveLocalCart(cart);
-    }
-    
-    // Update cart count based on server response
-    function updateServerCartCount(count) {
-        const cartCountElements = document.querySelectorAll('.cart-count');
-        if (cartCountElements) {
-            cartCountElements.forEach(element => {
-                element.textContent = count;
-                element.style.display = count > 0 ? 'block' : 'none';
-            });
-        }
-    }
-    
-    // Remove item from cart
-    async function removeFromCart(productId, options = {}) {
-        try {
-            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-            
-            if (isLoggedIn) {
-                // Remove from server cart
-                const user = FitZoneAuth.getCurrentUser();
-                const token = FitZoneAuth.getToken();
-                
-                const response = await fetch(`${API_URL}/cart/remove.php`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        user_id: user.id_utilisateur,
-                        product_id: productId,
-                        ...options
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    // Update cart count from server
-                    if (result.cart && result.cart.total_items) {
-                        updateServerCartCount(result.cart.total_items);
-                    }
-                    
-                    return { success: true };
-                } else {
-                    throw new Error(result.message || 'Failed to remove item from cart');
-                }
-            } else {
-                // Remove from local cart
-                removeFromLocalCart(productId, options);
-                updateCartCount();
-                return { success: true };
-            }
         } catch (error) {
-            console.error('Error removing from cart:', error);
-            return { success: false, message: error.message };
-        }
-    }
-    
-    // Remove item from local cart
-    function removeFromLocalCart(productId, options = {}) {
-        let cart = getLocalCart();
-        
-        cart = cart.filter(item => {
-            // Different product ID -> keep item
-            if (item.id !== productId) return true;
-            
-            // Check if options match
-            for (const key in options) {
-                if (item.options?.[key] !== options[key]) {
-                    return true; // Keep item if any option is different
-                }
-            }
-            
-            // If we get here, this is the item to remove
+            console.error('Failed to add product to cart:', error);
             return false;
-        });
+        }
+    }
+    
+    /**
+     * Alias for addToCart to maintain compatibility with script.js
+     */
+    function addItem(productId, quantity = 1) {
+        return addToCart(productId, quantity);
+    }
+    
+    /**
+     * Display add to cart success message
+     */
+    function showAddToCartMessage(productName) {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = 'cart-toast';
+        toast.innerHTML = `
+            <div class="cart-toast-content">
+                <i class="fas fa-check-circle"></i>
+                <span>${productName} added to cart!</span>
+                <a href="cart.html">View Cart</a>
+            </div>
+        `;
         
-        saveLocalCart(cart);
+        // Add to document
+        document.body.appendChild(toast);
+        
+        // Show with animation
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                document.body.removeChild(toast);
+            }, 500);
+        }, 3000);
     }
     
-    // Merge local cart with server cart on login
-    async function mergeCartsOnLogin() {
+    /**
+     * Get product details by ID
+     */
+    async function getProductDetails(productId) {
+        // First check if we can find it on the page
+        const productElement = document.querySelector(`.pro[data-id="${productId}"]`);
+        
+        if (productElement) {
+            // Extract product details from DOM
+            const nameElement = productElement.querySelector('h5');
+            const priceElement = productElement.querySelector('h4');
+            const imageElement = productElement.querySelector('img');
+            
+            // Parse price from text (remove $ and convert to number)
+            const priceText = priceElement ? priceElement.textContent : '';
+            const price = parseFloat(priceText.replace(/[^\d.-]/g, ''));
+            
+            return {
+                id: productId,
+                name: nameElement ? nameElement.textContent : 'Product',
+                price: isNaN(price) ? 0 : price,
+                image: imageElement ? imageElement.getAttribute('src') : ''
+            };
+        }
+        
+        // If we couldn't find it on the page, try API
         try {
-            const localCart = getLocalCart();
+            const response = await fetch(`${CONFIG.API_URL}/products/${productId}.php`);
+            const data = await response.json();
             
-            // If local cart is empty, nothing to merge
-            if (localCart.length === 0) return;
-            
-            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-            
-            if (!isLoggedIn) return;
-            
-            // Transfer local cart items to server
-            const user = FitZoneAuth.getCurrentUser();
-            const token = FitZoneAuth.getToken();
-            
-            const response = await fetch(`${API_URL}/cart/merge.php`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    user_id: user.id_utilisateur,
-                    cart_items: localCart
-                })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                // Clear local cart after successful merge
-                saveLocalCart([]);
-                
-                // Update cart count from server
-                if (result.cart && result.cart.total_items) {
-                    updateServerCartCount(result.cart.total_items);
-                }
-            } else {
-                console.warn('Failed to merge carts:', result.message);
+            if (data.success && data.data) {
+                return {
+                    id: productId,
+                    name: data.data.nom || 'Product',
+                    price: data.data.prix || 0,
+                    image: data.data.image || ''
+                };
             }
         } catch (error) {
-            console.error('Error merging carts:', error);
+            console.error(`Failed to get product details for ${productId}:`, error);
         }
+        
+        // If all else fails, return basic data
+        return {
+            id: productId,
+            name: 'Product',
+            price: 0,
+            image: ''
+        };
     }
     
-    // Get cart contents (from server if logged in, or local if not)
-    async function getCart() {
-        try {
-            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-            
-            if (isLoggedIn) {
-                // Get cart from server
-                const user = FitZoneAuth.getCurrentUser();
-                const token = FitZoneAuth.getToken();
-                
-                const response = await fetch(`${API_URL}/cart/get.php`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.cart;
-                } else {
-                    throw new Error(result.message || 'Failed to load cart');
-                }
-            } else {
-                // Return local cart with product details
-                const localCart = getLocalCart();
-                const cartWithDetails = await Promise.all(
-                    localCart.map(async (item) => {
-                        try {
-                            const product = await getProductDetails(item.id);
-                            return {
-                                ...item,
-                                product_details: product
-                            };
-                        } catch (error) {
-                            console.warn(`Error getting details for product ${item.id}:`, error);
-                            return item;
-                        }
-                    })
-                );
-                
-                return { items: cartWithDetails, total: calculateCartTotal(cartWithDetails) };
-            }
-        } catch (error) {
-            console.error('Error getting cart:', error);
-            throw error;
-        }
+    /**
+     * Update cart count display in UI
+     */
+    function updateCartCountDisplay() {
+        const count = getCartItemCount();
+        const countElements = document.querySelectorAll(CART_COUNT_SELECTOR);
+        
+        countElements.forEach(element => {
+            element.textContent = count;
+        });
     }
     
-    // Calculate total price for a cart
-    function calculateCartTotal(cart) {
-        return cart.reduce((total, item) => {
-            return total + (item.price * item.quantity);
-        }, 0);
+    // Alias for updateCartCountDisplay for script.js compatibility
+    function updateCartCount() {
+        updateCartCountDisplay();
     }
     
-    // Listen for login event to merge carts
-    window.addEventListener('user:login', mergeCartsOnLogin);
+    /**
+     * Get total number of items in cart
+     */
+    function getCartItemCount() {
+        return cart.items.reduce((total, item) => total + item.quantity, 0);
+    }
     
-    // Initialize cart on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        updateCartCount();
-    });
+    /**
+     * Calculate total price of items in cart
+     */
+    function calculateTotal() {
+        return cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    }
     
-    // Return public API
+    /**
+     * Get all cart items
+     */
+    function getCartItems() {
+        return [...cart.items];
+    }
+    
+    /**
+     * Get cart total
+     */
+    function getCartTotal() {
+        return cart.total;
+    }
+    
+    // Public API
     return {
-        getLocalCart,
-        saveLocalCart,
+        init,
         addToCart,
-        removeFromCart,
-        updateCartCount,
-        getCart,
-        mergeCartsOnLogin
+        addItem, // Add this alias for script.js compatibility
+        getCartItems,
+        getCartTotal,
+        getCartItemCount,
+        updateCartCountDisplay,
+        updateCartCount, // Add this alias function
+        resetCart
     };
 })();
+
+// Initialize cart when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    FitZoneCart.init();
+});

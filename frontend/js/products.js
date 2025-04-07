@@ -374,3 +374,25 @@ function generateStarRating(rating) {
     
     return starsHTML;
 }
+
+// Function to generate product HTML
+function generateProductHTML(product) {
+    // Ensure the product has a unique ID
+    const productId = product.id || `product-${Math.random().toString(36).substr(2, 9)}`;
+    const stars = generateStarRating(product.rating || 5);
+    
+    return `
+        <div class="pro" data-category="${product.category || ''}" data-id="${productId}">
+            <img src="${product.image}" alt="${product.name}">
+            <div class="des">
+                <span>${product.brand || 'Brand'}</span>
+                <h5>${product.name}</h5>
+                <div class="star">
+                    ${stars}
+                </div>
+                <h4>$${product.price.toFixed(2)}</h4>
+            </div>
+            <a href="#" class="add-to-cart"><i class="fal fa-shopping-cart cart"></i></a>
+        </div>
+    `;
+}

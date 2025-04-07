@@ -4,54 +4,85 @@
 (function() {
     // Configuration
     const config = {
-        // WebSocket URL for LiveReload (make sure to use proper URL format)
+        // WebSocket URL for LiveReload - ensure proper URL format
         websocketUrl: 'ws://127.0.0.1:35729/livereload',
         // Max reconnection attempts
-        maxReconnectAttempts: 3,
+        maxReconnectAttempts: 5,
         // Current reconnection attempt
-        currentReconnectAttempt: 0
+        currentReconnectAttempt: 0,
+        // How often to check for changes (milliseconds)
+        reloadInterval: 1000
     };
     
     let socket = null;
     
+    /**
+     * Ensure WebSocket URL has proper format
+     */
+    function fixWebSocketUrl(url) {
+        // Handle the specific problematic case
+        if (url === 'ws127.0.0.1:35729/livereload') {
+            return 'ws://127.0.0.1:35729/livereload';
+        }
+        
+        // If URL already has proper format, return as is
+        if (url.startsWith('ws://') || url.startsWith('wss://')) {
+            return url;
+        }
+        
+        // Fix URLs that start with ws followed by a number
+        if (url.match(/^ws[0-9]/)) {
+            return 'ws://' + url.substring(2);
+        }
+        
+        // Fix URLs that start with wss followed by a number
+        if (url.match(/^wss[0-9]/)) {
+            return 'wss://' + url.substring(3);
+        }
+        
+        // For any other URLs starting with ws but missing ://
+        if (url.startsWith('ws') && !url.includes('://')) {
+            return 'ws://' + url.substring(2);
+        }
+        
+        return url;
+    }
+    
     function initWebSocket() {
-        // Stop trying if we've reached max attempts
+        // Skip if max attempts reached
         if (config.currentReconnectAttempt >= config.maxReconnectAttempts) {
             console.log('Maximum reconnection attempts reached. Live reload disabled.');
             return;
         }
         
         try {
-            // Use the global URL fixer if available
-            let safeUrl = config.websocketUrl;
-            if (typeof window.fixWebSocketUrl === 'function') {
-                safeUrl = window.fixWebSocketUrl(config.websocketUrl);
+            // Use global WebSocket URL fixer if available
+            let url = config.websocketUrl;
+            if (window.fixWebSocketUrl) {
+                url = window.fixWebSocketUrl(url);
             } else {
-                // Backup URL fixing logic if global function isn't available
-                if (safeUrl.match(/^ws[0-9]/)) {
-                    safeUrl = safeUrl.replace(/^ws/, 'ws://');
-                }
+                url = fixWebSocketUrl(url);
             }
             
-            console.log('Connecting to reload WebSocket:', safeUrl);
+            console.log('Connecting to reload WebSocket:', url);
             
-            // Create WebSocket connection
-            socket = new WebSocket(safeUrl);
+            // Use window.__originalWebSocket if available (to avoid patched version)
+            const WebSocketConstructor = window.__originalWebSocket || window.WebSocket;
+            socket = new WebSocketConstructor(url);
             
             socket.onopen = function() {
-                console.log('Reload WebSocket connected');
+                console.log('Reload WebSocket connected successfully');
                 config.currentReconnectAttempt = 0;
             };
             
             socket.onmessage = function(event) {
-                console.log('Reload message received');
                 try {
                     const data = JSON.parse(event.data);
                     if (data.command === 'reload') {
                         window.location.reload();
                     }
-                } catch (error) {
-                    console.error('Error parsing WebSocket message:', error);
+                } catch (e) {
+                    console.error('Error processing reload message:', e);
                 }
             };
             
@@ -82,19 +113,16 @@
         }
     }
     
-    // Only run in development mode
-    if ((window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') && 
-        !window.location.href.startsWith('chrome-extension://')) {
+    // Start WebSocket connection only in development mode
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
         console.log('Development mode detected, initializing live reload');
         
-        // Wait for document to be ready
+        // Wait for document to be ready before initializing
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("LiveReload initialized. Page ready for automatic refresh.");
+            console.log('LiveReload initialized. Page ready for automatic refresh.');
             
-            // Start the WebSocket connection after a short delay to ensure URL fixer is ready
-            setTimeout(initWebSocket, 500);
+            // Slight delay to ensure all WebSocket patches are applied
+            setTimeout(initWebSocket, 300);
         });
-    } else {
-        console.log('Not in development mode, reload functionality disabled');
     }
 })();

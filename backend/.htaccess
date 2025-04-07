@@ -14,14 +14,34 @@ RewriteRule ^api/v1/(.*)$ api/$1 [L]
 
 # Enable CORS
 <IfModule mod_headers.c>
-    # Allow requests from development server and other origins
-    Header always set Access-Control-Allow-Origin "*"
+    # Remove any existing CORS headers to prevent duplicates
+    Header unset Access-Control-Allow-Origin
+    Header unset Access-Control-Allow-Methods
+    Header unset Access-Control-Allow-Headers
+    Header unset Access-Control-Allow-Credentials
+    
+    # Set CORS headers - allow specific origin
+    SetEnvIf Origin "http://127.0.0.1:5500" CORS_ORIGIN=$0
+    SetEnvIf Origin "http://localhost:5500" CORS_ORIGIN=$0
+    SetEnvIf Origin "http://localhost" CORS_ORIGIN=$0
+    Header always set Access-Control-Allow-Origin %{CORS_ORIGIN}e env=CORS_ORIGIN
+    
+    # If no matching origin, use * for public resources
+    Header always set Access-Control-Allow-Origin "*" env=!CORS_ORIGIN
+    
+    # Other CORS headers
     Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    Header always set Access-Control-Allow-Credentials "true"
+    Header always set Access-Control-Allow-Credentials "true" env=CORS_ORIGIN
     
-    # Handle OPTIONS method for CORS preflight requests
+    # Handle OPTIONS method
     RewriteEngine On
     RewriteCond %{REQUEST_METHOD} OPTIONS
     RewriteRule ^(.*)$ $1 [R=200,L]
+</IfModule>
+
+# PHP Settings
+<IfModule mod_php7.c>
+    php_flag display_errors On
+    php_value error_reporting E_ALL
 </IfModule>

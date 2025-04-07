@@ -152,23 +152,38 @@ const FitZoneWebSocket = (function() {
     function formatUrl(url) {
         if (!url) return url;
         
+        // Track the original URL for logging
+        const originalUrl = url;
+        
+        // Handle ALL variations of the problematic Chrome extension URL
+        if (url === 'ws127.0.0.1:35729/livereload' || 
+            url === 'ws127.0.0.1:35729' ||
+            url === 'ws127.0.0.1') {
+            console.log('Fixed Chrome extension WebSocket URL:', url);
+            return 'ws://127.0.0.1:35729/livereload';
+        }
+        
         // Fix specific problematic pattern: ws127.0.0.1 → ws://127.0.0.1
         if (url.match(/^ws[0-9]/)) {
-            url = url.replace(/^ws/, 'ws://');
+            url = url.replace(/^ws(?=[0-9])/, 'ws://');
             console.log('Fixed WebSocket URL with missing protocol separator:', url);
         }
         
         // Fix specific problematic pattern: wss127.0.0.1 → wss://127.0.0.1
         if (url.match(/^wss[0-9]/)) {
-            url = url.replace(/^wss/, 'wss://');
+            url = url.replace(/^wss(?=[0-9])/, 'wss://');
             console.log('Fixed WebSocket URL with missing protocol separator:', url);
         }
         
         // First, fix missing "://" after protocol (more general case)
         url = url.replace(/^(ws|wss)(?!\:\/\/)(.)/i, '$1://$2');
         
-        // If URL already has proper protocol, return as is
+        // If URL already has proper protocol, return it
         if (url.startsWith('ws://') || url.startsWith('wss://')) {
+            // Log if we made changes
+            if (url !== originalUrl) {
+                console.log(`WebSocket URL transformed: ${originalUrl} → ${url}`);
+            }
             return url;
         }
         

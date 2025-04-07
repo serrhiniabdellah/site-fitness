@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            color: #088178;
+        }
+        button {
+            background-color: #088178;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            cursor: pointer;
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .result {
+            margin-top: 10px;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cart Testing Page</h1>
+    <p>Use this page to test cart functionality isolated from the main site</p>
+
+    <div class="test-section">
+        <h2>Local Storage Cart</h2>
+        <button id="view-local-cart">View Cart from localStorage</button>
+        <pre id="local-cart-result" class="result"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>API Cart</h2>
+        <button id="get-api-cart">Get Cart from API</button>
+        <pre id="api-cart-result" class="result"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>Cart Manipulation</h2>
+        <button id="add-item">Add Test Item</button>
+        <button id="clear-cart">Clear Cart</button>
+        <pre id="cart-manipulation-result" class="result"></pre>
+    </div>
+
+    <div class="test-section">
+        <h2>WebSocket URL Test</h2>
+        <input type="text" id="ws-url" value="ws127.0.0.1:35729/livereload">
+        <button id="fix-ws-url">Fix URL</button>
+        <pre id="ws-url-result" class="result"></pre>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // View local storage cart
+            document.getElementById('view-local-cart').addEventListener('click', function() {
+                const result = document.getElementById('local-cart-result');
+                try {
+                    const cart = JSON.parse(localStorage.getItem('fitzone_cart')) || { items: [], total: 0 };
+                    result.textContent = JSON.stringify(cart, null, 2);
+                } catch (e) {
+                    result.textContent = `Error: ${e.message}`;
+                }
+            });
+
+            // Get cart from API
+            document.getElementById('get-api-cart').addEventListener('click', async function() {
+                const result = document.getElementById('api-cart-result');
+                result.textContent = 'Loading...';
+                
+                try {
+                    const response = await fetch('http://localhost/site_fitness/backend/api/cart/get.php', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const text = await response.text();
+                    try {
+                        const data = JSON.parse(text);
+                        result.textContent = JSON.stringify(data, null, 2);
+                    } catch (e) {
+                        result.textContent = `Parse Error: ${e.message}\nRaw response: ${text}`;
+                    }
+                } catch (e) {
+                    result.textContent = `Fetch Error: ${e.message}`;
+                }
+            });
+
+            // Add test item to cart
+            document.getElementById('add-item').addEventListener('click', function() {
+                const result = document.getElementById('cart-manipulation-result');
+                
+                try {
+                    // Get current cart
+                    let cart = JSON.parse(localStorage.getItem('fitzone_cart')) || { items: [], total: 0 };
+                    
+                    // Add test item
+                    const testItem = {
+                        id: Date.now().toString(), // unique ID based on timestamp
+                        name: 'Test Product',
+                        price: 19.99,
+                        quantity: 1,
+                        image: 'img/products/f1.jpg'
+                    };
+                    
+                    // Check if item exists
+                    const existingItemIndex = cart.items.findIndex(item => item.name === testItem.name);
+                    
+                    if (existingItemIndex > -1) {
+                        // Update quantity
+                        cart.items[existingItemIndex].quantity++;
+                    } else {
+                        // Add new item
+                        cart.items.push(testItem);
+                    }
+                    
+                    // Recalculate total
+                    cart.total = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+                    
+                    // Save cart
+                    localStorage.setItem('fitzone_cart', JSON.stringify(cart));
+                    
+                    result.textContent = 'Item added to cart: ' + JSON.stringify(testItem);
+                } catch (e) {
+                    result.textContent = `Error: ${e.message}`;
+                }
+            });
+
+            // Clear cart
+            document.getElementById('clear-cart').addEventListener('click', function() {
+                const result = document.getElementById('cart-manipulation-result');
+                
+                try {
+                    localStorage.setItem('fitzone_cart', JSON.stringify({ items: [], total: 0 }));
+                    result.textContent = 'Cart cleared';
+                } catch (e) {
+                    result.textContent = `Error: ${e.message}`;
+                }
+            });
+
+            // WebSocket URL test
+            document.getElementById('fix-ws-url').addEventListener('click', function() {
+                const result = document.getElementById('ws-url-result');
+                const url = document.getElementById('ws-url').value;
+                
+                try {
+                    // Simple WebSocket URL fixer
+                    function fixWebSocketUrl(url) {
+                        if (url === 'ws127.0.0.1:35729/livereload') {
+                            return 'ws://127.0.0.1:35729/livereload';
+                        }
+                        
+                        if (url.match(/^ws[0-9]/)) {
+                            url = url.replace(/^ws/, 'ws://');
+                        }
+                        
+                        if (url.match(/^wss[0-9]/)) {
+                            url = url.replace(/^wss/, 'wss://');
+                        }
+                        
+                        url = url.replace(/^(ws|wss)(?!\:\/\/)(.)/i, '$1://$2');
+                        
+                        return url;
+                    }
+                    
+                    const fixedUrl = fixWebSocketUrl(url);
+                    result.textContent = `Original: ${url}\nFixed: ${fixedUrl}`;
+                } catch (e) {
+                    result.textContent = `Error: ${e.message}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

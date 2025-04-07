@@ -2102,3 +2102,50 @@ body.logged-in [data-guest-only],
 body.logged-in .guest-only {
     display: none !important;
 }
+
+/* Cart Toast Notification */
+.cart-toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #ffffff;
+    border-left: 4px solid #088178;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    border-radius: 4px;
+    z-index: 1000;
+    transform: translateX(110%);
+    transition: transform 0.3s ease;
+}
+
+.cart-toast.show {
+    transform: translateX(0);
+}
+
+.cart-toast-content {
+    display: flex;
+    align-items: center;
+}
+
+.cart-toast i {
+    color: #088178;
+    font-size: 20px;
+    margin-right: 10px;
+}
+
+.cart-toast span {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+.cart-toast a {
+    margin-left: auto;
+    color: #088178;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.cart-toast a:hover {
+    text-decoration: underline;
+}

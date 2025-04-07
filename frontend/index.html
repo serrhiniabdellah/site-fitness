@@ -6,12 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone</title>
-    <!-- Load Chrome extension fix early -->
-    <script src="chrome-extension-fix.js"></script>
-    <script src="chrome-extension-reload-fix.js"></script>
-    <!-- Add CORS proxy for development -->
+    <!-- Load WebSocket fixes in proper order - ONLY ONE SHOULD APPLY -->
+    <!-- PICK ONE OF THESE OPTIONS - comment out the others -->
+    <script src="js/global-websocket-fix.js"></script>
+    <!-- <script src="chrome-extension-fix.js"></script> -->
+    <!-- <script src="chrome-extension-reload-fix.js"></script> -->
+    <!-- Add auth and CORS handlers -->
     <script src="js/cors-proxy.js"></script>
-    <!-- Add auth persistence handler -->
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-header.js"></script>
     <!-- Updated Content Security Policy -->
@@ -502,6 +503,8 @@
     <!-- Scripts -->
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/add-to-cart.js"></script>
     <script src="script.js"></script>
     
     <!-- Development only - Fixed reload script with proper WebSocket URL -->

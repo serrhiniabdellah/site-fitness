@@ -35,6 +35,16 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
     </style>
+    <!-- Load WebSocket fixes early -->
+    <script src="js/global-websocket-fix.js"></script>
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    
+    <!-- Add auth and CORS handlers -->
+    <script src="js/cors-proxy.js"></script>
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
 </head>
 
 <body>
@@ -489,10 +499,208 @@
             loadCart();
         });
     </script>
-    <!-- Add auth persistence handler -->
-    <script src="chrome-extension-fix.js"></script>
-    <script src="js/auth-persistence.js"></script>
-    <script src="js/auth-header.js"></script>
+    <!-- Important: Load core scripts in correct order -->
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/products.js"></script>
+    <script src="script.js"></script>
+
+    <script>
+    // Safe cart loading function
+    async function loadCart() {
+        try {
+            // Display loading state
+            const cartContainer = document.querySelector('.cart-items-container');
+            if (cartContainer) {
+                cartContainer.innerHTML = '<p class="loading">Loading cart items...</p>';
+            }
+            
+            // Check if we're logged in
+            const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
+            
+            // Try to get cart data from localStorage first
+            let cartData = null;
+            try {
+                const localCart = localStorage.getItem('fitzone_cart');
+                if (localCart) {
+                    cartData = JSON.parse(localCart);
+                }
+            } catch (e) {
+                console.warn('Error reading cart from localStorage:', e);
+            }
+            
+            // If no local cart data or user is logged in, try API
+            if (!cartData && isLoggedIn) {
+                try {
+                    // Make API request with auth token
+                    const token = FitZoneAuth.getToken();
+                    const userId = FitZoneAuth.getCurrentUser()?.id_utilisateur;
+                    
+                    // Use fetch with error handling
+                    const response = await fetch(`${CONFIG.API_URL}/cart/get.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ user_id: userId })
+                    });
+                    
+                    // Handle empty responses
+                    const text = await response.text();
+                    if (!text) {
+                        throw new Error('Empty response from server');
+                    }
+                    
+                    // Parse response
+                    const data = JSON.parse(text);
+                    
+                    if (data.success) {
+                        cartData = data.data;
+                    } else {
+                        throw new Error(data.message || 'Failed to load cart');
+                    }
+                } catch (e) {
+                    console.error('Error loading cart from API:', e);
+                    
+                    // Fallback to local cart if API fails
+                    if (!cartData) {
+                        cartData = { items: [], total: 0 };
+                    }
+                }
+            } else if (!cartData) {
+                // Default empty cart
+                cartData = { items: [], total: 0 };
+            }
+            
+            // Now render the cart
+            renderCart(cartData);
+            
+            return cartData;
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            
+            // Show error message
+            const cartContainer = document.querySelector('.cart-items-container');
+            if (cartContainer) {
+                cartContainer.innerHTML = '<p class="error">Failed to load cart. Please try again later.</p>';
+            }
+            
+            // Return empty cart as fallback
+            return { items: [], total: 0 };
+        }
+    }
+    
+    // Function to render cart data
+    function renderCart(cartData) {
+        const cartContainer = document.querySelector('.cart-items-container');
+        if (!cartContainer) return;
+        
+        if (!cartData.items || cartData.items.length === 0) {
+            cartContainer.innerHTML = '<tr><td colspan="6" class="empty-cart">Your cart is empty</td></tr>';
+            document.getElementById('subtotal').textContent = '$0.00';
+            document.getElementById('total').textContent = '$0.00';
+            
+            // Hide checkout button
+            const checkoutBtn = document.getElementById('checkout-btn');
+            if (checkoutBtn) checkoutBtn.style.display = 'none';
+            return;
+        }
+        
+        // Reset container
+        cartContainer.innerHTML = '';
+        
+        // Add cart items
+        cartData.items.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><a href="#" class="remove-item" data-id="${item.id}"><i class="far fa-times-circle"></i></a></td>
+                <td><img src="${item.image || 'img/products/f1.jpg'}" alt="${item.name}"></td>
+                <td>${item.name}</td>
+                <td>$${item.price.toFixed(2)}</td>
+                <td>
+                    <input type="number" value="${item.quantity}" min="1" data-id="${item.id}" class="item-quantity">
+                </td>
+                <td>$${(item.price * item.quantity).toFixed(2)}</td>
+            `;
+            cartContainer.appendChild(row);
+        });
+        
+        // Update totals
+        document.getElementById('subtotal').textContent = `$${cartData.total.toFixed(2)}`;
+        document.getElementById('total').textContent = `$${cartData.total.toFixed(2)}`;
+        
+        // Show checkout button
+        const checkoutBtn = document.getElementById('checkout-btn');
+        if (checkoutBtn) checkoutBtn.style.display = 'block';
+        
+        // Add event listeners for quantity change and removal
+        setupCartInteractions();
+    }
+    
+    // Handle cart interactions
+    function setupCartInteractions() {
+        // Handle quantity changes
+        document.querySelectorAll('.item-quantity').forEach(input => {
+            input.addEventListener('change', handleQuantityChange);
+        });
+        
+        // Handle item removal
+        document.querySelectorAll('.remove-item').forEach(btn => {
+            btn.addEventListener('click', handleRemoveItem);
+        });
+    }
+    
+    // Handle quantity changes
+    function handleQuantityChange(e) {
+        const itemId = e.target.getAttribute('data-id');
+        const newQuantity = parseInt(e.target.value);
+        
+        // Update cart
+        if (typeof FitZoneCart !== 'undefined' && FitZoneCart.updateQuantity) {
+            FitZoneCart.updateQuantity(itemId, newQuantity);
+            
+            // Reload cart display
+            loadCart();
+        }
+    }
+    
+    // Handle item removal
+    function handleRemoveItem(e) {
+        e.preventDefault();
+        
+        const itemId = e.currentTarget.getAttribute('data-id');
+        
+        // Remove from cart
+        if (typeof FitZoneCart !== 'undefined' && FitZoneCart.removeItem) {
+            FitZoneCart.removeItem(itemId);
+            
+            // Reload cart display
+            loadCart();
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make sure FitZoneAuth is defined
+        if (typeof FitZoneAuth === 'undefined') {
+            console.error('FitZoneAuth is not defined! Loading auth.js manually');
+            
+            // Create and append auth.js script as fallback
+            const authScript = document.createElement('script');
+            authScript.src = 'js/auth.js';
+            authScript.onload = function() {
+                console.log('Auth.js loaded manually');
+                loadCart();
+            };
+            document.body.appendChild(authScript);
+        } else {
+            console.log('FitZoneAuth already loaded');
+            loadCart();
+        }
+    });
+</script>
 
 </body>
 
