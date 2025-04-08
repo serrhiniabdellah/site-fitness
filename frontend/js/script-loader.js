@@ -1,8 +1,10 @@
 /**
- * Script Loader
+ * Improved Script Loader
  * Ensures scripts are loaded in the correct order with proper dependencies
  */
 (function() {
+    console.log('Script loader initializing');
+    
     // Add a way to track script loading status
     window.ScriptStatus = {};
     
@@ -14,29 +16,32 @@
         { name: 'global-cart', src: 'js/global-cart.js', depends: ['config', 'cart-service'], loaded: false }
     ];
 
-    // Load a script
+    // Load a script with better error handling
     function loadScript(script) {
         return new Promise((resolve, reject) => {
+            console.log(`Attempting to load script: ${script.name}`);
+            
             // Check if all dependencies are loaded
             if (script.depends && script.depends.length > 0) {
-                for (const dependency of script.depends) {
-                    if (!window.ScriptStatus[dependency]) {
-                        // Find the dependency in the scripts array
-                        const dependencyScript = scripts.find(s => s.name === dependency);
-                        if (dependencyScript) {
-                            // Load the dependency first, then retry this script
-                            loadScript(dependencyScript)
-                                .then(() => loadScript(script))
-                                .then(resolve)
-                                .catch(reject);
-                            return;
-                        }
-                    }
+                const unloadedDependencies = script.depends.filter(dep => !window.ScriptStatus[dep]);
+                if (unloadedDependencies.length > 0) {
+                    console.log(`Waiting for dependencies: ${unloadedDependencies.join(', ')}`);
+                    
+                    // Load dependencies first
+                    Promise.all(unloadedDependencies.map(depName => {
+                        const depScript = scripts.find(s => s.name === depName);
+                        return depScript ? loadScript(depScript) : Promise.resolve();
+                    }))
+                    .then(() => loadScript(script))
+                    .then(resolve)
+                    .catch(reject);
+                    return;
                 }
             }
             
             // Skip if script is already loaded
             if (window.ScriptStatus[script.name]) {
+                console.log(`Script ${script.name} already loaded`);
                 resolve();
                 return;
             }
@@ -44,17 +49,19 @@
             // Check if script element already exists on page
             const existingScript = document.querySelector(`script[src="${script.src}"]`);
             if (existingScript) {
+                console.log(`Script ${script.name} found in DOM`);
                 window.ScriptStatus[script.name] = true;
                 resolve();
                 return;
             }
             
             // Create and load the script
+            console.log(`Loading script: ${script.name} from ${script.src}`);
             const scriptElement = document.createElement('script');
             scriptElement.src = script.src;
             scriptElement.onload = () => {
                 window.ScriptStatus[script.name] = true;
-                console.log(`Script loaded: ${script.name}`);
+                console.log(`Script loaded successfully: ${script.name}`);
                 resolve();
             };
             scriptElement.onerror = (err) => {
@@ -64,23 +71,6 @@
             document.head.appendChild(scriptElement);
         });
     }
-    
-    // Wait for scripts to be loaded (improved version)
-    window.waitForScripts = function(scriptNames, callback) {
-        const allReady = () => scriptNames.every(name => window.ScriptStatus[name]);
-        
-        if (allReady()) {
-            callback();
-            return;
-        }
-        
-        const checkInterval = setInterval(() => {
-            if (allReady()) {
-                clearInterval(checkInterval);
-                callback();
-            }
-        }, 100);
-    };
     
     // Load all scripts in order
     async function loadAllScripts() {
@@ -93,7 +83,12 @@
         }
         
         // Dispatch event when all scripts are loaded
-        document.dispatchEvent(new CustomEvent('scripts:loaded'));
+        const allLoaded = scripts.every(script => window.ScriptStatus[script.name]);
+        console.log('All scripts loaded:', allLoaded);
+        
+        if (allLoaded) {
+            document.dispatchEvent(new CustomEvent('scripts:loaded'));
+        }
     }
     
     // Start loading scripts

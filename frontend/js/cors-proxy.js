@@ -1,83 +1,95 @@
 /**
- * CORS Proxy for Development v1.1
- * Handles CORS issues when using different origins for frontend and backend
+ * CORS Proxy for API requests
+ * Helps with local development when CORS headers aren't properly set on the backend
  */
+
 (function() {
-    console.log('CORS proxy initialized');
-    
-    // Only activate in development mode
-    if (!window.location.hostname.includes('127.0.0.1') && !window.location.hostname.includes('localhost')) {
-        console.log('Not in development mode, CORS proxy disabled');
-        return;
-    }
-    
-    // Store the original fetch function
     const originalFetch = window.fetch;
     
-    // Override fetch to add CORS handling for API requests
-    window.fetch = async function(resource, options = {}) {
-        let url = resource;
-        
-        // Convert Request objects to URL strings
-        if (resource instanceof Request) {
-            url = resource.url;
-            options = {
-                method: resource.method,
-                headers: resource.headers,
-                // ...other properties from Request
-                ...options
-            };
+    // CORS proxy URL
+    const CORS_PROXY = 'https://corsproxy.io/?';
+    
+    // Allowed domains that will bypass the CORS proxy
+    const ALLOWED_DOMAINS = [
+        '127.0.0.1',
+        'localhost'
+    ];
+    
+    // Check if URL should use CORS proxy
+    function shouldUseProxy(url) {
+        try {
+            const urlObj = new URL(url);
+            return !ALLOWED_DOMAINS.some(domain => urlObj.hostname.includes(domain));
+        } catch (e) {
+            return false;
         }
+    }
+    
+    // Override fetch to handle CORS
+    window.fetch = async function(url, options = {}) {
+        const originalOptions = {...options};
+        let modifiedOptions = {...options};
         
-        // Check if this is an API request to the backend
-        if (typeof url === 'string' && url.includes('/site_fitness/backend/api')) {
-            console.log('Intercepting API request with CORS proxy:', url);
+        try {
+            // Format URL properly
+            const isString = typeof url === 'string';
+            const urlString = isString ? url : url.url;
             
-            // Add CORS headers
-            const newOptions = {
-                ...options,
-                headers: {
-                    ...options.headers || {},
-                    'Origin': window.location.origin,
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                mode: 'cors',
-                credentials: 'include'
-            };
-            
-            try {
-                // Try the original request with modified options
-                return await originalFetch(url, newOptions);
-            } catch (error) {
-                console.warn('CORS request failed, trying alternative approach:', error);
-                
-                // If original request fails with CORS error, try a fallback approach
-                if (error.message.includes('CORS') || error.name === 'TypeError') {
-                    // For development only - display detailed error
-                    console.error('CORS Error Details:', { 
-                        url, 
-                        originalOptions: options,
-                        modifiedOptions: newOptions,
-                        error
-                    });
-                    
-                    // Show user-friendly message in console
-                    console.info('%c💡 CORS Issue Detected', 'font-size: 14px; font-weight: bold; color: orange;');
-                    console.info('%cTo fix this issue:', 'font-weight: bold;');
-                    console.info('1. Ensure your backend has proper CORS headers');
-                    console.info('2. Try serving frontend and backend from the same origin');
-                    console.info('3. Use a CORS proxy in development');
-                    
-                    // Rethrow the error with a more helpful message
-                    throw new Error(`CORS error accessing ${url}. Check the console for details.`);
+            // For API requests, add Authorization header if available
+            if (urlString.includes('/api/')) {
+                // Add headers if not exists
+                if (!modifiedOptions.headers) {
+                    modifiedOptions.headers = {};
                 }
                 
-                // If it's not a CORS error, rethrow the original error
-                throw error;
+                // Convert Headers object to plain object
+                if (modifiedOptions.headers instanceof Headers) {
+                    const plainHeaders = {};
+                    for (const [key, value] of modifiedOptions.headers.entries()) {
+                        plainHeaders[key] = value;
+                    }
+                    modifiedOptions.headers = plainHeaders;
+                }
+                
+                // Add Authorization header for API requests if token exists
+                const token = localStorage.getItem('fitzone_token');
+                if (token && !modifiedOptions.headers.Authorization) {
+                    modifiedOptions.headers.Authorization = `Bearer ${token}`;
+                }
+                
+                // For API requests to local server
+                if (urlString.includes('localhost') || urlString.includes('127.0.0.1')) {
+                    console.log('[CORS] Direct connection to API:', urlString);
+                    
+                    // Try direct connection first
+                    try {
+                        return await originalFetch(urlString, modifiedOptions);
+                    } catch (directError) {
+                        console.error('[CORS] Direct connection error:', directError);
+                        
+                        // If CSP allows, try CORS proxy as fallback
+                        try {
+                            console.log('[CORS] Trying alternate connection');
+                            // Try without CORS proxy but with different options
+                            modifiedOptions.mode = 'cors';
+                            modifiedOptions.credentials = 'include';
+                            return await originalFetch(urlString, modifiedOptions);
+                        } catch (corsError) {
+                            console.error('[CORS] Alternative connection failed');
+                            throw directError; // Throw the original error
+                        }
+                    }
+                }
             }
+            
+            // Default case, proceed with original fetch
+            return await originalFetch(url, originalOptions);
+            
+        } catch (error) {
+            console.error('[CORS] Request failed:', error);
+            throw new Error(`CORS error accessing ${url}. Check the console for details.`);
         }
-        
-        // For non-API requests, use the original fetch
-        return originalFetch(resource, options);
     };
+    
+    console.log('[CORS] CORS proxy initialized');
 })();

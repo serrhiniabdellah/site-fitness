@@ -364,11 +364,62 @@
             const checkoutBtn = document.getElementById('checkout-btn');
             const cartAddSection = document.getElementById('cart-add');
             
+            // Directly setup checkout button handler first, before any async operations
+            if (checkoutBtn) {
+                checkoutBtn.onclick = function(event) {
+                    event.preventDefault();
+                    console.log("Checkout button clicked!");
+                    
+                    // Simple check for login status
+                    const hasToken = localStorage.getItem('fitzone_token');
+                    const hasUser = localStorage.getItem('fitzone_user');
+                    const isLoggedIn = hasToken && hasUser;
+                    
+                    console.log("Login check:", {hasToken, hasUser, isLoggedIn});
+                    
+                    if (!isLoggedIn) {
+                        console.log("Not logged in, redirecting to login");
+                        window.location.href = 'login.html?redirect=checkout.html';
+                    } else {
+                        console.log("User is logged in, proceeding to checkout");
+                        window.location.href = 'checkout.html';
+                    }
+                };
+                console.log("Checkout button handler attached directly");
+            } else {
+                console.error("Checkout button not found!");
+            }
+            
             // Load cart on page load
             loadCart();
             
             // Initialize auth UI
             setupAuthUI();
+            
+            // Direct checkout button event handler - Add this first before any other code
+            if (checkoutBtn) {
+                console.log("Setting up checkout button click handler");
+                checkoutBtn.addEventListener('click', function(event) {
+                    event.preventDefault(); // Prevent any default behavior
+                    console.log("Checkout button clicked");
+                    
+                    // Check if the user is logged in using FitZoneAuth
+                    const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn && FitZoneAuth.isLoggedIn();
+                    console.log("User login status:", isLoggedIn);
+                    
+                    if (!isLoggedIn) {
+                        // User is not logged in, redirect to login page with checkout as redirect destination
+                        console.log("Redirecting to login page with checkout redirect");
+                        window.location.href = 'login.html?redirect=checkout.html';
+                    } else {
+                        // User is logged in, proceed directly to checkout
+                        console.log("Redirecting to checkout page");
+                        window.location.href = 'checkout.html';
+                    }
+                });
+            } else {
+                console.error("Checkout button not found in the DOM");
+            }
             
             // Load cart data and display it
             async function loadCart() {
@@ -379,9 +430,41 @@
                     if (cartEmpty) cartEmpty.style.display = 'none';
                     if (cartAddSection) cartAddSection.style.display = 'none';
                     
-                    // Get cart data
-                    const cart = await CartService.getCart();
-                    console.log('Cart loaded:', cart);
+                    let cart;
+                    
+                    // Get cart from CartService if available
+                    if (typeof CartService !== 'undefined' && CartService.getCart) {
+                        cart = await CartService.getCart();
+                        console.log('Cart loaded from CartService:', cart);
+                    } else {
+                        // Fallback to direct localStorage access
+                        try {
+                            // Try new format first
+                            const cartData = localStorage.getItem('fitzone_cart');
+                            if (cartData) {
+                                cart = JSON.parse(cartData);
+                            } else {
+                                // Try legacy format
+                                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                                cart = {
+                                    items: cartItems,
+                                    total: cartItems.reduce((sum, item) => {
+                                        return sum + (parseFloat(item.price || 0) * parseInt(item.quantity || 1));
+                                    }, 0)
+                                };
+                            }
+                        } catch (e) {
+                            console.error('Error parsing cart from localStorage:', e);
+                            cart = { items: [], total: 0 };
+                        }
+                        
+                        console.log('Cart loaded from localStorage:', cart);
+                    }
+                    
+                    // Make sure cart is properly structured
+                    if (!cart || !cart.items) {
+                        cart = { items: [], total: 0 };
+                    }
                     
                     // Display cart based on loaded data
                     displayCart(cart);
@@ -434,7 +517,7 @@
                     
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td><a href="#" class="remove-btn" data-id="${id}" data-variant="${variantId}"><i class="far fa-times-circle"></i></a></td>
+                        <td><a href="#" class="remove-btn" data-id="${id}" data-variant="${variantId}"><i class="far fa-times-circle"></i></td>
                         <td><img src="${image}" alt="${name}"></td>
                         <td>${name}</td>
                         <td>$${price.toFixed(2)}</td>
@@ -537,20 +620,8 @@
                     });
                 });
                 
-                // Setup checkout button
-                if (checkoutBtn) {
-                    checkoutBtn.addEventListener('click', function() {
-                        const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-                        
-                        if (!isLoggedIn) {
-                            alert('Please log in to proceed with checkout');
-                            window.location.href = 'login.html?redirect=' + encodeURIComponent('checkout.html');
-                            return;
-                        }
-                        
-                        window.location.href = 'checkout.html';
-                    });
-                }
+                // Note: We've removed the checkout button handler from this function
+                // as it's now handled separately at the top level
             }
             
             // Setup auth UI

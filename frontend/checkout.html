@@ -5,62 +5,162 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Content Security Policy that allows API calls and WebSocket connections -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - Checkout</title>
+    
+    <!-- Force break any redirection loops with this initial script -->
+    <script>
+        // Initial auth check
+        (function() {
+            try {
+                // Clear any redirect counters
+                localStorage.removeItem('checkout_redirect_count');
+                localStorage.removeItem('auth_redirect_count');
+                
+                // Direct auth check
+                const hasToken = localStorage.getItem('fitzone_token');
+                const userDataStr = localStorage.getItem('fitzone_user');
+                
+                if (!hasToken || !userDataStr) {
+                    console.log('No auth data found, redirecting to login');
+                    window.location.href = 'login.html?redirect=checkout.html&source=direct';
+                } else {
+                    try {
+                        // Verify user data can be parsed
+                        JSON.parse(userDataStr);
+                        console.log('Auth data verified before page load');
+                    } catch(e) {
+                        console.error('Invalid user data found');
+                        localStorage.removeItem('fitzone_token');
+                        localStorage.removeItem('fitzone_user');
+                        window.location.href = 'login.html?redirect=checkout.html&error=invalid_data';
+                    }
+                }
+            } catch (err) {
+                console.error('Error in initial auth check:', err);
+            }
+        })();
+    </script>
+    
+    <!-- Load WebSocket fixes early -->
+    <script src="js/global-websocket-fix.js"></script>
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    
+    <!-- Add auth and CORS handlers -->
+    <script src="js/cors-proxy.js"></script>
+    <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-header.js"></script>
+    
+    <!-- CSP policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
+    
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
-    <!-- Other existing stylesheets and meta tags -->
     
-    <!-- Include cart service script -->
-    <script src="js/cart-service.js"></script>
-    <script src="js/global-cart.js"></script>
     <style>
+        #page-header.about-header {
+            background-image: url('img/banner/b19.jpg');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        #page-header.about-header::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
+        }
+        
+        #page-header h2, 
+        #page-header p {
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
+        
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        
+        /* Checkout form styles */
         .checkout-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            padding: 40px 20px;
         }
         
         .checkout-form {
-            width: 60%;
-            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
         
-        .checkout-summary {
-            width: 35%;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
+        .form-section {
+            margin-bottom: 30px;
         }
         
-        @media (max-width: 768px) {
-            .checkout-form, .checkout-summary {
-                width: 100%;
-            }
-            
-            .checkout-summary {
-                margin-top: 20px;
-            }
+        .form-section h3 {
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
         
         .form-row {
             display: flex;
             flex-wrap: wrap;
+            gap: 20px;
             margin-bottom: 15px;
         }
         
         .form-group {
-            margin-bottom: 15px;
-            width: 100%;
-        }
-        
-        .form-row .form-group {
-            width: 48%;
-        }
-        
-        .form-row .form-group:first-child {
-            margin-right: 4%;
+            flex: 1;
+            min-width: 200px;
         }
         
         .form-group label {
@@ -70,169 +170,54 @@
         }
         
         .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #e1e1e1;
             border-radius: 4px;
         }
         
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #088178;
+        .order-summary {
+            margin-top: 30px;
         }
         
-        .payment-methods {
-            margin-top: 20px;
-        }
-        
-        .payment-method {
-            margin-bottom: 10px;
-            padding: 15px;
-            border: 1px solid #e1e1e1;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        .payment-method.active {
-            border-color: #088178;
-            background-color: rgba(8, 129, 120, 0.05);
-        }
-        
-        .payment-method-header {
-            display: flex;
-            align-items: center;
-        }
-        
-        .payment-method-header input[type="radio"] {
-            margin-right: 10px;
-        }
-        
-        .payment-method-details {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e1e1e1;
-            display: none;
-        }
-        
-        .payment-method.active .payment-method-details {
-            display: block;
-        }
-        
-        .order-summary-title {
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .order-summary-items {
-            margin-bottom: 20px;
-            max-height: 250px;
-            overflow-y: auto;
-        }
-        
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e1e1e1;
-        }
-        
-        .order-item-image {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-        
-        .order-item-details {
-            flex-grow: 1;
-        }
-        
-        .order-item-name {
-            font-weight: 500;
-        }
-        
-        .order-item-meta {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .order-item-price {
-            font-weight: 500;
-            text-align: right;
-        }
-        
-        .order-totals {
-            margin-top: 20px;
-        }
-        
-        .order-total-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
-        
-        .order-total-row.grand-total {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #e1e1e1;
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .place-order-btn {
-            width: 100%;
-            padding: 15px;
-            margin-top: 20px;
-            font-size: 16px;
-            font-weight: 600;
+        .checkout-btn {
             background-color: #088178;
-            color: #fff;
+            color: white;
+            padding: 15px 30px;
             border: none;
             border-radius: 4px;
+            font-size: 16px;
             cursor: pointer;
+            transition: all 0.3s ease;
         }
         
-        .place-order-btn:hover {
-            background-color: #066960;
-        }
-        
-        .place-order-btn:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
+        .checkout-btn:hover {
+            background-color: #066a63;
         }
         
         .error-message {
-            color: #e74c3c;
-            font-size: 14px;
-            margin-top: 5px;
+            color: #dc3545;
+            margin-top: 10px;
         }
         
-        .terms-checkbox {
-            display: flex;
-            align-items: flex-start;
-            margin-top: 20px;
-        }
-        
-        .terms-checkbox input {
-            margin-right: 10px;
-            margin-top: 5px;
-            width: auto;
+        .success-message {
+            color: #28a745;
+            margin-top: 10px;
         }
     </style>
+    
+    <!-- Include cart service script -->
+    <script src="js/config.js"></script>
+    <script src="js/cart-service.js"></script>
+    <script src="js/global-cart.js"></script>
+    <script src="js/auth.js"></script>
 </head>
 
 <body>
-
+    <!-- Standard Navbar Section -->
     <section id="header">
-        <a href="#"><img src="img/logo.png" class="logo" alt=""></a>
-
+        <a href="index.html"><img src="img/logo.png" class="logo" alt="FitZone Logo"></a>
         <div>
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
@@ -241,13 +226,25 @@
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <input type="text" id="search-input" placeholder="Search for products...">
                 <button id="search-button"><i class="fas fa-search"></i></button>
                 <div id="search-results"></div>
             </div>
@@ -261,172 +258,92 @@
 
     <section id="page-header" class="about-header">
         <h2>#checkout</h2>
-        <p>Complete Your Order</p>
+        <p>Complete your purchase securely</p>
     </section>
 
-    <section id="checkout" class="section-p1">
-        <div id="checkout-loading" class="loading-container">
-            <div class="loading-spinner">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p>Loading checkout information...</p>
-            </div>
-        </div>
-        
-        <div id="checkout-container" class="checkout-container" style="display: none;">
-            <div class="checkout-form">
-                <h2>Billing & Shipping Details</h2>
-                
-                <form id="checkout-form">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="first-name">First Name *</label>
-                            <input type="text" id="first-name" name="first_name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="last-name">Last Name *</label>
-                            <input type="text" id="last-name" name="last_name" required>
-                        </div>
-                    </div>
-                    
+    <section class="checkout-container section-p1">
+        <div class="checkout-form">
+            <div class="form-section">
+                <h3>Shipping Information</h3>
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="email">Email Address *</label>
-                        <input type="email" id="email" name="email" required>
+                        <label for="firstName">First Name*</label>
+                        <input type="text" id="firstName" required>
                     </div>
-                    
                     <div class="form-group">
-                        <label for="phone">Phone Number *</label>
-                        <input type="tel" id="phone" name="phone" required>
+                        <label for="lastName">Last Name*</label>
+                        <input type="text" id="lastName" required>
                     </div>
-                    
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="address">Street Address *</label>
-                        <input type="text" id="address" name="address" placeholder="Street Address" required>
+                        <label for="email">Email Address*</label>
+                        <input type="email" id="email" required>
                     </div>
-                    
                     <div class="form-group">
-                        <input type="text" id="address2" name="address2" placeholder="Apartment, suite, unit etc. (optional)">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone">
                     </div>
-                    
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="city">City / Town *</label>
-                            <input type="text" id="city" name="city" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="postal-code">Postal Code *</label>
-                            <input type="text" id="postal-code" name="postal_code" required>
-                        </div>
-                    </div>
-                    
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label for="country">Country *</label>
-                        <select id="country" name="country" required>
-                            <option value="">Select Country</option>
-                            <option value="FR">France</option>
+                        <label for="address">Address*</label>
+                        <input type="text" id="address" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="city">City*</label>
+                        <input type="text" id="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postalCode">Postal/ZIP Code*</label>
+                        <input type="text" id="postalCode" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="country">Country*</label>
+                        <select id="country" required>
+                            <option value="">Select a Country</option>
                             <option value="US">United States</option>
-                            <option value="UK">United Kingdom</option>
                             <option value="CA">Canada</option>
-                            <option value="AU">Australia</option>
+                            <option value="GB">United Kingdom</option>
+                            <option value="FR">France</option>
                             <option value="DE">Germany</option>
                             <!-- Add more countries as needed -->
                         </select>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="order-notes">Order Notes (optional)</label>
-                        <textarea id="order-notes" name="order_notes" rows="4" placeholder="Notes about your order, e.g. special delivery instructions"></textarea>
-                    </div>
-                    
-                    <h3>Payment Method</h3>
-                    <div class="payment-methods">
-                        <div class="payment-method" data-method="credit_card">
-                            <div class="payment-method-header">
-                                <input type="radio" name="payment_method" id="payment-credit-card" value="credit_card" checked>
-                                <label for="payment-credit-card">Credit Card</label>
-                            </div>
-                            <div class="payment-method-details">
-                                <div class="form-group">
-                                    <label for="card-number">Card Number *</label>
-                                    <input type="text" id="card-number" name="card_number" placeholder="1234 5678 9012 3456" required>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="card-expiry">Expiry Date *</label>
-                                        <input type="text" id="card-expiry" name="card_expiry" placeholder="MM/YY" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="card-cvc">CVC *</label>
-                                        <input type="text" id="card-cvc" name="card_cvc" placeholder="123" required>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="card-name">Name on Card *</label>
-                                    <input type="text" id="card-name" name="card_name" required>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="payment-method" data-method="paypal">
-                            <div class="payment-method-header">
-                                <input type="radio" name="payment_method" id="payment-paypal" value="paypal">
-                                <label for="payment-paypal">PayPal</label>
-                            </div>
-                            <div class="payment-method-details">
-                                <p>You will be redirected to PayPal to complete your purchase.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="payment-method" data-method="bank_transfer">
-                            <div class="payment-method-header">
-                                <input type="radio" name="payment_method" id="payment-bank-transfer" value="bank_transfer">
-                                <label for="payment-bank-transfer">Bank Transfer</label>
-                            </div>
-                            <div class="payment-method-details">
-                                <p>Make your payment directly into our bank account. Please use your Order ID as the payment reference.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="terms-checkbox">
-                        <input type="checkbox" id="terms-agreement" name="terms_agreement" required>
-                        <label for="terms-agreement">I have read and agree to the website <a href="#">terms and conditions</a> and <a href="#">privacy policy</a> *</label>
-                    </div>
-                </form>
+                </div>
             </div>
             
-            <div class="checkout-summary">
-                <div class="order-summary-title">
-                    <h2>Your Order</h2>
-                </div>
-                
-                <div id="order-summary-items" class="order-summary-items">
-                    <!-- Order items will be loaded dynamically here -->
-                    <div class="loading-spinner">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <span>Loading items...</span>
+            <div class="form-section">
+                <h3>Payment Method</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="payment" value="credit_card" checked> Credit Card
+                        </label>
                     </div>
                 </div>
-                
-                <div id="order-totals" class="order-totals">
-                    <div class="order-total-row">
-                        <span>Subtotal:</span>
-                        <span id="order-subtotal">$0.00</span>
-                    </div>
-                    <div class="order-total-row">
-                        <span>Shipping:</span>
-                        <span id="order-shipping">Free</span>
-                    </div>
-                    <div class="order-total-row discount" style="display: none;">
-                        <span>Discount:</span>
-                        <span id="order-discount">-$0.00</span>
-                    </div>
-                    <div class="order-total-row grand-total">
-                        <span>Total:</span>
-                        <span id="order-total">$0.00</span>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="payment" value="paypal"> PayPal
+                        </label>
                     </div>
                 </div>
-                
-                <button id="place-order-btn" class="place-order-btn">Place Order</button>
+            </div>
+            
+            <div class="order-summary">
+                <h3>Order Summary</h3>
+                <div id="cart-items">Loading cart items...</div>
+                <div id="cart-total" style="margin-top: 20px; font-weight: bold; font-size: 18px;">Total: $0.00</div>
+            </div>
+            
+            <div style="margin-top: 30px;">
+                <button id="place-order-btn" class="checkout-btn">Place Order</button>
+                <div id="checkout-message"></div>
             </div>
         </div>
     </section>
@@ -495,283 +412,332 @@
         </div>
     </footer>
 
-    <!-- Base configuration -->
-    <script src="js/config.js"></script>
-
-    <!-- Core modules -->
-    <script src="js/auth.js"></script>
-    <script src="js/products.js"></script>
-    <script src="js/cart.js"></script>
-
-    <!-- Additional modules as needed -->
     <script src="script.js"></script>
-
-    <!-- Header/navigation functionality -->
-    <script src="js/header.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is logged in
-            if (!FitZoneAuth.isLoggedIn()) {
-                // Redirect to login page with return URL
-                window.location.href = `login.html?redirect=${encodeURIComponent('checkout.html')}`;
-                return;
-            }
+            console.log('Checkout page loaded');
             
-            // Update the API URL to use the correct path to PHP
-            const API_URL = 'http://localhost/site_fitness/backend/api';
+            // Additional verification that we have auth data
+            const token = localStorage.getItem('fitzone_token');
+            const userDataStr = localStorage.getItem('fitzone_user');
             
-            // DOM Elements
-            const checkoutLoading = document.getElementById('checkout-loading');
-            const checkoutContainer = document.getElementById('checkout-container');
-            const orderSummaryItems = document.getElementById('order-summary-items');
-            const orderSubtotal = document.getElementById('order-subtotal');
-            const orderShipping = document.getElementById('order-shipping');
-            const orderDiscount = document.getElementById('order-discount');
-            const orderTotal = document.getElementById('order-total');
-            const checkoutForm = document.getElementById('checkout-form');
-            const placeOrderBtn = document.getElementById('place-order-btn');
-            const paymentMethods = document.querySelectorAll('.payment-method');
-            
-            // Authentication check
-            const user = FitZoneAuth.getCurrentUser();
-            
-            if (!user) {
-                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
-                return;
-            }
-            
-            // Load cart
-            async function loadCart() {
+            // Function to verify we're authenticated
+            function checkAuthentication() {
+                if (!token || !userDataStr) {
+                    console.error('Missing auth data after page load');
+                    // Redirect to login without any complex conditions or state to avoid loops
+                    window.location.href = 'login.html?direct=true';
+                    return false;
+                }
+                
                 try {
-                    const response = await fetch(`${API_URL}/cart/get.php`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_id: user.id_utilisateur,
-                            token: user.token
-                        })
+                    // Verify user data is valid JSON
+                    const userData = JSON.parse(userDataStr);
+                    if (!userData || !userData.id_utilisateur) {
+                        throw new Error('Invalid user data');
+                    }
+                    
+                    // Pre-fill form with user data if available
+                    if (userData.email) document.getElementById('email').value = userData.email;
+                    if (userData.prenom) document.getElementById('firstName').value = userData.prenom;
+                    if (userData.nom) document.getElementById('lastName').value = userData.nom;
+                    if (userData.telephone) document.getElementById('phone').value = userData.telephone;
+                    
+                    return true;
+                } catch (e) {
+                    console.error('Invalid user data:', e);
+                    localStorage.removeItem('fitzone_token');
+                    localStorage.removeItem('fitzone_user');
+                    window.location.href = 'login.html?direct=true';
+                    return false;
+                }
+            }
+            
+            // Immediately check authentication
+            const isAuthenticated = checkAuthentication();
+            
+            // Update UI for authenticated user
+            if (isAuthenticated) {
+                // Show account menu
+                const loginMenu = document.getElementById('account-menu-login');
+                const accountMenu = document.getElementById('account-menu-dropdown');
+                
+                if (loginMenu) loginMenu.style.display = 'none';
+                if (accountMenu) accountMenu.style.display = 'block';
+                
+                try {
+                    // Update user name in dropdown
+                    const userData = JSON.parse(userDataStr);
+                    const userNameNav = document.getElementById('user-name-nav');
+                    if (userNameNav && userData && userData.prenom) {
+                        userNameNav.textContent = userData.prenom;
+                    }
+                } catch (e) {
+                    console.error('Error updating user name:', e);
+                }
+                
+                // Set up logout functionality
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked');
+                        
+                        // Simple direct logout without complex logic
+                        localStorage.removeItem('fitzone_token');
+                        localStorage.removeItem('fitzone_user');
+                        window.location.href = 'index.html';
+                    });
+                }
+                
+                // Load cart items for checkout summary
+                loadCartItems();
+            }
+            
+            // Function to load cart items
+            async function loadCartItems() {
+                try {
+                    // Get cart items
+                    const cartItems = await CartService.getCart();
+                    console.log('Cart items:', cartItems);
+                    
+                    if (!cartItems || !cartItems.items || cartItems.items.length === 0) {
+                        // No items in cart, go back to cart
+                        window.location.href = 'cart.html?error=empty';
+                        return;
+                    }
+                    
+                    // Display cart items in checkout
+                    const cartItemsContainer = document.getElementById('cart-items');
+                    const cartTotalElement = document.getElementById('cart-total');
+                    
+                    let html = '<div style="margin-bottom: 15px;">';
+                    let total = 0;
+                    
+                    cartItems.items.forEach(item => {
+                        const name = item.nom_produit || item.name;
+                        const price = parseFloat(item.prix || item.price || 0);
+                        const quantity = parseInt(item.quantity || 1);
+                        const itemTotal = price * quantity;
+                        
+                        total += itemTotal;
+                        
+                        html += `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div>${name} x ${quantity}</div>
+                                <div>$${itemTotal.toFixed(2)}</div>
+                            </div>
+                        `;
                     });
                     
-                    const result = await response.json();
+                    html += '</div>';
+                    cartItemsContainer.innerHTML = html;
+                    cartTotalElement.textContent = `Total: $${total.toFixed(2)}`;
                     
-                    if (result.success) {
-                        // If cart is empty, redirect to cart page
-                        if (!result.cart.items || result.cart.items.length === 0) {
-                            alert('Your cart is empty');
-                            window.location.href = 'cart.html';
-                            return;
-                        }
+                    // Set up place order button
+                    const placeOrderBtn = document.getElementById('place-order-btn');
+                    placeOrderBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
                         
-                        // Display cart items
-                        displayCartItems(result.cart);
+                        // Get form data
+                        const checkoutForm = document.querySelector('.checkout-form');
+                        const isValid = validateForm();
                         
-                        // If user info is available, fill in the form
-                        if (user.prenom && user.nom && user.email) {
-                            document.getElementById('first-name').value = user.prenom;
-                            document.getElementById('last-name').value = user.nom;
-                            document.getElementById('email').value = user.email;
+                        if (isValid) {
+                            // Process order
+                            processOrder();
                         }
-                    } else {
-                        console.error('Error fetching cart:', result.message);
-                        alert('Failed to load your cart. Please try again later.');
-                        window.location.href = 'cart.html';
-                    }
+                    });
+                    
                 } catch (error) {
                     console.error('Error loading cart:', error);
-                    alert('Failed to load your cart. Please try again later.');
-                    window.location.href = 'cart.html';
-                } finally {
-                    // Hide loading spinner
-                    checkoutLoading.style.display = 'none';
-                    checkoutContainer.style.display = 'flex';
+                    document.getElementById('cart-items').innerHTML = 'Error loading cart items.';
                 }
             }
             
-            // Display cart items in order summary
-            function displayCartItems(cart) {
-                if (!cart.items || cart.items.length === 0) {
-                    orderSummaryItems.innerHTML = '<p>No items in your cart</p>';
-                    return;
-                }
-                
-                // Clear items container
-                orderSummaryItems.innerHTML = '';
-                
-                // Calculate totals
-                let subtotal = 0;
-                
-                // Display items
-                cart.items.forEach(item => {
-                    const itemTotal = item.prix * item.quantity;
-                    subtotal += itemTotal;
-                    
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'order-item';
-                    
-                    itemElement.innerHTML = `
-                        <img src="${item.image || 'img/products/default.jpg'}" alt="${item.nom_produit}" class="order-item-image">
-                        <div class="order-item-details">
-                            <div class="order-item-name">${item.nom_produit}</div>
-                            <div class="order-item-meta">
-                                <span>Quantity: ${item.quantity}</span>
-                                ${item.variant_nom ? `<span>Variant: ${item.variant_nom}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="order-item-price">
-                            <span>$${itemTotal.toFixed(2)}</span>
-                        </div>
-                    `;
-                    
-                    orderSummaryItems.appendChild(itemElement);
-                });
-                
-                // Update order summary
-                orderSubtotal.textContent = `$${subtotal.toFixed(2)}`;
-                orderTotal.textContent = `$${subtotal.toFixed(2)}`;
-            }
-            
-            // Payment method selection
-            paymentMethods.forEach(method => {
-                const radio = method.querySelector('input[type="radio"]');
-                
-                method.addEventListener('click', () => {
-                    // Check the radio button
-                    radio.checked = true;
-                    
-                    // Update active class
-                    paymentMethods.forEach(m => m.classList.remove('active'));
-                    method.classList.add('active');
-                });
-                
-                // Also handle radio button change
-                radio.addEventListener('change', () => {
-                    if (radio.checked) {
-                        paymentMethods.forEach(m => m.classList.remove('active'));
-                        method.classList.add('active');
-                    }
-                });
-            });
-            
-            // Form validation
+            // Validate form
             function validateForm() {
-                // Basic form validation
-                if (!checkoutForm.checkValidity()) {
-                    alert('Please fill in all required fields');
-                    return false;
-                }
+                const requiredFields = ['firstName', 'lastName', 'email', 'address', 'city', 'postalCode', 'country'];
+                let isValid = true;
                 
-                // Payment method specific validation
-                const activePaymentMethod = document.querySelector('.payment-method.active');
-                
-                if (!activePaymentMethod) {
-                    alert('Please select a payment method');
-                    return false;
-                }
-                
-                const paymentMethodValue = activePaymentMethod.getAttribute('data-method');
-                
-                if (paymentMethodValue === 'credit_card') {
-                    // Validate credit card fields
-                    const cardNumber = document.getElementById('card-number').value;
-                    const cardExpiry = document.getElementById('card-expiry').value;
-                    const cardCVC = document.getElementById('card-cvc').value;
-                    const cardName = document.getElementById('card-name').value;
-                    
-                    if (!cardNumber || !cardExpiry || !cardCVC || !cardName) {
-                        alert('Please fill in all credit card details');
-                        return false;
+                requiredFields.forEach(fieldId => {
+                    const field = document.getElementById(fieldId);
+                    if (!field.value.trim()) {
+                        field.style.borderColor = '#dc3545';
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '#e1e1e1';
                     }
+                });
+                
+                if (!isValid) {
+                    const messageElem = document.getElementById('checkout-message');
+                    messageElem.className = 'error-message';
+                    messageElem.textContent = 'Please fill in all required fields.';
                 }
                 
-                return true;
+                return isValid;
             }
             
-            // Place order
-            async function placeOrder() {
-                if (!validateForm()) {
-                    return;
-                }
-                
-                // Disable button and show loading state
-                placeOrderBtn.disabled = true;
-                placeOrderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                
-                // Gather form data
-                const formData = {
-                    user_id: user.id_utilisateur,
-                    token: user.token,
-                    first_name: document.getElementById('first-name').value,
-                    last_name: document.getElementById('last-name').value,
-                    email: document.getElementById('email').value,
-                    phone: document.getElementById('phone').value,
-                    address: document.getElementById('address').value,
-                    address2: document.getElementById('address2').value,
-                    city: document.getElementById('city').value,
-                    postal_code: document.getElementById('postal-code').value,
-                    country: document.getElementById('country').value,
-                    order_notes: document.getElementById('order-notes').value,
-                    payment_method: document.querySelector('input[name="payment_method"]:checked').value
-                };
-                
-                // Add payment details if credit card
-                if (formData.payment_method === 'credit_card') {
-                    formData.payment_details = {
-                        card_number: document.getElementById('card-number').value,
-                        card_expiry: document.getElementById('card-expiry').value,
-                        card_cvc: document.getElementById('card-cvc').value,
-                        card_name: document.getElementById('card-name').value
-                    };
-                }
-                
+            // Process order
+            async function processOrder() {
+                const messageElem = document.getElementById('checkout-message');
+                messageElem.textContent = '';
+                messageElem.className = '';
+
                 try {
+                    // Validate form data
+                    const firstName = document.getElementById('firstName').value.trim();
+                    const lastName = document.getElementById('lastName').value.trim();
+                    const email = document.getElementById('email').value.trim();
+                    const address = document.getElementById('address').value.trim();
+                    const city = document.getElementById('city').value.trim();
+                    const postalCode = document.getElementById('postalCode').value.trim();
+                    const country = document.getElementById('country').value.trim();
+                    const phone = document.getElementById('phone') ? document.getElementById('phone').value.trim() : '';
+                    
+                    const paymentMethod = document.querySelector('input[name="payment"]:checked');
+                    
+                    // Validate form fields
+                    if (!firstName || !lastName || !email || !address || !city || !postalCode || !country) {
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = 'Please fill in all required fields.';
+                        return;
+                    }
+                    
+                    if (!paymentMethod) {
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = 'Please select a payment method.';
+                        return;
+                    }
+                    
+                    // Get current cart
+                    let cart;
+                    try {
+                        if (typeof CartService !== 'undefined' && CartService.getCart) {
+                            cart = await CartService.getCart();
+                        } else {
+                            // Fallback to direct localStorage access
+                            const cartData = localStorage.getItem('fitzone_cart');
+                            if (cartData) {
+                                cart = JSON.parse(cartData);
+                            } else {
+                                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                                cart = {
+                                    items: cartItems,
+                                    total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error retrieving cart:', e);
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = 'Error retrieving your cart. Please try again.';
+                        return;
+                    }
+
+                    // Validate cart
+                    if (!cart || !cart.items || cart.items.length === 0) {
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = 'Your cart is empty. Please add items to your cart before checkout.';
+                        return;
+                    }
+
+                    // Show processing message
+                    messageElem.className = 'info-message';
+                    messageElem.textContent = 'Processing your order...';
+
+                    // Prepare order data
+                    const orderData = {
+                        shipping_info: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: email,
+                            phone: phone,
+                            address: address,
+                            city: city,
+                            postal_code: postalCode,
+                            country: country
+                        },
+                        cart: cart,
+                        payment_method: paymentMethod.value,
+                        shipping_cost: 0 // Free shipping for now
+                    };
+
+                    console.log('Sending order data:', orderData);
+                    
+                    // Get authorization token
+                    const token = localStorage.getItem('fitzone_token');
+                    if (!token) {
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = 'Authentication required. Please log in again.';
+                        setTimeout(() => {
+                            window.location.href = 'login.html?redirect=checkout.html';
+                        }, 2000);
+                        return;
+                    }
+                    
                     // Send order to API
-                    const response = await fetch(`${API_URL}/orders/create.php`, {
+                    const response = await fetch(`${CONFIG.API_URL}/orders/create.php`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify(formData)
+                        body: JSON.stringify(orderData)
                     });
                     
-                    const result = await response.json();
+                    // Get response as text first for debugging
+                    const responseText = await response.text();
+                    console.log('Order API raw response:', responseText);
                     
-                    if (result.success) {
-                        // Redirect to order confirmation page
-                        window.location.href = `order-confirmation.html?order_id=${result.order_id}`;
-                    } else {
-                        alert(result.message || 'Failed to place order. Please try again.');
-                        // Re-enable button
-                        placeOrderBtn.disabled = false;
-                        placeOrderBtn.textContent = 'Place Order';
+                    // Handle non-JSON responses gracefully
+                    if (!responseText || responseText.trim() === '' || responseText.includes('<!DOCTYPE')) {
+                        throw new Error('Server returned an invalid response. Please try again later.');
                     }
+                    
+                    // Parse the response
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        console.error('Error parsing API response:', e);
+                        throw new Error('Invalid response from server. Please try again.');
+                    }
+                    
+                    if (data.success) {
+                        // Order successful
+                        messageElem.className = 'success-message';
+                        messageElem.textContent = 'Order placed successfully! Redirecting to orders page...';
+                        
+                        // Clear the cart
+                        if (typeof CartService !== 'undefined' && CartService.clearCart) {
+                            await CartService.clearCart();
+                        } else {
+                            localStorage.setItem('fitzone_cart', JSON.stringify({items: [], total: 0}));
+                            localStorage.removeItem('cartItems'); // Clear legacy format too
+                        }
+                        
+                        // Trigger cart update event
+                        document.dispatchEvent(new CustomEvent('cart:updated'));
+                        
+                        // Redirect to orders page
+                        setTimeout(() => {
+                            window.location.href = 'orders.html';
+                        }, 2000);
+                    } else {
+                        // Order failed
+                        messageElem.className = 'error-message';
+                        messageElem.textContent = data.message || 'Failed to process your order. Please try again.';
+                    }
+                    
                 } catch (error) {
-                    console.error('Error placing order:', error);
-                    alert('Error placing order. Please try again later.');
-                    // Re-enable button
-                    placeOrderBtn.disabled = false;
-                    placeOrderBtn.textContent = 'Place Order';
+                    console.error('Error processing order:', error);
+                    messageElem.className = 'error-message';
+                    messageElem.textContent = error.message || 'An error occurred while processing your order. Please try again.';
                 }
             }
-            
-            // Add event listener to place order button
-            placeOrderBtn.addEventListener('click', placeOrder);
-            
-            // Initialize checkout page
-            function initCheckout() {
-                // Set default active payment method
-                document.querySelector('.payment-method').classList.add('active');
-                
-                // Load cart
-                loadCart();
-            }
-            
-            // Initialize checkout
-            initCheckout();
         });
     </script>
 </body>
-
 </html>

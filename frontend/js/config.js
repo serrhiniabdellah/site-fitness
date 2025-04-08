@@ -22,7 +22,26 @@ const CONFIG = {
     LOGIN_EXPIRES: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
     
     // Product pagination
-    PRODUCTS_PER_PAGE: 8
+    PRODUCTS_PER_PAGE: 8,
+
+    // Site URL
+    SITE_URL: 'http://127.0.0.1:5500/frontend',
+    
+    // Feature flags
+    FEATURES: {
+        ENABLE_WISHLIST: true,
+        ENABLE_REVIEWS: true,
+        ENABLE_CART_MERGE: true
+    },
+    
+    // Cart configuration
+    CART: {
+        SAVE_IN_LOCALSTORAGE: true,
+        SYNC_WITH_SERVER: true
+    },
+    
+    // Session timeout (in minutes)
+    SESSION_TIMEOUT: 120
 };
 
 console.log('CONFIG initialized');
@@ -127,4 +146,15 @@ if (typeof CONFIG === 'undefined') {
 // Export for module systems if needed
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = window.CONFIG;
+}
+
+// Development indicator
+// Use this without re-declaring if already set
+if (typeof IS_DEV === 'undefined') {
+    const IS_DEV = window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1';
+    
+    if (IS_DEV) {
+        console.log('Running in development mode');
+    }
 }

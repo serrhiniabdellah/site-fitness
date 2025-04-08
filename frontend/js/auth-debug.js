@@ -119,3 +119,102 @@
         document.addEventListener('auth:storageChange', updateDebugInfo);
     });
 })();
+
+/**
+ * Auth debugging tool to help troubleshoot authentication issues
+ */
+(function() {
+    // Create a global debug object
+    window.AuthDebug = {
+        /**
+         * Check authentication state and log details
+         */
+        checkState: function() {
+            console.group('Auth State Check');
+            
+            // Check localStorage data
+            const token = localStorage.getItem('fitzone_token');
+            const userData = localStorage.getItem('fitzone_user');
+            const timestamp = localStorage.getItem('fitzone_login_timestamp');
+            
+            console.log('Token exists:', !!token);
+            console.log('User data exists:', !!userData);
+            console.log('Timestamp exists:', !!timestamp);
+            
+            if (token) {
+                console.log('Token length:', token.length);
+                console.log('Token preview:', token.substring(0, 10) + '...');
+            }
+            
+            if (userData) {
+                try {
+                    const user = JSON.parse(userData);
+                    console.log('User data valid JSON:', true);
+                    console.log('User ID:', user.id_utilisateur);
+                    console.log('User email:', user.email);
+                    console.log('User name:', user.prenom + ' ' + user.nom);
+                } catch (e) {
+                    console.error('User data is not valid JSON:', e);
+                }
+            }
+            
+            if (timestamp) {
+                const loginTime = new Date(parseInt(timestamp));
+                const now = new Date();
+                const elapsedMs = now.getTime() - loginTime.getTime();
+                const elapsedMinutes = Math.floor(elapsedMs / (1000 * 60));
+                
+                console.log('Login time:', loginTime.toLocaleString());
+                console.log('Current time:', now.toLocaleString());
+                console.log('Minutes since login:', elapsedMinutes);
+            }
+            
+            // Check if FitZoneAuth is loaded
+            if (typeof FitZoneAuth !== 'undefined') {
+                console.log('FitZoneAuth is loaded');
+                console.log('isLoggedIn() returns:', FitZoneAuth.isLoggedIn());
+            } else {
+                console.warn('FitZoneAuth is not loaded');
+            }
+            
+            console.log('URL parameters:', window.location.search);
+            console.log('Current URL:', window.location.href);
+            
+            console.groupEnd();
+        },
+        
+        /**
+         * Clear auth data and reset redirects
+         */
+        reset: function() {
+            localStorage.removeItem('fitzone_token');
+            localStorage.removeItem('fitzone_user');
+            localStorage.removeItem('fitzone_login_timestamp');
+            localStorage.removeItem('redirect_count');
+            console.log('Auth state reset complete');
+        },
+        
+        /**
+         * Force inject auth data (for testing)
+         */
+        mockLogin: function(userData = {}) {
+            const mockUser = {
+                id_utilisateur: 999,
+                email: 'test@example.com',
+                prenom: 'Test',
+                nom: 'User',
+                ...userData
+            };
+            
+            localStorage.setItem('fitzone_token', 'mock_token_for_testing');
+            localStorage.setItem('fitzone_user', JSON.stringify(mockUser));
+            localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
+            console.log('Mock login data injected');
+        }
+    };
+    
+    // Auto-run check if URL includes auth-debug=true
+    if (window.location.search.includes('auth-debug=true')) {
+        setTimeout(window.AuthDebug.checkState, 500);
+    }
+})();

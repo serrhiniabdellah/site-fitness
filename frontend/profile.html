@@ -13,7 +13,7 @@
     <!-- Add auth persistence handler -->
     <script src="js/auth-persistence.js"></script>
     <!-- Updated CSP to allow API and WebSocket connections -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https://corsproxy.io/* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - My Profile</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
@@ -664,45 +664,77 @@
             // Fetch order history
             async function fetchOrderHistory() {
                 try {
-                    const response = await fetch(`${CONFIG.API_URL}/orders/history.php`, {
+                    const orderHistoryElement = document.getElementById('order-history');
+                    
+                    // Show loading indicator
+                    orderHistoryElement.innerHTML = '<p>Loading your orders...</p>';
+                    
+                    // Get API URL from config or use default
+                    const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
+                        ? window.CONFIG.API_URL 
+                        : 'http://localhost/site_fitness/backend/api';
+                    
+                    // Fetch orders
+                    const response = await fetch(`${apiUrl}/orders/history.php`, {
+                        method: 'GET',
                         headers: {
                             'Authorization': `Bearer ${FitZoneAuth.getToken()}`
                         }
                     });
                     
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
+                    
                     const data = await response.json();
                     
-                    if (data.success && data.data.orders && data.data.orders.length > 0) {
-                        const orderHistoryElement = document.getElementById('order-history');
-                        let ordersHtml = '<ul class="order-list">';
-                        
-                        data.data.orders.forEach(order => {
-                            const statusClass = order.status === 'delivered' ? 'status-delivered' : 'status-pending';
+                    if (data.success && data.data && data.data.orders) {
+                        if (data.data.orders.length > 0) {
+                            // Display orders
+                            let ordersHtml = '<ul class="order-list">';
                             
-                            ordersHtml += `
-                                <li class="order-item">
-                                    <div>
-                                        <div class="order-number">Order #${order.id}</div>
-                                        <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
-                                    </div>
-                                    <div>
-                                        <div>$${order.total.toFixed(2)}</div>
-                                        <span class="order-status ${statusClass}">${order.status}</span>
-                                    </div>
-                                </li>
-                            `;
-                        });
-                        
-                        ordersHtml += '</ul>';
-                        orderHistoryElement.innerHTML = ordersHtml;
+                            data.data.orders.forEach(order => {
+                                const statusClass = order.status === 'delivered' ? 'status-delivered' : 'status-pending';
+                                const formattedDate = new Date(order.date).toLocaleDateString();
+                                
+                                ordersHtml += `
+                                    <li class="order-item">
+                                        <div>
+                                            <div class="order-number">Order #${order.id}</div>
+                                            <div class="order-date">${formattedDate}</div>
+                                        </div>
+                                        <div>
+                                            <div>$${order.total.toFixed(2)}</div>
+                                            <span class="order-status ${statusClass}">${order.status}</span>
+                                        </div>
+                                    </li>
+                                `;
+                            });
+                            
+                            ordersHtml += '</ul>';
+                            orderHistoryElement.innerHTML = ordersHtml;
+                        } else {
+                            // No orders
+                            orderHistoryElement.innerHTML = '<p>You don\'t have any orders yet.</p>';
+                        }
+                    } else {
+                        // API returned error
+                        throw new Error(data.message || 'Failed to load orders');
                     }
                 } catch (error) {
                     console.error('Error fetching order history:', error);
+                    const orderHistoryElement = document.getElementById('order-history');
+                    orderHistoryElement.innerHTML = `
+                        <div class="error-message">
+                            <p>Sorry, we couldn't load your order history.</p>
+                            <p>Error: ${error.message || 'Unknown error'}</p>
+                        </div>
+                    `;
                 }
             }
 
-            // We don't call fetchOrderHistory() yet since the API endpoint might not exist
-            // But the function is here ready to be used once the endpoint is created
+            // Call the function to fetch order history
+            fetchOrderHistory();
             
             // Prevent accidental logout
             const originalLogout = FitZoneAuth.logout;

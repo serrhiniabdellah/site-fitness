@@ -212,3 +212,134 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
 });
+
+/**
+ * Global Cart Helper Functions
+ * These functions help with cart operations across the site
+ */
+
+// Check if user is logged in (simple version)
+function isUserLoggedIn() {
+    const hasToken = localStorage.getItem('fitzone_token');
+    const hasUser = localStorage.getItem('fitzone_user');
+    return hasToken && hasUser;
+}
+
+// Handle checkout redirect
+function proceedToCheckout() {
+    if (isUserLoggedIn()) {
+        window.location.href = 'checkout.html';
+    } else {
+        window.location.href = 'login.html?redirect=checkout.html';
+    }
+}
+
+// Update cart count across site
+function updateCartCount() {
+    // Get cart items from local storage
+    const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+    
+    // Calculate total quantity
+    const totalItems = cartItems.reduce((total, item) => total + (parseInt(item.quantity) || 1), 0);
+    
+    // Update all cart count elements
+    const cartCountElements = document.querySelectorAll('.cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = totalItems;
+        element.style.display = totalItems > 0 ? 'block' : 'none';
+    });
+    
+    return totalItems;
+}
+
+// Initialize cart on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateCartCount();
+});
+
+/**
+ * Global cart initialization and event handlers
+ */
+(function() {
+    console.log('Global cart handler initialized');
+    
+    // Initialize cart UI
+    function updateCartCount() {
+        if (typeof CartService !== 'undefined') {
+            CartService.updateCartCountUI()
+                .then(() => console.log('Cart count updated'))
+                .catch(error => console.error('Error updating cart count:', error));
+        } else {
+            console.warn('CartService not available');
+            
+            // Fallback for legacy cart display
+            try {
+                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+                const totalItems = cartItems.reduce((total, item) => total + parseInt(item.quantity || 1), 0);
+                
+                document.querySelectorAll('.cart-count').forEach(element => {
+                    element.textContent = totalItems.toString();
+                    element.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                });
+            } catch (error) {
+                console.error('Error in fallback cart count update:', error);
+            }
+        }
+    }
+
+    // Run immediately and set up listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCartCount();
+        
+        // Listen for cart update events
+        document.addEventListener('cart:updated', updateCartCount);
+        
+        // Attach global add-to-cart handlers for any buttons with data-product-id
+        document.querySelectorAll('[data-product-id]').forEach(button => {
+            button.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                const productId = this.dataset.productId;
+                const quantity = parseInt(this.dataset.quantity || 1);
+                
+                console.log(`Adding product ${productId} to cart`);
+                
+                try {
+                    if (typeof CartService !== 'undefined') {
+                        // Get product data if available
+                        const productName = this.dataset.productName;
+                        const productPrice = this.dataset.productPrice;
+                        const productImage = this.dataset.productImage;
+                        
+                        // Construct product data object
+                        const productData = {
+                            name: productName,
+                            nom_produit: productName,
+                            price: productPrice,
+                            prix: productPrice,
+                            image: productImage,
+                            image_url: productImage
+                        };
+                        
+                        // Add to cart
+                        await CartService.addItem(productId, quantity, productData);
+                        
+                        // Show success message if element exists
+                        const msgElement = document.getElementById('cart-message');
+                        if (msgElement) {
+                            msgElement.textContent = 'Product added to cart!';
+                            msgElement.style.display = 'block';
+                            setTimeout(() => {
+                                msgElement.style.display = 'none';
+                            }, 3000);
+                        }
+                    } else {
+                        console.warn('CartService not available for adding product');
+                    }
+                } catch (error) {
+                    console.error('Error adding product to cart:', error);
+                }
+            });
+        });
+    });
+})();

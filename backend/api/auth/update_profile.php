@@ -1,64 +1,62 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
-require_once '../../utils.php';
+// Set response headers
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Validate request method
-Utils::validateMethod('POST');
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// Include required files
+require_once '../config/database.php';
+require_once '../utils/auth.php';
+require_once '../utils/response.php';
+require_once '../utils/input.php'; // Include input sanitization utilities
+
+// Get JSON data from request
+$data = json_decode(file_get_contents('php://input'), true);
+
+// Check if data is valid
+if (!$data || !isset($data['first_name']) || !isset($data['last_name']) || !isset($data['user_id'])) {
+    sendResponse(['success' => false, 'message' => 'Invalid request data'], 400);
+    exit;
+}
+
+// Sanitize input data
+$firstName = sanitizeInput($data['first_name']);
+$lastName = sanitizeInput($data['last_name']);
+$phone = isset($data['phone']) ? sanitizeInput($data['phone']) : null;
+$userId = (int) $data['user_id'];
+
+// Check if user is authenticated
+$auth = new Auth($conn);
+if (!$auth->validateToken()) {
+    sendResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    exit;
+}
+
+// Verify user ID matches authenticated user
+$authenticatedUserId = $auth->getUserId();
+if ($authenticatedUserId !== $userId && !$auth->isAdmin()) {
+    sendResponse(['success' => false, 'message' => 'Unauthorized'], 401);
+    exit;
+}
 
 try {
-    // Get request data
-    $data = Utils::getJsonData();
-    
-    // Validate required fields
-    if (!isset($data['user_id']) || !isset($data['token']) || !isset($data['first_name']) || !isset($data['last_name'])) {
-        Utils::sendResponse(false, 'Missing required fields', null, 400);
-    }
-    
-    // Validate token
-    $tokenData = Utils::validateToken($data['token']);
-    if (!$tokenData || $tokenData['sub'] != $data['user_id']) {
-        Utils::sendResponse(false, 'Invalid or expired token', null, 401);
-    }
-    
-    // Sanitize input
-    $userId = (int)$data['user_id'];
-    $firstName = Utils::sanitizeInput($data['first_name']);
-    $lastName = Utils::sanitizeInput($data['last_name']);
-    $phone = isset($data['phone']) ? Utils::sanitizeInput($data['phone']) : null;
-    
-    // Create database connection
-    $db = new Database();
-    
     // Update user profile
-    $db->query("UPDATE utilisateurs SET 
-                prenom = :prenom, 
-                nom = :nom, 
-                telephone = :telephone 
-                WHERE id_utilisateur = :id_utilisateur");
+    $stmt = $conn->prepare("UPDATE utilisateurs SET prenom = ?, nom = ?, telephone = ? WHERE id_utilisateur = ?");
+    $stmt->bind_param("sssi", $firstName, $lastName, $phone, $userId);
     
-    $db->bind(':prenom', $firstName);
-    $db->bind(':nom', $lastName);
-    $db->bind(':telephone', $phone);
-    $db->bind(':id_utilisateur', $userId);
-    
-    $success = $db->execute();
-    
-    if (!$success) {
-        Utils::sendResponse(false, 'Failed to update profile', null, 500);
+    if ($stmt->execute()) {
+        sendResponse(['success' => true, 'message' => 'Profile updated successfully']);
+    } else {
+        sendResponse(['success' => false, 'message' => 'Failed to update profile']);
     }
-    
-    // Get updated user data
-    $db->query("SELECT id_utilisateur, email, nom, prenom, telephone, est_admin FROM utilisateurs WHERE id_utilisateur = :id");
-    $db->bind(':id', $userId);
-    $user = $db->singleArray();
-    
-    if (!$user) {
-        Utils::sendResponse(false, 'User not found', null, 404);
-    }
-    
-    Utils::sendResponse(true, 'Profile updated successfully', ['user' => $user]);
 } catch (Exception $e) {
-    Utils::sendResponse(false, 'Error: ' . $e->getMessage(), null, 500);
+    sendResponse(['success' => false, 'message' => 'Error: ' . $e->getMessage()], 500);
 }
 ?>

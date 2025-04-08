@@ -9,6 +9,8 @@
     <!-- Add auth persistence handler -->
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-header.js"></script>
+    <!-- Add auth debugger right after head opening tag -->
+    <script src="js/auth-debugger.js"></script>
     <!-- CSP that allows API and WebSocket connections -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
     <title>FitZone - Login</title>
@@ -20,6 +22,8 @@
     <!-- Include cart service script -->
     <script src="js/cart-service.js"></script>
     <script src="js/global-cart.js"></script>
+    <script src="js/cart-merge.js"></script>
+    <script src="js/auth-debug.js"></script>
     <style>
         .success-message {
             color: #28a745;
@@ -34,6 +38,40 @@
             font-size: 14px;
         }
     </style>
+
+    <script>
+        // Run this immediately to handle checkout redirect loop
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            
+            console.log('Login page loaded with redirect:', redirectUrl);
+            
+            // If coming from checkout, check if we already have valid auth
+            if (redirectUrl === 'checkout.html') {
+                try {
+                    const token = localStorage.getItem('fitzone_token');
+                    const userString = localStorage.getItem('fitzone_user');
+                    
+                    if (token && userString) {
+                        // Verify user data is valid JSON
+                        const user = JSON.parse(userString);
+                        
+                        if (user && user.id_utilisateur) {
+                            console.log('Already authenticated - redirecting to checkout');
+                            localStorage.removeItem('checkout_redirect_count'); // Reset counter
+                            window.location.replace('checkout.html');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error checking auth data:', e);
+                    // Clear invalid data
+                    localStorage.removeItem('fitzone_token');
+                    localStorage.removeItem('fitzone_user');
+                }
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -149,136 +187,254 @@
     <script src="js/auth.js"></script>
     <script src="script.js"></script>
     
+    <!-- Replace the DOMContentLoaded script with this version -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Debug auth state
-            if (window.AuthDebug) {
-                console.log('Using Auth Debug tools on login page');
-                AuthDebug.checkState();
-            }
-        
-            // If user is already logged in, redirect to profile
-            if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn()) {
-                console.log('User already logged in, redirecting to profile');
-                window.location.href = 'profile.html';
-                return;
-            }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Run additional checks to clear bad auth data
+        function checkAndCleanAuthData() {
+            const token = localStorage.getItem('fitzone_token');
+            const userData = localStorage.getItem('fitzone_user');
             
-            // Check for registration success or other URL parameters
-            const urlParams = new URLSearchParams(window.location.search);
-            const redirectUrl = urlParams.get('redirect') || 'index.html';
-            const registeredEmail = urlParams.get('email') || '';
-            const justRegistered = urlParams.get('registered') === 'true';
+            console.log('Checking auth data integrity');
             
-            // Pre-fill email if provided in URL (e.g., after registration)
-            if (registeredEmail) {
-                document.getElementById('email').value = registeredEmail;
-                
-                // If just registered, show success message
-                if (justRegistered) {
-                    document.getElementById('login-success').textContent = 
-                        'Registration successful! Please log in with your credentials.';
+            if (userData) {
+                try {
+                    // Check if user data is valid JSON
+                    const user = JSON.parse(userData);
+                    if (!user || !user.id_utilisateur) {
+                        console.warn('User data is missing required fields, clearing auth data');
+                        localStorage.removeItem('fitzone_token');
+                        localStorage.removeItem('fitzone_user');
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    console.warn('Failed to parse user data, clearing auth data', e);
+                    localStorage.removeItem('fitzone_token');
+                    localStorage.removeItem('fitzone_user');
+                    return false;
                 }
             }
             
-            // Handle login form submission
-            const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
+            if (token && !userData) {
+                console.warn('Token exists but user data missing, clearing token');
+                localStorage.removeItem('fitzone_token');
+            }
+            
+            return false;
+        }
+        
+        // Debug auth state
+        if (window.AuthDebug) {
+            console.log('Using Auth Debug tools on login page');
+            AuthDebug.checkState();
+        }
+        
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectUrl = urlParams.get('redirect') || 'index.html';
+        const registeredEmail = urlParams.get('email') || '';
+        const justRegistered = urlParams.get('registered') === 'true';
+        
+        console.log('Redirect URL is:', redirectUrl);
+        
+        // Reset redirect counter if this isn't part of the checkout flow
+        if (!redirectUrl.includes('checkout.html')) {
+            localStorage.removeItem('auth_redirect_count');
+        }
+        
+        // Check if user is already logged in
+        const hasValidAuthData = checkAndCleanAuthData();
+        
+        if (hasValidAuthData) {
+            console.log('User appears to be logged in, redirecting to:', redirectUrl);
+            
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, 100);
+            return;
+        }
+        
+        // Pre-fill email if provided in URL (e.g., after registration)
+        if (registeredEmail) {
+            document.getElementById('email').value = registeredEmail;
+            
+            if (justRegistered) {
+                document.getElementById('login-success').textContent = 
+                    'Registration successful! Please log in with your credentials.';
+            }
+        }
+        
+        // Handle login form submission
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorElement = document.getElementById('login-error');
+                const successElement = document.getElementById('login-success');
+                
+                // Clear previous messages
+                errorElement.textContent = '';
+                successElement.textContent = '';
+                
+                // Disable submit button during login
+                const submitBtn = document.getElementById('loginButton');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in...';
+                
+                try {
+                    console.log('Login attempt for:', email);
+                    console.log('Will redirect to:', redirectUrl);
                     
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    const errorElement = document.getElementById('login-error');
-                    const successElement = document.getElementById('login-success');
+                    // Get the API URL from config or use a fallback
+                    const apiBaseUrl = (window.CONFIG && window.CONFIG.API_URL) 
+                        ? window.CONFIG.API_URL 
+                        : 'http://localhost/site_fitness/backend/api';
                     
-                    // Clear previous messages
-                    errorElement.textContent = '';
-                    successElement.textContent = '';
+                    // Log the API URL being used
+                    console.log('Using API URL:', apiBaseUrl);
                     
-                    // Disable submit button during login
-                    const submitBtn = document.getElementById('loginButton');
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = 'Logging in...';
+                    // Make the login request
+                    const response = await fetch(`${apiBaseUrl}/auth/login.php`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({email, password})
+                    });
+                    
+                    const responseText = await response.text();
+                    console.log('Login raw response:', responseText);
                     
                     try {
-                        console.log('Login attempt for:', email);
+                        const data = JSON.parse(responseText);
+                        console.log('Login structured response:', data);
                         
-                        // Log the response to debug
-                        const response = await fetch(`${CONFIG.API_URL}/auth/login.php`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({email, password})
-                        });
-                        
-                        const responseText = await response.text();
-                        console.log('Login raw response:', responseText);
-                        
-                        // Parse the response to debug exact structure
-                        try {
-                            const data = JSON.parse(responseText);
-                            console.log('Login structured response:', data);
+                        if (data.success) {
+                            // Extract token and user data
+                            let token = null;
+                            let userData = null;
                             
-                            if (data.success) {
-                                // Try to manually extract token and user data
-                                let token = null;
-                                let userData = null;
+                            // Check all possible locations for token
+                            if (data.data?.user?.token) {
+                                token = data.data.user.token;
+                            }
+                            else if (data.data?.token) token = data.data.token;
+                            else if (data.token) token = data.token;
+                            else if (data.data?.access_token) token = data.data.access_token;
+                            else if (data.access_token) token = data.access_token;
+                            
+                            // Check for user data
+                            if (data.data?.user) userData = data.data.user;
+                            else if (data.user) userData = data.user;
+                            
+                            console.log('Extracted token:', token ? 'Found' : 'Not found');
+                            console.log('Extracted user data:', userData ? 'Found' : 'Not found');
+                            
+                            if (token && userData) {
+                                // Store auth data
+                                localStorage.setItem('fitzone_token', token);
+                                localStorage.setItem('fitzone_user', JSON.stringify(userData));
+                                localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
                                 
-                                // Check all possible locations for token, including the specific structure
-                                if (data.data?.user?.token) {
-                                    token = data.data.user.token; // This matches your API's structure
+                                // Clear any redirect counter
+                                localStorage.removeItem('redirect_count');
+                                localStorage.removeItem('checkout_redirect_count');
+                                
+                                // Set auth state to prevent auto logout
+                                localStorage.setItem('fitzone_auth_state', 'active');
+                                
+                                successElement.textContent = 'Login successful! Processing...';
+                                
+                                // Merge cart items from anonymous session
+                                if (window.CartMerge) {
+                                    try {
+                                        submitBtn.textContent = 'Merging your cart...';
+                                        await CartMerge.mergeCartsOnLogin();
+                                    } catch (cartError) {
+                                        console.error('Error merging carts:', cartError);
+                                        // Continue despite merge error
+                                    }
                                 }
-                                else if (data.data?.token) token = data.data.token;
-                                else if (data.token) token = data.token;
-                                else if (data.data?.access_token) token = data.data.access_token;
-                                else if (data.access_token) token = data.access_token;
                                 
-                                // Check all possible locations for user data
-                                if (data.data?.user) userData = data.data.user;
-                                else if (data.user) userData = data.user;
+                                successElement.textContent = 'Login successful! Redirecting...';
                                 
-                                console.log('Extracted token:', token ? 'Found' : 'Not found');
-                                console.log('Extracted user data:', userData ? 'Found' : 'Not found');
+                                // Dispatch auth state change event
+                                document.dispatchEvent(new CustomEvent('auth:stateChanged', {
+                                    detail: { isLoggedIn: true, user: userData }
+                                }));
                                 
-                                if (token && userData) {
-                                    // Manually store auth data
-                                    localStorage.setItem('fitzone_token', token);
-                                    localStorage.setItem('fitzone_user', JSON.stringify(userData));
-                                    localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
-                                    
-                                    successElement.textContent = 'Login successful! Redirecting...';
-                                    
-                                    // Redirect with delay
-                                    setTimeout(() => {
-                                        window.location.href = redirectUrl;
-                                    }, 1000);
-                                } else {
-                                    errorElement.textContent = 'Login response missing required data';
-                                    submitBtn.disabled = false;
-                                    submitBtn.textContent = 'Login';
-                                }
+                                // Redirect with a delay
+                                setTimeout(() => {
+                                    window.location.href = redirectUrl;
+                                }, 500);
                             } else {
-                                errorElement.textContent = data.message || 'Login failed';
+                                errorElement.textContent = 'Login response missing required data';
                                 submitBtn.disabled = false;
                                 submitBtn.textContent = 'Login';
                             }
-                        } catch (e) {
-                            console.error('Error parsing response:', e);
-                            errorElement.textContent = 'Invalid response from server';
+                        } else {
+                            errorElement.textContent = data.message || 'Login failed';
                             submitBtn.disabled = false;
                             submitBtn.textContent = 'Login';
                         }
-                    } catch (error) {
-                        console.error('Login error:', error);
-                        errorElement.textContent = error.message || 'An unexpected error occurred';
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        errorElement.textContent = 'Invalid response from server';
                         submitBtn.disabled = false;
                         submitBtn.textContent = 'Login';
                     }
-                });
+
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorElement.textContent = error.message || 'An unexpected error occurred';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            });
+        }
+
+        // Add this to ensure checkout.html is handled correctly after login
+        const handleLoginSuccess = function(token, userData) {
+            // Store auth data
+            localStorage.setItem('fitzone_token', token);
+            localStorage.setItem('fitzone_user', JSON.stringify(userData));
+            localStorage.setItem('fitzone_login_timestamp', Date.now().toString());
+            
+            // Reset any redirect counters
+            localStorage.removeItem('checkout_redirect_count');
+            
+            // Get redirect URL from parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect') || 'index.html';
+            
+            // Show success message
+            const successElement = document.getElementById('login-success');
+            if (successElement) {
+                successElement.textContent = 'Login successful! Redirecting...';
             }
-        });
-    </script>
+            
+            // Special handling for checkout redirects
+            if (redirectUrl === 'checkout.html') {
+                console.log('Successful login - redirecting to checkout page');
+                setTimeout(() => {
+                    window.location.replace('checkout.html');
+                }, 500);
+            } else {
+                // Normal redirect for other pages
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 500);
+            }
+        };
+        
+        // Modify your existing login form handler to use this function
+        // Instead of repeating the code inside the event handler
+    });
+</script>
 </body>
 </html>

@@ -1,12 +1,8 @@
 <?php
-require_once '../config/database.php';
-require_once '../utils/auth.php';
-require_once '../utils/response.php';
-
 // Set response headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 // Handle preflight requests
@@ -14,6 +10,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+// Required files
+require_once '../config/database.php';
+require_once '../utils/auth.php';
+require_once '../utils/response.php';
 
 // Check request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -34,7 +35,7 @@ $quantity = isset($data['quantity']) ? max(1, intval($data['quantity'])) : 1;
 $userId = null;
 $sessionId = null;
 
-// Check if request is authenticated
+// Check if user is authenticated
 $auth = new Auth($conn);
 $isAuthenticated = $auth->validateToken();
 

@@ -1,189 +1,181 @@
 <?php
-require_once '../../config.php';
-require_once '../../db.php';
-require_once '../../utils.php';
+// Set response headers
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-// Only accept POST requests
-Utils::validateMethod('POST');
-
-// Get request data
-$data = Utils::getJsonData();
-
-// Validate required fields
-if (!isset($data['user_id']) || !isset($data['token']) || !isset($data['first_name']) || 
-    !isset($data['last_name']) || !isset($data['email']) || !isset($data['address']) || 
-    !isset($data['city']) || !isset($data['postal_code']) || !isset($data['country']) || 
-    !isset($data['payment_method'])) {
-    Utils::sendResponse(false, 'Missing required fields', null, 400);
+// Handle preflight requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
 }
 
-// Validate token
-$tokenData = Utils::validateToken($data['token']);
-if (!$tokenData || $tokenData['sub'] != $data['user_id']) {
-    Utils::sendResponse(false, 'Invalid or expired token', null, 401);
+require_once '../config/database.php';
+require_once '../utils/auth.php';
+require_once '../utils/response.php';
+
+// Check authentication
+$auth = new Auth($conn);
+if (!$auth->validateToken()) {
+    sendResponse(['success' => false, 'message' => 'Authentication required'], 401);
+    exit;
 }
 
-// Sanitize input
-$userId = (int)Utils::sanitizeInput($data['user_id']);
-$firstName = Utils::sanitizeInput($data['first_name']);
-$lastName = Utils::sanitizeInput($data['last_name']);
-$email = Utils::sanitizeInput($data['email']);
-$phone = isset($data['phone']) ? Utils::sanitizeInput($data['phone']) : null;
-$address = Utils::sanitizeInput($data['address']);
-$address2 = isset($data['address2']) ? Utils::sanitizeInput($data['address2']) : null;
-$city = Utils::sanitizeInput($data['city']);
-$postalCode = Utils::sanitizeInput($data['postal_code']);
-$country = Utils::sanitizeInput($data['country']);
-$orderNotes = isset($data['order_notes']) ? Utils::sanitizeInput($data['order_notes']) : null;
-$paymentMethod = Utils::sanitizeInput($data['payment_method']);
+// Get authenticated user ID
+$userId = $auth->getUserId();
 
-// Create database connection
-$db = new Database();
+// Get JSON data from request
+$data = json_decode(file_get_contents('php://input'), true);
 
-// Start transaction
-$db->beginTransaction();
+// Validate input data
+if (!isset($data['shipping_info']) || !isset($data['cart']) || !isset($data['payment_method'])) {
+    sendResponse(['success' => false, 'message' => 'Missing required order information'], 400);
+    exit;
+}
+
+// Start transaction for database integrity
+$conn->begin_transaction();
 
 try {
-    // Get cart items
-    $db->query("SELECT c.*, p.nom_produit, p.prix, p.stock, 
-                v.nom as variant_nom, v.prix as variant_prix, v.stock as variant_stock
-                FROM cart c
-                JOIN produits p ON c.id_produit = p.id_produit
-                LEFT JOIN variants_produit v ON c.variant_id = v.id_variant
-                WHERE c.id_utilisateur = :user_id");
-    $db->bind(':user_id', $userId);
-
-    $cartItems = $db->resultSetArray();
-
-    if (empty($cartItems)) {
-        Utils::sendResponse(false, 'Cart is empty', null, 400);
-    }
-
-    // Calculate order totals
-    $subtotal = 0;
-    $shippingCost = 0; // Free shipping for now
-    
-    foreach ($cartItems as $item) {
-        // Use variant price if available, otherwise use product price
-        $price = $item['variant_prix'] ? $item['variant_prix'] : $item['prix'];
-        $subtotal += $price * $item['quantity'];
-        
-        // Check stock availability
-        $stockToCheck = $item['variant_id'] ? $item['variant_stock'] : $item['stock'];
-        
-        if ($item['quantity'] > $stockToCheck) {
-            $db->cancelTransaction();
-            Utils::sendResponse(false, "Not enough stock available for {$item['nom_produit']}", null, 400);
-        }
-    }
-    
+    // 1. Create order record
+    $subtotal = isset($data['cart']['total']) ? floatval($data['cart']['total']) : 0;
+    $shippingCost = isset($data['shipping_cost']) ? floatval($data['shipping_cost']) : 0;
     $total = $subtotal + $shippingCost;
-
-    // Create order
-    $db->query("INSERT INTO commandes (id_utilisateur, statut_commande, sous_total, frais_livraison, total, 
-               methode_paiement, notes, date_commande) 
-               VALUES (:user_id, 'pending', :subtotal, :shipping, :total, :payment_method, :notes, NOW())");
-    $db->bind(':user_id', $userId);
-    $db->bind(':subtotal', $subtotal);
-    $db->bind(':shipping', $shippingCost);
-    $db->bind(':total', $total);
-    $db->bind(':payment_method', $paymentMethod);
-    $db->bind(':notes', $orderNotes);
     
-    if (!$db->execute()) {
-        $db->cancelTransaction();
-        Utils::sendResponse(false, 'Failed to create order', null, 500);
+    // Get payment method
+    $paymentMethod = $conn->real_escape_string($data['payment_method']);
+    
+    // Default status ID is 1 (pending)
+    $statusId = 1;
+    
+    // Create order in database
+    $stmt = $conn->prepare("
+        INSERT INTO commandes 
+            (id_utilisateur, id_statut, sous_total, frais_livraison, total, methode_paiement) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->bind_param("iiddds", $userId, $statusId, $subtotal, $shippingCost, $total, $paymentMethod);
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to create order: " . $stmt->error);
     }
     
-    $orderId = $db->lastInsertId();
-
-    // Create shipping address
-    $db->query("INSERT INTO adresses (id_commande, type, prenom, nom, telephone, adresse, adresse2, ville, 
-               code_postal, pays) 
-               VALUES (:order_id, 'shipping', :first_name, :last_name, :phone, :address, :address2, :city, 
-               :postal_code, :country)");
-    $db->bind(':order_id', $orderId);
-    $db->bind(':first_name', $firstName);
-    $db->bind(':last_name', $lastName);
-    $db->bind(':phone', $phone);
-    $db->bind(':address', $address);
-    $db->bind(':address2', $address2);
-    $db->bind(':city', $city);
-    $db->bind(':postal_code', $postalCode);
-    $db->bind(':country', $country);
+    // Get the order ID
+    $orderId = $conn->insert_id;
     
-    if (!$db->execute()) {
-        $db->cancelTransaction();
-        Utils::sendResponse(false, 'Failed to create shipping address', null, 500);
-    }
-
-    // Create billing address (same as shipping for now)
-    $db->query("INSERT INTO adresses (id_commande, type, prenom, nom, telephone, adresse, adresse2, ville, 
-               code_postal, pays) 
-               VALUES (:order_id, 'billing', :first_name, :last_name, :phone, :address, :address2, :city, 
-               :postal_code, :country)");
-    $db->bind(':order_id', $orderId);
-    $db->bind(':first_name', $firstName);
-    $db->bind(':last_name', $lastName);
-    $db->bind(':phone', $phone);
-    $db->bind(':address', $address);
-    $db->bind(':address2', $address2);
-    $db->bind(':city', $city);
-    $db->bind(':postal_code', $postalCode);
-    $db->bind(':country', $country);
+    // 2. Add shipping address
+    $shipping = $data['shipping_info'];
+    $firstname = $conn->real_escape_string($shipping['first_name']);
+    $lastname = $conn->real_escape_string($shipping['last_name']);
+    $phone = isset($shipping['phone']) ? $conn->real_escape_string($shipping['phone']) : '';
+    $address = $conn->real_escape_string($shipping['address']);
+    $city = $conn->real_escape_string($shipping['city']);
+    $postalCode = $conn->real_escape_string($shipping['postal_code']);
+    $country = $conn->real_escape_string($shipping['country']);
+    $addressType = 'shipping';
     
-    if (!$db->execute()) {
-        $db->cancelTransaction();
-        Utils::sendResponse(false, 'Failed to create billing address', null, 500);
+    // Fix: Changed the binding to match parameter count and types
+    $stmt = $conn->prepare("
+        INSERT INTO adresses 
+            (id_utilisateur, id_commande, type, prenom, nom, telephone, adresse, ville, code_postal, pays) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ");
+    
+    // Fix: Added the type parameter to the binding
+    $stmt->bind_param(
+        "iissssssss", 
+        $userId, 
+        $orderId, 
+        $addressType,
+        $firstname, 
+        $lastname, 
+        $phone, 
+        $address, 
+        $city, 
+        $postalCode, 
+        $country
+    );
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to save shipping address: " . $stmt->error);
     }
-
-    // Add order items and update stock
-    foreach ($cartItems as $item) {
-        // Use variant price if available, otherwise use product price
-        $price = $item['variant_prix'] ? $item['variant_prix'] : $item['prix'];
+    
+    // 3. Add order items
+    if (!isset($data['cart']['items']) || !is_array($data['cart']['items']) || count($data['cart']['items']) === 0) {
+        throw new Exception("Cart is empty");
+    }
+    
+    foreach ($data['cart']['items'] as $item) {
+        // Extract all possible product ID formats
+        $productId = isset($item['id_produit']) ? intval($item['id_produit']) : 
+                    (isset($item['id']) ? intval($item['id']) : 0);
+                    
+        // Handle variant ID - might be null
+        $variantId = isset($item['variant_id']) ? intval($item['variant_id']) : null;
         
-        $db->query("INSERT INTO commande_items (id_commande, id_produit, id_variant, quantite, prix) 
-                   VALUES (:order_id, :product_id, :variant_id, :quantity, :price)");
-        $db->bind(':order_id', $orderId);
-        $db->bind(':product_id', $item['id_produit']);
-        $db->bind(':variant_id', $item['variant_id']);
-        $db->bind(':quantity', $item['quantity']);
-        $db->bind(':price', $price);
+        // Get quantity, ensure it's a positive integer
+        $quantity = max(1, intval($item['quantity'] ?? 1));
         
-        if (!$db->execute()) {
-            $db->cancelTransaction();
-            Utils::sendResponse(false, 'Failed to create order item', null, 500);
+        // Get price, ensure it's a positive float
+        $price = max(0, floatval($item['prix'] ?? $item['price'] ?? 0));
+        
+        // Skip invalid items
+        if ($productId <= 0 || $price <= 0) {
+            continue;
         }
         
-        // Update stock
-        if ($item['variant_id']) {
-            $db->query("UPDATE variants_produit SET stock = stock - :quantity WHERE id_variant = :id");
-            $db->bind(':quantity', $item['quantity']);
-            $db->bind(':id', $item['variant_id']);
+        // Prepare statement with nullable variant_id
+        if ($variantId) {
+            $stmt = $conn->prepare("
+                INSERT INTO commande_items 
+                    (id_commande, id_produit, id_variant, quantite, prix) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+            $stmt->bind_param("iiiid", $orderId, $productId, $variantId, $quantity, $price);
         } else {
-            $db->query("UPDATE produits SET stock = stock - :quantity WHERE id_produit = :id");
-            $db->bind(':quantity', $item['quantity']);
-            $db->bind(':id', $item['id_produit']);
+            // Use NULL for variant_id by using direct query
+            $stmt = $conn->prepare("
+                INSERT INTO commande_items 
+                    (id_commande, id_produit, id_variant, quantite, prix) 
+                VALUES (?, ?, NULL, ?, ?)
+            ");
+            $stmt->bind_param("iiid", $orderId, $productId, $quantity, $price);
         }
         
-        if (!$db->execute()) {
-            $db->cancelTransaction();
-            Utils::sendResponse(false, 'Failed to update stock', null, 500);
+        if (!$stmt->execute()) {
+            throw new Exception("Failed to add order item: " . $stmt->error);
         }
     }
-
-    // Clear user's cart
-    $db->query("DELETE FROM cart WHERE id_utilisateur = :user_id");
-    $db->bind(':user_id', $userId);
-    $db->execute();
-
-    // Commit transaction
-    $db->endTransaction();
-
-    Utils::sendResponse(true, 'Order created successfully', ['order_id' => $orderId]);
+    
+    // 4. Clear user's cart if they have one in the database
+    $stmt = $conn->prepare("DELETE FROM cart WHERE id_utilisateur = ?");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    
+    // If everything is successful, commit the transaction
+    $conn->commit();
+    
+    // Return success response
+    sendResponse([
+        'success' => true,
+        'message' => 'Order created successfully',
+        'data' => [
+            'order_id' => $orderId,
+            'total' => $total
+        ]
+    ]);
     
 } catch (Exception $e) {
-    $db->cancelTransaction();
-    Utils::sendResponse(false, 'Error processing order: ' . $e->getMessage(), null, 500);
+    // Rollback transaction on error
+    $conn->rollback();
+    
+    // Log the error for server-side debugging
+    error_log('Order creation error: ' . $e->getMessage());
+    
+    sendResponse([
+        'success' => false,
+        'message' => $e->getMessage()
+    ], 500);
 }
 ?>
