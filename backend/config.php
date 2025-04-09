@@ -49,15 +49,30 @@ if (!file_exists(UPLOAD_DIR)) {
 // Session timeout (in seconds)
 define('SESSION_TIMEOUT', 3600); // 1 hour
 
-// CORS settings for Live Server
-header('Access-Control-Allow-Origin: http://127.0.0.1:5500');
-header('Access-Control-Allow-Credentials: true');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
-header('Content-Type: application/json');
+// Define allowed origins for CORS
+define('ALLOWED_ORIGINS', [
+    'http://127.0.0.1:5500',
+    'http://localhost:5500', 
+    'http://localhost',
+    'null' // For local file testing
+]);
 
-// Handle preflight OPTIONS request
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+// Handle preflight OPTIONS request ONLY if cors-handler.php has not been loaded
+// This is determined by checking if a specific flag is set
+if (!defined('CORS_HANDLER_LOADED') && $_SERVER['REQUEST_METHOD'] == 'OPTIONS' && !headers_sent()) {
+    // Get the requesting origin
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
+    
+    // Set the correct Access-Control-Allow-Origin header
+    if (in_array($origin, ALLOWED_ORIGINS) || $origin === 'null') {
+        header("Access-Control-Allow-Origin: $origin");
+    } else {
+        header("Access-Control-Allow-Origin: *");
+    }
+    
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
     http_response_code(200);
     exit;
 }

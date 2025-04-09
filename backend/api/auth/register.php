@@ -1,13 +1,9 @@
 <?php
+// Include CORS handler at the very top
+require_once __DIR__ . '/../cors-handler.php';
 require_once '../../config.php';
 require_once '../../utils.php';
 require_once '../../db.php';
-
-// Handle preflight request
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
 
 // Validate request method
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

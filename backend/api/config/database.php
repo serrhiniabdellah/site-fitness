@@ -1,4 +1,8 @@
 <?php
+// Include CORS handler at the very top
+require_once __DIR__ . '/../cors-handler.php';
+
+
 class Database {
     private $host;
     private $db_name;

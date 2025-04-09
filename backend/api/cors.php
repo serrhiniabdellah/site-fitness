@@ -1,4 +1,8 @@
 <?php
+// Include CORS handler at the very top
+require_once __DIR__ . '/../cors-handler.php';
+
+
 /**
  * CORS handler for API requests
  */

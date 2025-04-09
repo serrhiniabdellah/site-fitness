@@ -1,0 +1,30 @@
+# Enable URL rewriting
+RewriteEngine On
+
+# Enable CORS for all API endpoints
+<IfModule mod_headers.c>
+    # For specific origins with credentials
+    SetEnvIf Origin "http://127.0.0.1:5500" CORS_ORIGIN=$0
+    SetEnvIf Origin "http://localhost:5500" CORS_ORIGIN=$0
+    SetEnvIf Origin "http://localhost" CORS_ORIGIN=$0
+    
+    # Set origin based on environment variable
+    Header always set Access-Control-Allow-Origin %{CORS_ORIGIN}e env=CORS_ORIGIN
+    Header always set Access-Control-Allow-Credentials "true" env=CORS_ORIGIN
+    
+    # Default for other origins
+    Header always set Access-Control-Allow-Origin "*" env=!CORS_ORIGIN
+    
+    # Common headers for all requests
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization, Access-Control-Allow-Headers"
+    Header always set Access-Control-Max-Age "86400"
+    
+    # Handle preflight OPTIONS requests
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+</IfModule>
+
+# Set PHP error reporting for debugging
+php_flag display_errors On
+php_value error_reporting E_ALL

@@ -444,7 +444,13 @@
                     // Get authorization token
                     const token = FitZoneAuth.getToken();
                     
+                    if (!token) {
+                        throw new Error('No authentication token available');
+                    }
+                    
                     // Fetch orders from API
+                    console.log(`Fetching orders from: ${CONFIG.API_URL}/orders/history.php`);
+                    
                     const response = await fetch(`${CONFIG.API_URL}/orders/history.php`, {
                         method: 'GET',
                         headers: {
@@ -452,6 +458,10 @@
                             'Authorization': `Bearer ${token}`
                         }
                     });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server responded with status: ${response.status}`);
+                    }
                     
                     const data = await response.json();
                     
@@ -507,6 +517,7 @@
                         }
                     } else {
                         // API error
+                        console.error('API returned error:', data);
                         if (ordersList) ordersList.innerHTML = `
                             <div class="no-orders">
                                 <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
@@ -527,7 +538,7 @@
                         <div class="no-orders">
                             <div class="icon"><i class="fas fa-exclamation-circle"></i></div>
                             <h2>Error Loading Orders</h2>
-                            <p>There was a problem loading your orders. Please try again later.</p>
+                            <p>There was a problem loading your orders: ${error.message}</p>
                             <button onclick="window.location.reload()" class="normal">Retry</button>
                         </div>
                     `;

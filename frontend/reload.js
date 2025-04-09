@@ -1,128 +1,161 @@
 /**
- * LiveReload script for development v2.0
+ * Live Reload Script
+ * Enhanced version with Chrome extension compatibility
  */
 (function() {
+    console.log('[LiveReload] Initializing LiveReload with improved WebSocket handling');
+    
     // Configuration
-    const config = {
-        // WebSocket URL for LiveReload - ensure proper URL format
-        websocketUrl: 'ws://127.0.0.1:35729/livereload',
-        // Max reconnection attempts
-        maxReconnectAttempts: 5,
-        // Current reconnection attempt
-        currentReconnectAttempt: 0,
-        // How often to check for changes (milliseconds)
-        reloadInterval: 1000
-    };
+    const RETRY_INTERVAL = 3000; // Retry connection every 3 seconds
+    const MAX_RETRIES = 10;      // Maximum number of connection attempts
     
     let socket = null;
+    let retryCount = 0;
+    let retryTimeout = null;
     
     /**
-     * Ensure WebSocket URL has proper format
+     * Fix WebSocket URL to ensure proper format
+     * Uses the global WebSocketHelper or early fix if available
      */
     function fixWebSocketUrl(url) {
-        // Handle the specific problematic case
+        // Use global fixers if available
+        if (window.fixWebSocketUrl) {
+            return window.fixWebSocketUrl(url);
+        }
+        
+        if (window.WebSocketHelper && window.WebSocketHelper.fixUrl) {
+            return window.WebSocketHelper.fixUrl(url);
+        }
+        
+        // Fallback implementation
+        if (typeof url !== 'string') return url;
+        
+        // Special case for the problematic URL
         if (url === 'ws127.0.0.1:35729/livereload') {
             return 'ws://127.0.0.1:35729/livereload';
         }
         
-        // If URL already has proper format, return as is
+        // Already properly formatted URL
         if (url.startsWith('ws://') || url.startsWith('wss://')) {
             return url;
         }
         
-        // Fix URLs that start with ws followed by a number
-        if (url.match(/^ws[0-9]/)) {
-            return 'ws://' + url.substring(2);
-        }
-        
-        // Fix URLs that start with wss followed by a number
-        if (url.match(/^wss[0-9]/)) {
-            return 'wss://' + url.substring(3);
-        }
-        
-        // For any other URLs starting with ws but missing ://
-        if (url.startsWith('ws') && !url.includes('://')) {
+        // Common format fixes
+        if (url.startsWith('ws')) {
             return 'ws://' + url.substring(2);
         }
         
         return url;
     }
     
-    function initWebSocket() {
-        // Skip if max attempts reached
-        if (config.currentReconnectAttempt >= config.maxReconnectAttempts) {
-            console.log('Maximum reconnection attempts reached. Live reload disabled.');
-            return;
-        }
-        
+    /**
+     * Create WebSocket with error handling
+     */
+    function createWebSocket() {
         try {
-            // Use global WebSocket URL fixer if available
-            let url = config.websocketUrl;
-            if (window.fixWebSocketUrl) {
-                url = window.fixWebSocketUrl(url);
-            } else {
-                url = fixWebSocketUrl(url);
+            // Use standard port for LiveReload
+            const url = fixWebSocketUrl('ws://127.0.0.1:35729/livereload');
+            
+            console.log('[LiveReload] Creating WebSocket connection to', url);
+            
+            if (window.WebSocketHelper && window.WebSocketHelper.createWebSocket) {
+                return window.WebSocketHelper.createWebSocket(url);
             }
             
-            console.log('Connecting to reload WebSocket:', url);
-            
-            // Use window.__originalWebSocket if available (to avoid patched version)
-            const WebSocketConstructor = window.__originalWebSocket || window.WebSocket;
-            socket = new WebSocketConstructor(url);
-            
-            socket.onopen = function() {
-                console.log('Reload WebSocket connected successfully');
-                config.currentReconnectAttempt = 0;
-            };
-            
-            socket.onmessage = function(event) {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.command === 'reload') {
-                        window.location.reload();
-                    }
-                } catch (e) {
-                    console.error('Error processing reload message:', e);
-                }
-            };
-            
-            socket.onclose = function() {
-                config.currentReconnectAttempt++;
-                const remainingAttempts = config.maxReconnectAttempts - config.currentReconnectAttempt;
-                
-                if (remainingAttempts > 0) {
-                    console.log(`Reload WebSocket closed, reconnecting in 5s... (${remainingAttempts} attempts remaining)`);
-                    setTimeout(initWebSocket, 5000);
-                } else {
-                    console.log('Reload WebSocket closed. No more reconnection attempts.');
-                }
-            };
-            
-            socket.onerror = function(error) {
-                console.log('Reload WebSocket error:', error);
-            };
+            return new WebSocket(url);
         } catch (error) {
-            console.error('Failed to initialize reload WebSocket:', error);
-            config.currentReconnectAttempt++;
-            
-            const remainingAttempts = config.maxReconnectAttempts - config.currentReconnectAttempt;
-            if (remainingAttempts > 0) {
-                console.log(`Retrying in 5 seconds... (${remainingAttempts} attempts remaining)`);
-                setTimeout(initWebSocket, 5000);
-            }
+            console.error('[LiveReload] Error creating WebSocket:', error);
+            return null;
         }
     }
     
-    // Start WebSocket connection only in development mode
-    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-        console.log('Development mode detected, initializing live reload');
+    /**
+     * Connect to LiveReload server
+     */
+    function connect() {
+        if (socket) {
+            // Close any existing connection
+            try {
+                socket.close();
+            } catch (e) {
+                // Ignore errors during close
+            }
+            socket = null;
+        }
         
-        // Wait for document to be ready before initializing
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('LiveReload initialized. Page ready for automatic refresh.');
+        // Create new WebSocket connection
+        socket = createWebSocket();
+        
+        if (!socket) {
+            scheduleRetry();
+            return;
+        }
+        
+        // Setup event handlers
+        socket.onopen = function() {
+            console.log('[LiveReload] Connected successfully');
+            retryCount = 0; // Reset retry counter on successful connection
             
-            // Slight delay to ensure all WebSocket patches are applied
-            setTimeout(initWebSocket, 300);
-        });
+            // Send hello message
+            socket.send(JSON.stringify({
+                command: 'hello',
+                protocols: ['http://livereload.com/protocols/official-7']
+            }));
+        };
+        
+        socket.onclose = function() {
+            console.log('[LiveReload] Connection closed');
+            socket = null;
+            scheduleRetry();
+        };
+        
+        socket.onerror = function(error) {
+            console.error('[LiveReload] WebSocket error:', error);
+            
+            // Let the onclose handler schedule the retry
+            try {
+                socket.close();
+            } catch (e) {
+                // Ignore errors during close
+            }
+        };
+        
+        socket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data && data.command === 'reload') {
+                    console.log('[LiveReload] Reloading page...');
+                    window.location.reload();
+                }
+            } catch (e) {
+                console.error('[LiveReload] Error processing message:', e);
+            }
+        };
     }
+    
+    /**
+     * Schedule reconnection attempt
+     */
+    function scheduleRetry() {
+        if (retryTimeout) {
+            clearTimeout(retryTimeout);
+        }
+        
+        if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            console.log(`[LiveReload] Scheduling reconnection attempt ${retryCount}/${MAX_RETRIES} in ${RETRY_INTERVAL}ms`);
+            
+            retryTimeout = setTimeout(function() {
+                console.log(`[LiveReload] Attempting to reconnect (${retryCount}/${MAX_RETRIES})`);
+                connect();
+            }, RETRY_INTERVAL);
+        } else {
+            console.log('[LiveReload] Maximum reconnection attempts reached. Giving up.');
+        }
+    }
+    
+    // Start connection when script loads
+    console.log('[LiveReload] Starting LiveReload client');
+    connect();
 })();

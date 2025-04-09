@@ -4,43 +4,33 @@ RewriteEngine On
 # Set the base directory
 RewriteBase /site_fitness/backend/
 
-# Allow direct access to real files and directories
+# Handle OPTIONS method for CORS preflight requests
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^(.*)$ $1 [R=200,L]
+
+# Allow direct access to actual files and directories
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
 
-# Handle API requests - allows for cleaner URLs
+# API routing - clean URLs
 RewriteRule ^api/v1/(.*)$ api/$1 [L]
 
-# Enable CORS
+# Enable CORS via Apache headers
 <IfModule mod_headers.c>
-    # Remove any existing CORS headers to prevent duplicates
-    Header unset Access-Control-Allow-Origin
-    Header unset Access-Control-Allow-Methods
-    Header unset Access-Control-Allow-Headers
-    Header unset Access-Control-Allow-Credentials
-    
-    # Set CORS headers - allow specific origin
-    SetEnvIf Origin "http://127.0.0.1:5500" CORS_ORIGIN=$0
-    SetEnvIf Origin "http://localhost:5500" CORS_ORIGIN=$0
-    SetEnvIf Origin "http://localhost" CORS_ORIGIN=$0
-    Header always set Access-Control-Allow-Origin %{CORS_ORIGIN}e env=CORS_ORIGIN
-    
-    # If no matching origin, use * for public resources
-    Header always set Access-Control-Allow-Origin "*" env=!CORS_ORIGIN
-    
-    # Other CORS headers
+    # Always set CORS headers
+    Header always set Access-Control-Allow-Origin "*"
     Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header always set Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-    Header always set Access-Control-Allow-Credentials "true" env=CORS_ORIGIN
     
-    # Handle OPTIONS method
-    RewriteEngine On
-    RewriteCond %{REQUEST_METHOD} OPTIONS
-    RewriteRule ^(.*)$ $1 [R=200,L]
+    # For specific origins with credentials
+    SetEnvIf Origin "http://127.0.0.1:5500" CORS_ORIGIN=$0
+    SetEnvIf Origin "http://localhost:5500" CORS_ORIGIN=$0
+    Header always set Access-Control-Allow-Origin %{CORS_ORIGIN}e env=CORS_ORIGIN
+    Header always set Access-Control-Allow-Credentials "true" env=CORS_ORIGIN
 </IfModule>
 
-# PHP Settings
+# PHP error settings - helpful for debugging
 <IfModule mod_php7.c>
     php_flag display_errors On
     php_value error_reporting E_ALL

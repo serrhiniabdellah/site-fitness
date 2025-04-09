@@ -1,5 +1,5 @@
 /**
- * Application Configuration v1.1
+ * Application Configuration v1.3
  * Central configuration for the FitZone application
  */
 
@@ -7,55 +7,92 @@
 const IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const DEBUG_MODE = IS_DEV;
 
-// API configuration
-const CONFIG = {
-    // API Base URL - updated to use absolute URL for backend
-    API_URL: IS_DEV ? 'http://localhost/site_fitness/backend/api' : 'https://yoursite.com/api',
-    
-    // WebSocket URL
-    WS_URL: IS_DEV ? 'ws://localhost:8080' : 'wss://yoursite.com/ws',
-    
-    // Debug mode toggle
-    DEBUG_MODE: DEBUG_MODE,
-    
-    // Authentication settings
-    LOGIN_EXPIRES: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-    
-    // Product pagination
-    PRODUCTS_PER_PAGE: 8,
+// Automatically detect if we're running from localhost:5500 (dev) or localhost (Apache)
+const isDevEnvironment = window.location.hostname === '127.0.0.1' && window.location.port === '5500';
 
-    // Site URL
-    SITE_URL: 'http://127.0.0.1:5500/frontend',
+// Global configuration for FitZone frontend
+const CONFIG = {
+    // API URLs with fallbacks
+    API_URL: 'http://localhost/site_fitness/backend/api',
+    API_URL_ALT: 'http://127.0.0.1/site_fitness/backend/api',
     
-    // Feature flags
-    FEATURES: {
-        ENABLE_WISHLIST: true,
-        ENABLE_REVIEWS: true,
-        ENABLE_CART_MERGE: true
+    // Image paths
+    PRODUCT_IMG_PATH: 'img/products/',
+    
+    // Authentication configuration
+    AUTH: {
+        TOKEN_STORAGE_KEY: 'fitzone_token',
+        USER_STORAGE_KEY: 'fitzone_user',
+        TIMESTAMP_KEY: 'fitzone_auth_timestamp',
+        SESSION_TIMEOUT: 3600000 // 1 hour in milliseconds
     },
     
-    // Cart configuration
-    CART: {
-        SAVE_IN_LOCALSTORAGE: true,
-        SYNC_WITH_SERVER: true
-    },
-    
-    // Session timeout (in minutes)
-    SESSION_TIMEOUT: 120
+    // CORS proxy settings
+    CORS: {
+        ENABLED: true,
+        PROXY_URLS: [
+            'https://corsproxy.io/?',
+            'https://cors-anywhere.herokuapp.com/'
+        ]
+    }
 };
 
-console.log('CONFIG initialized');
+// Initialize configuration
+(function() {
+    console.log('CONFIG initialized');
+    
+    // Check if we need to use alternative API URL
+    function checkApiAvailability() {
+        fetch(CONFIG.API_URL + '/test_connection.php')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Primary API unreachable');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Primary API available:', data);
+            })
+            .catch(err => {
+                console.warn('Primary API URL failed, switching to alternative URL');
+                // Swap the URLs
+                const temp = CONFIG.API_URL;
+                CONFIG.API_URL = CONFIG.API_URL_ALT;
+                CONFIG.API_URL_ALT = temp;
+                
+                // Try the alternative URL
+                fetch(CONFIG.API_URL + '/test_connection.php')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Alternative API also unreachable');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Alternative API available:', data);
+                    })
+                    .catch(altErr => {
+                        console.error('Both API URLs failed:', altErr);
+                    });
+            });
+    }
+    
+    // Optional: Check API availability on startup
+    // checkApiAvailability();
+})();
 
-// Function to make standardized API calls
-async function makeApiCall(endpoint, method = 'GET', data = null) {
+// Function to make standardized API calls with fallback to alternative URL
+async function makeApiCall(endpoint, method = 'GET', data = null, tryAlt = true) {
     try {
         const options = {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest' // Help with CORS
+                'X-Requested-With': 'XMLHttpRequest',
+                'Origin': window.location.origin
             },
-            credentials: 'include' // Include cookies with requests
+            credentials: 'include', // Include cookies with requests
+            mode: 'cors' // Explicitly request CORS mode
         };
 
         if (data) {
@@ -63,7 +100,7 @@ async function makeApiCall(endpoint, method = 'GET', data = null) {
         }
 
         // Add auth token if available
-        const token = localStorage.getItem('fitzone_token');
+        const token = localStorage.getItem(CONFIG.AUTH.TOKEN_STORAGE_KEY);
         if (token) {
             options.headers['Authorization'] = `Bearer ${token}`;
         }
@@ -74,20 +111,47 @@ async function makeApiCall(endpoint, method = 'GET', data = null) {
         
         console.log(`Making ${method} request to ${fullUrl}`);
         
-        const response = await fetch(fullUrl, options);
-        
-        // Handle empty responses
-        const responseText = await response.text();
-        if (!responseText) {
-            return { success: false, message: 'Empty response from server' };
-        }
-        
-        // Parse JSON response
         try {
-            return JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('JSON parse error:', parseError, 'Response text:', responseText.substring(0, 100) + '...');
-            throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+            const response = await fetch(fullUrl, options);
+            
+            // Handle empty responses
+            const responseText = await response.text();
+            if (!responseText) {
+                return { success: false, message: 'Empty response from server' };
+            }
+            
+            // Parse JSON response
+            try {
+                return JSON.parse(responseText);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError, 'Response text:', responseText.substring(0, 100) + '...');
+                throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+            }
+        } catch (fetchError) {
+            // If primary URL fails and we haven't tried alternative yet, try the alternative URL
+            if (tryAlt) {
+                console.log('Primary API URL failed. Trying alternative URL...');
+                const altApiUrl = CONFIG.API_URL_ALT;
+                const altFullUrl = endpoint.startsWith('/') ? `${altApiUrl}${endpoint}` : `${altApiUrl}/${endpoint}`;
+                
+                console.log(`Making ${method} request to alternative URL: ${altFullUrl}`);
+                
+                const altResponse = await fetch(altFullUrl, options);
+                const altResponseText = await altResponse.text();
+                
+                if (!altResponseText) {
+                    return { success: false, message: 'Empty response from server (alternative URL)' };
+                }
+                
+                try {
+                    return JSON.parse(altResponseText);
+                } catch (parseError) {
+                    console.error('JSON parse error (alt):', parseError);
+                    throw new Error(`Invalid JSON response from alternative URL: ${altResponseText.substring(0, 100)}...`);
+                }
+            } else {
+                throw fetchError;
+            }
         }
     } catch (error) {
         console.error('API call failed:', error);
@@ -103,58 +167,5 @@ if (typeof module !== 'undefined' && module.exports) {
     };
 }
 
-/**
- * FitZone Configuration
- * Global configuration settings for the application
- */
-
-// Check if CONFIG is already defined to prevent duplicate declarations
-if (typeof CONFIG === 'undefined') {
-    const CONFIG = {
-        // API URL - change this to your actual API endpoint
-        API_URL: 'http://localhost/site_fitness/backend/api',
-        
-        // Authentication settings
-        AUTH: {
-            TOKEN_STORAGE_KEY: 'fitzone_token',
-            USER_STORAGE_KEY: 'fitzone_user',
-            TOKEN_EXPIRY_DAYS: 7
-        },
-        
-        // Cart settings
-        CART: {
-            STORAGE_KEY: 'fitzone_cart',
-            SESSION_ID_KEY: 'fitzone_cart_session'
-        },
-        
-        // Debug settings
-        DEBUG: true,
-        
-        // Environment
-        ENV: 'development'
-    };
-
-    // Debug log if in development mode
-    if (CONFIG.DEBUG) {
-        console.log('CONFIG initialized');
-    }
-
-    // Make CONFIG available globally
-    window.CONFIG = CONFIG;
-}
-
-// Export for module systems if needed
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = window.CONFIG;
-}
-
-// Development indicator
-// Use this without re-declaring if already set
-if (typeof IS_DEV === 'undefined') {
-    const IS_DEV = window.location.hostname === 'localhost' || 
-                  window.location.hostname === '127.0.0.1';
-    
-    if (IS_DEV) {
-        console.log('Running in development mode');
-    }
-}
+// Make CONFIG available globally
+window.CONFIG = CONFIG;

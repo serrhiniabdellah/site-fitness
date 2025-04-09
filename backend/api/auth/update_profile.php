@@ -1,4 +1,8 @@
 <?php
+// Include CORS handler at the very top
+require_once __DIR__ . '/../cors-handler.php';
+
+
 // Set response headers
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');

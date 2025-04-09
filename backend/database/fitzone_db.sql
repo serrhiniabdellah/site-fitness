@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : 127.0.0.1:3307
--- Généré le : lun. 07 avr. 2025 à 23:01
+-- Généré le : mar. 08 avr. 2025 à 23:25
 -- Version du serveur : 10.4.32-MariaDB
 -- Version de PHP : 8.2.12
 
@@ -42,6 +42,14 @@ CREATE TABLE `adresses` (
   `pays` varchar(100) NOT NULL,
   `est_defaut` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `adresses`
+--
+
+INSERT INTO `adresses` (`id_adresse`, `id_utilisateur`, `id_commande`, `type`, `prenom`, `nom`, `telephone`, `adresse`, `adresse2`, `ville`, `code_postal`, `pays`, `est_defaut`) VALUES
+(0, 1, 8, 'shipping', 'Abdellah', 'SERRHINI', '0660995200', '5 Rue Paul Dautier 78140 Vélizy-Villacoublay', NULL, 'Velizy Villacoublay (78)', '78140', 'FR', 0),
+(0, 1, 20, 'shipping', 'filamatra', 'steeve', '056846466', '61 RUE FNIDEK APPT 8 AIT SKATOU2', NULL, 'Fès', '30000', 'GB', 0);
 
 -- --------------------------------------------------------
 
@@ -90,13 +98,14 @@ INSERT INTO `avis` (`id_avis`, `id_utilisateur`, `id_produit`, `note`, `commenta
 
 CREATE TABLE `cart` (
   `id` int(11) NOT NULL,
-  `id_utilisateur` int(11) NOT NULL,
+  `id_utilisateur` int(11) DEFAULT NULL,
+  `session_id` varchar(255) DEFAULT NULL,
   `id_produit` int(11) NOT NULL,
   `variant_id` int(11) DEFAULT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
   `created_at` datetime DEFAULT current_timestamp(),
   `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ;
 
 -- --------------------------------------------------------
 
@@ -144,6 +153,14 @@ CREATE TABLE `commandes` (
   `date_expedition` datetime DEFAULT NULL,
   `date_livraison` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `commandes`
+--
+
+INSERT INTO `commandes` (`id_commande`, `id_utilisateur`, `id_statut`, `sous_total`, `frais_livraison`, `total`, `methode_paiement`, `id_transaction`, `notes`, `date_commande`, `date_paiement`, `date_expedition`, `date_livraison`) VALUES
+(8, 1, 1, 325.98, 0.00, 325.98, 'credit_card', NULL, NULL, '2025-04-08 14:04:36', NULL, NULL, NULL),
+(20, 1, 1, 220.00, 0.00, 220.00, 'credit_card', NULL, NULL, '2025-04-08 15:01:50', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -314,11 +331,12 @@ CREATE TABLE `utilisateurs` (
 --
 
 INSERT INTO `utilisateurs` (`id_utilisateur`, `email`, `mot_de_passe`, `nom`, `prenom`, `telephone`, `est_admin`, `est_actif`, `date_inscription`, `derniere_connexion`) VALUES
-(1, 'admin@fitzone.com', '$2y$10$oMB.fnt9WL/J1MiGGTyCm.0N1VEwa6eIShLaPOx1sZdv4Wu/v3xkK', 'SERRHINI', 'Abdellah', '0660995200', 1, 1, '2025-04-07 02:31:55', '2025-04-07 22:56:50'),
+(1, 'admin@fitzone.com', '$2y$10$1qObO0jghy.zgX7KJYFFvu9sNchVMADzF6TIjsxQh71RUhB.k8tyS', 'SERRHINI', 'Abdellah', '0660995200', 1, 1, '2025-04-07 02:31:55', '2025-04-08 19:26:48'),
 (2, 'user@example.com', '$2y$10$eVUIt7cqliKczPEiHOT6we02WJLV7NfLomySJBxPjC9geaIHvnpya', 'John', 'Doe', '06658741', 0, 1, '2025-04-07 02:31:55', NULL),
-(10, 'ser.abdellah@gmail.com', '$2y$10$l9.Yd4jPGkcCzSRJooMiAe2MQNfFgjjm5/XqjaKYYFJK3KanxRgcy', 'SERRHINI', 'Abdellah', NULL, 0, 1, '2025-04-07 17:01:26', '2025-04-07 17:11:18'),
+(10, 'ser.abdellah@gmail.com', '$2y$10$l9.Yd4jPGkcCzSRJooMiAe2MQNfFgjjm5/XqjaKYYFJK3KanxRgcy', 'SERRHINI', 'Abdellah', NULL, 0, 1, '2025-04-07 17:01:26', '2025-04-08 15:06:16'),
 (11, 'ser.abdellah80@gmail.com', '$2y$10$WsbPj/ayVP2OGxY7iRhuKO0ZEntge7y5kFtsmSfuIiFz9B79RTy9u', 'SERRHINI', 'Abdellah', NULL, 0, 1, '2025-04-07 17:11:43', NULL),
-(12, 'ser.abdellah3@gmail.com', '$2y$10$o/836FqvVR9dv/3rv1ZTgOQa6WFjujkV7ROYG5v2cblFeCNmKoxbm', 'SERRHINI', 'Abdellah', NULL, 0, 1, '2025-04-07 17:23:25', '2025-04-07 18:54:58');
+(12, 'ser.abdellah3@gmail.com', '$2y$10$o/836FqvVR9dv/3rv1ZTgOQa6WFjujkV7ROYG5v2cblFeCNmKoxbm', 'SERRHINI', 'Abdellah', NULL, 0, 1, '2025-04-07 17:23:25', '2025-04-07 18:54:58'),
+(14, 'filamatrasteeve2019@gmail.com', '$2y$10$.AWa4WD4NmsLtdRGGbWHX.tzMEtr40JXdzf19z2kuDsdax9CawyxS', 'steeve', 'filamatra', '0568444', 0, 1, '2025-04-08 14:13:19', '2025-04-08 14:13:32');
 
 -- --------------------------------------------------------
 
@@ -358,7 +376,6 @@ INSERT INTO `variants_produit` (`id_variant`, `id_produit`, `nom`, `description`
 -- Index pour la table `adresses`
 --
 ALTER TABLE `adresses`
-  ADD PRIMARY KEY (`id_adresse`),
   ADD KEY `id_utilisateur` (`id_utilisateur`),
   ADD KEY `id_commande` (`id_commande`);
 
@@ -382,9 +399,12 @@ ALTER TABLE `avis`
 --
 ALTER TABLE `cart`
   ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_user_product_variant` (`id_utilisateur`,`id_produit`,`variant_id`),
   ADD KEY `id_utilisateur` (`id_utilisateur`),
   ADD KEY `id_produit` (`id_produit`),
-  ADD KEY `variant_id` (`variant_id`);
+  ADD KEY `variant_id` (`variant_id`),
+  ADD KEY `idx_cart_user` (`id_utilisateur`),
+  ADD KEY `idx_cart_session` (`session_id`);
 
 --
 -- Index pour la table `categories`
@@ -400,6 +420,12 @@ ALTER TABLE `commandes`
   ADD PRIMARY KEY (`id_commande`),
   ADD KEY `id_utilisateur` (`id_utilisateur`),
   ADD KEY `id_statut` (`id_statut`);
+
+--
+-- Index pour la table `commande_items`
+--
+ALTER TABLE `commande_items`
+  ADD PRIMARY KEY (`id_item`);
 
 --
 -- Index pour la table `produits`
@@ -426,6 +452,12 @@ ALTER TABLE `utilisateurs`
 --
 
 --
+-- AUTO_INCREMENT pour la table `cart`
+--
+ALTER TABLE `cart`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT pour la table `categories`
 --
 ALTER TABLE `categories`
@@ -435,7 +467,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT pour la table `commandes`
 --
 ALTER TABLE `commandes`
-  MODIFY `id_commande` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_commande` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT pour la table `commande_items`
+--
+ALTER TABLE `commande_items`
+  MODIFY `id_item` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `produits`
@@ -453,7 +491,7 @@ ALTER TABLE `statut_commande`
 -- AUTO_INCREMENT pour la table `utilisateurs`
 --
 ALTER TABLE `utilisateurs`
-  MODIFY `id_utilisateur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `id_utilisateur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- Contraintes pour les tables déchargées

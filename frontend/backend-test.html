@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #results {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+        .endpoint {
+            margin-bottom: 15px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>FitZone Backend Connection Test</h1>
+    
+    <h2>Connection Tests</h2>
+    <div>
+        <button onclick="testBasicConnection()">Test Basic Connection</button>
+        <button onclick="testDatabaseConnection()">Test Database Connection</button>
+        <button onclick="testLoginEndpoint()">Test Login Endpoint</button>
+        <button onclick="testProductsEndpoint()">Test Products Endpoint</button>
+    </div>
+
+    <h2>API URLs</h2>
+    <div>
+        <table>
+            <tr>
+                <th>Type</th>
+                <th>URL</th>
+            </tr>
+            <tr>
+                <td>Primary API URL</td>
+                <td id="primary-url"></td>
+            </tr>
+            <tr>
+                <td>Alternative API URL</td>
+                <td id="alternative-url"></td>
+            </tr>
+            <tr>
+                <td>Current Origin</td>
+                <td id="current-origin"></td>
+            </tr>
+        </table>
+    </div>
+
+    <h2>Test Results</h2>
+    <div id="results">Results will appear here...</div>
+
+    <script>
+        // Display API URLs
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('primary-url').textContent = 'http://localhost/site_fitness/backend/api';
+            document.getElementById('alternative-url').textContent = 'http://127.0.0.1/site_fitness/backend/api';
+            document.getElementById('current-origin').textContent = window.location.origin;
+        });
+
+        // Function to format and display results
+        function displayResults(title, data, success = true) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Create endpoint div
+            const endpointDiv = document.createElement('div');
+            endpointDiv.className = 'endpoint ' + (success ? 'success-bg' : 'error-bg');
+            
+            // Add title
+            const titleElem = document.createElement('h3');
+            titleElem.className = success ? 'success' : 'error';
+            titleElem.textContent = title;
+            endpointDiv.appendChild(titleElem);
+            
+            // Add content
+            const content = document.createElement('pre');
+            content.textContent = typeof data === 'object' ? JSON.stringify(data, null, 2) : data;
+            endpointDiv.appendChild(content);
+            
+            // Add timestamp
+            const timestamp = document.createElement('div');
+            timestamp.textContent = new Date().toLocaleString();
+            timestamp.style.fontSize = '0.8em';
+            timestamp.style.color = '#666';
+            endpointDiv.appendChild(timestamp);
+            
+            // Add to results
+            resultsDiv.appendChild(endpointDiv);
+            
+            // Add separator
+            const hr = document.createElement('hr');
+            resultsDiv.appendChild(hr);
+            
+            // Scroll to bottom
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+        
+        // Function to test connection to the backend
+        async function testBasicConnection() {
+            try {
+                const urls = [
+                    'http://localhost/site_fitness/backend/api/test_connection.php',
+                    'http://127.0.0.1/site_fitness/backend/api/test_connection.php'
+                ];
+                
+                for (const url of urls) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Origin': window.location.origin
+                            },
+                            mode: 'cors'
+                        });
+                        
+                        const data = await response.json();
+                        
+                        displayResults(`Basic Connection: ${url}`, data, response.ok);
+                        
+                        // If the first URL worked, break out
+                        break;
+                    } catch (urlError) {
+                        if (url === urls[urls.length - 1]) {
+                            // If this was the last URL, show the error
+                            displayResults(`Connection Failed: ${url}`, urlError.message, false);
+                        }
+                        // Otherwise, try the next URL
+                    }
+                }
+            } catch (error) {
+                displayResults('Basic Connection', `Error: ${error.message}`, false);
+            }
+        }
+        
+        // Function to test database connection
+        async function testDatabaseConnection() {
+            try {
+                const urls = [
+                    'http://localhost/site_fitness/backend/api/test_connection.php?db=1',
+                    'http://127.0.0.1/site_fitness/backend/api/test_connection.php?db=1'
+                ];
+                
+                for (const url of urls) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Origin': window.location.origin
+                            },
+                            mode: 'cors'
+                        });
+                        
+                        const data = await response.json();
+                        const dbSuccess = data.database && data.database.connected === true;
+                        
+                        displayResults(`Database Connection: ${url}`, data, dbSuccess);
+                        
+                        // If the first URL worked, break out
+                        break;
+                    } catch (urlError) {
+                        if (url === urls[urls.length - 1]) {
+                            // If this was the last URL, show the error
+                            displayResults(`DB Connection Failed: ${url}`, urlError.message, false);
+                        }
+                        // Otherwise, try the next URL
+                    }
+                }
+            } catch (error) {
+                displayResults('Database Connection', `Error: ${error.message}`, false);
+            }
+        }
+        
+        // Function to test login endpoint
+        async function testLoginEndpoint() {
+            try {
+                const urls = [
+                    'http://localhost/site_fitness/backend/api/auth/login.php',
+                    'http://127.0.0.1/site_fitness/backend/api/auth/login.php'
+                ];
+                
+                // Test data - should be invalid to avoid actual login
+                const testData = {
+                    email: 'test@example.com',
+                    password: 'test123'
+                };
+                
+                for (const url of urls) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Origin': window.location.origin
+                            },
+                            body: JSON.stringify(testData),
+                            mode: 'cors'
+                        });
+                        
+                        const data = await response.text();
+                        let jsonData;
+                        
+                        try {
+                            jsonData = JSON.parse(data);
+                            // Even if login fails with 401, consider the test a success if we got a JSON response
+                            displayResults(`Login API Connection: ${url}`, jsonData, true);
+                        } catch (e) {
+                            // If the response is not JSON, consider it a failure
+                            displayResults(`Login API Response (Invalid JSON): ${url}`, data, false);
+                        }
+                        
+                        // If the first URL worked, break out
+                        break;
+                    } catch (urlError) {
+                        if (url === urls[urls.length - 1]) {
+                            // If this was the last URL, show the error
+                            displayResults(`Login API Failed: ${url}`, urlError.message, false);
+                        }
+                        // Otherwise, try the next URL
+                    }
+                }
+            } catch (error) {
+                displayResults('Login API Connection', `Error: ${error.message}`, false);
+            }
+        }
+        
+        // Function to test products endpoint
+        async function testProductsEndpoint() {
+            try {
+                const urls = [
+                    'http://localhost/site_fitness/backend/api/products/index.php',
+                    'http://127.0.0.1/site_fitness/backend/api/products/index.php'
+                ];
+                
+                for (const url of urls) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Origin': window.location.origin
+                            },
+                            mode: 'cors'
+                        });
+                        
+                        const data = await response.text();
+                        let jsonData;
+                        
+                        try {
+                            jsonData = JSON.parse(data);
+                            displayResults(`Products API Connection: ${url}`, jsonData, true);
+                        } catch (e) {
+                            // If the response is not JSON, consider it a failure
+                            displayResults(`Products API Response (Invalid JSON): ${url}`, data, false);
+                        }
+                        
+                        // If the first URL worked, break out
+                        break;
+                    } catch (urlError) {
+                        if (url === urls[urls.length - 1]) {
+                            // If this was the last URL, show the error
+                            displayResults(`Products API Failed: ${url}`, urlError.message, false);
+                        }
+                        // Otherwise, try the next URL
+                    }
+                }
+            } catch (error) {
+                displayResults('Products API Connection', `Error: ${error.message}`, false);
+            }
+        }
+    </script>
+</body>
+</html>

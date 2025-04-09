@@ -1,4 +1,7 @@
 <?php
+// Include CORS handler at the very top
+require_once __DIR__ . '/cors-handler.php';
+
 // Simple API index file to verify your API is working
 header('Content-Type: application/json');
 echo json_encode([

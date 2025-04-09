@@ -1,0 +1,8 @@
+{
+    "servers": {
+        "my-mcp-server-2e41e686": {
+            "type": "sse",
+            "url": "http://localhost/site_fitness/backend/"
+        }
+    }
+}

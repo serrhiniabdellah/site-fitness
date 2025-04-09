@@ -13,7 +13,12 @@ class Database {
 
     public function __construct() {
         // Set DSN (Data Source Name)
-        $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4";
+        // Extract host and port correctly
+        $hostParts = explode(':', $this->host);
+        $host = $hostParts[0];
+        $port = isset($hostParts[1]) ? $hostParts[1] : '3306';
+        
+        $dsn = "mysql:host={$host};port={$port};dbname={$this->dbname};charset=utf8mb4";
         
         // Set PDO options
         $options = [
@@ -32,6 +37,20 @@ class Database {
             }
         } catch (PDOException $e) {
             $this->error = $e->getMessage();
+            
+            // Try alternative port if specified port failed
+            if (isset($hostParts[1]) && $port != '3306') {
+                try {
+                    $altDsn = "mysql:host={$host};port=3306;dbname={$this->dbname};charset=utf8mb4";
+                    $this->dbh = new PDO($altDsn, $this->user, $this->pass, $options);
+                    error_log("Database connection successful using alternative port 3306");
+                    return;
+                } catch (PDOException $altError) {
+                    // Both attempts failed
+                    $this->error .= ". Also tried port 3306: " . $altError->getMessage();
+                }
+            }
+            
             // Format error as JSON for API responses
             $errorResponse = [
                 'error' => "Database connection error: {$this->error}"
@@ -125,7 +144,7 @@ class Database {
         return $this->dbh->rollBack();
     }
     
-    // Check if in transaction - NEW METHOD
+    // Check if in transaction
     public function inTransaction() {
         return $this->transaction || $this->dbh->inTransaction();
     }

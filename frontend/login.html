@@ -1,9 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone - Login</title>
+    
+    <!-- Early WebSocket Fix - Load before any other scripts -->
+    <script src="js/websocket-earlyfix.js"></script>
+    
     <!-- Load Chrome extension fix early -->
     <script src="chrome-extension-fix.js"></script>
     <!-- Add auth persistence handler -->
@@ -13,7 +18,6 @@
     <script src="js/auth-debugger.js"></script>
     <!-- CSP that allows API and WebSocket connections -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* http://127.0.0.1:* http://localhost:*;">
-    <title>FitZone - Login</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
