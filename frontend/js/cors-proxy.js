@@ -18,9 +18,12 @@
     // Track failed URLs to avoid infinite retry loops
     const failedUrls = new Set();
     
+    // Check if we're in Docker environment
+    const IS_DOCKER = window.location.port === '80' || window.location.port === '';
+    
     // Fixed API base URLs - update these to match your htdocs deployment
-    const API_BASE_URL = 'http://localhost/site_fitness/backend/api';
-    const FALLBACK_API_URL = 'http://127.0.0.1/site_fitness/backend/api';
+    const API_BASE_URL = IS_DOCKER ? '/api' : 'http://localhost/site_fitness/backend/api';
+    const FALLBACK_API_URL = IS_DOCKER ? '/api' : 'http://127.0.0.1/site_fitness/backend/api';
     
     // Override fetch to handle CORS
     window.fetch = async function(url, options = {}) {
@@ -42,6 +45,12 @@
             // Only intercept API calls, not all fetch requests
             if (urlString.includes('/api/') || urlString.includes('/site_fitness/backend/')) {
                 console.log('[CORS Proxy] Intercepting API request:', urlString);
+                
+                // In Docker environment, don't proxy requests, just use direct paths
+                if (IS_DOCKER && urlString.startsWith('/api/')) {
+                    console.log('[CORS Proxy] Docker environment detected, using direct API path:', urlString);
+                    return originalFetch(urlString, originalOptions);
+                }
                 
                 // Prepare headers
                 if (!modifiedOptions.headers) {

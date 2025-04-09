@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitZone - Health Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FitZone Health Check</h1>
+        <div id="status" class="status">Checking system status...</div>
+        <div>
+            <button onclick="checkBackendApi()">Check Backend API</button>
+            <button onclick="checkDatabase()">Check Database</button>
+        </div>
+        <div id="results" style="margin-top: 20px; text-align: left;"></div>
+    </div>
+
+    <script>
+        // Check system status when page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            await checkBackendApi();
+        });
+
+        // Check backend API health
+        async function checkBackendApi() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                statusEl.textContent = 'Checking backend API...';
+                statusEl.className = 'status';
+                
+                const response = await fetch('/api/ping.php');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    statusEl.textContent = 'Backend API is operational!';
+                    statusEl.className = 'status success';
+                    resultsEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    throw new Error('Backend returned unsuccessful status');
+                }
+            } catch (error) {
+                statusEl.textContent = `Backend API check failed: ${error.message}`;
+                statusEl.className = 'status error';
+                resultsEl.textContent = 'Could not connect to backend API. Please check the server logs.';
+            }
+        }
+        
+        // Check database health through API
+        async function checkDatabase() {
+            const statusEl = document.getElementById('status');
+            const resultsEl = document.getElementById('results');
+            
+            try {
+                statusEl.textContent = 'Checking database connection...';
+                statusEl.className = 'status';
+                
+                const response = await fetch('/api/test_connection.php');
+                const data = await response.json();
+                
+                if (data.database_connection === true) {
+                    statusEl.textContent = 'Database connection successful!';
+                    statusEl.className = 'status success';
+                    resultsEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    throw new Error('Database connection failed');
+                }
+            } catch (error) {
+                statusEl.textContent = `Database check failed: ${error.message}`;
+                statusEl.className = 'status error';
+                resultsEl.textContent = 'Could not connect to the database. Please check the server logs.';
+            }
+        }
+    </script>
+</body>
+</html>

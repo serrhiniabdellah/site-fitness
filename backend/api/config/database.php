@@ -2,7 +2,6 @@
 // Include CORS handler at the very top
 require_once __DIR__ . '/../cors-handler.php';
 
-
 class Database {
     private $host;
     private $db_name;
@@ -12,11 +11,17 @@ class Database {
     private $port;
 
     public function __construct() {
-        $this->host = "localhost";
-        $this->db_name = "fitzone_db";
-        $this->username = "root";
-        $this->password = ""; // Default XAMPP password is empty
-        $this->port = 3307; // As seen in your SQL dump
+        // Detect Docker environment
+        $is_docker = getenv('DB_HOST') === 'database';
+
+        // Use environment variables in Docker, fallback to default values
+        $this->host = $is_docker ? getenv('DB_HOST') : "localhost";
+        $this->db_name = $is_docker ? getenv('DB_NAME') : "fitzone_db";
+        $this->username = $is_docker ? getenv('DB_USER') : "root";
+        $this->password = $is_docker ? getenv('DB_PASS') : ""; // Default XAMPP password is empty
+        
+        // Use port 3306 in Docker, fallback to 3307 for local dev
+        $this->port = $is_docker ? 3306 : 3307;
     }
 
     /**

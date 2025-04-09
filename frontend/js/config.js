@@ -1,5 +1,5 @@
 /**
- * Application Configuration v1.3
+ * Application Configuration v1.4
  * Central configuration for the FitZone application
  */
 
@@ -7,14 +7,14 @@
 const IS_DEV = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const DEBUG_MODE = IS_DEV;
 
-// Automatically detect if we're running from localhost:5500 (dev) or localhost (Apache)
-const isDevEnvironment = window.location.hostname === '127.0.0.1' && window.location.port === '5500';
+// Docker environment detection - Docker setup uses /api/ as the path
+const IS_DOCKER = window.location.port === '80' || window.location.port === '';
 
 // Global configuration for FitZone frontend
 const CONFIG = {
-    // API URLs with fallbacks
-    API_URL: 'http://localhost/site_fitness/backend/api',
-    API_URL_ALT: 'http://127.0.0.1/site_fitness/backend/api',
+    // API URLs with fallbacks - Docker setup uses a different URL structure
+    API_URL: IS_DOCKER ? '/api' : 'http://localhost/site_fitness/backend/api', 
+    API_URL_ALT: IS_DOCKER ? '/api' : 'http://127.0.0.1/site_fitness/backend/api',
     
     // Image paths
     PRODUCT_IMG_PATH: 'img/products/',
@@ -29,7 +29,7 @@ const CONFIG = {
     
     // CORS proxy settings
     CORS: {
-        ENABLED: true,
+        ENABLED: !IS_DOCKER, // No need for CORS proxy in Docker environment
         PROXY_URLS: [
             'https://corsproxy.io/?',
             'https://cors-anywhere.herokuapp.com/'
@@ -39,7 +39,7 @@ const CONFIG = {
 
 // Initialize configuration
 (function() {
-    console.log('CONFIG initialized');
+    console.log('CONFIG initialized', IS_DOCKER ? '(Docker Environment)' : '(Standard Environment)');
     
     // Check if we need to use alternative API URL
     function checkApiAvailability() {

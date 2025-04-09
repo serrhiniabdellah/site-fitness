@@ -677,8 +677,12 @@
                         return;
                     }
                     
-                    // Send order to API
-                    const response = await fetch(`${CONFIG.API_URL}/orders/create.php`, {
+                    // Check for Docker environment
+                    const IS_DOCKER = window.location.port === '80' || window.location.port === '';
+                    const API_URL = IS_DOCKER ? '/api' : CONFIG.API_URL;
+                    
+                    // Send order to API using the correct URL based on environment
+                    const response = await fetch(`${API_URL}/orders/create.php`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

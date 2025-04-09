@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 3308,
+            "driver": "MySQL",
+            "username": "fitzone_user",
+            "name": "FitZone Docker DB",
+            "database": "fitzone_db",
+            "connectionTimeout": 30,
+            "askForPassword": true
+        }
+    ]
+}

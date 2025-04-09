@@ -1,18 +1,57 @@
 <?php
-// Enable debug mode for development
+/**
+ * Global Configuration File
+ * This file holds all the configuration settings for the backend
+ */
+
+// Debug mode
 define('CONFIG_DEBUG', true);
 
-// Enable error handling that won't break JSON responses
-ini_set('display_errors', 0);
-error_reporting(E_ALL);
+// Detect Docker environment
+$is_docker = getenv('DB_HOST') === 'database';
 
-// Database configuration - Updated with correct port number from my.cnf
-define('DB_HOST', 'localhost:3307'); // Adding port 3307 as specified in your MySQL config
-define('DB_USER', 'root'); // Replace with your database username
-define('DB_PASS', ''); // If your MySQL root user has a password, add it here
+// Database settings
+define('DB_HOST', $is_docker ? getenv('DB_HOST') : 'localhost');
+define('DB_NAME', $is_docker ? getenv('DB_NAME') : 'fitzone_db');
+define('DB_USER', $is_docker ? getenv('DB_USER') : 'root');
+define('DB_PASS', $is_docker ? getenv('DB_PASS') : '');
+define('DB_CHARSET', 'utf8mb4');
 
-// JWT Secret for authentication tokens - This must be defined for token generation
-define('JWT_SECRET', 'fitzone_super_secure_secret_key_2025'); // Replace with a strong random string in production
+// Application paths
+define('ROOT_PATH', dirname(__FILE__));
+define('API_PATH', ROOT_PATH . '/api');
+define('UPLOADS_PATH', ROOT_PATH . '/uploads');
+
+// Allowed origins for CORS
+$allowed_origins = array(
+    'http://localhost',
+    'http://localhost:80',
+    'http://127.0.0.1',
+    'http://127.0.0.1:5500',
+    'http://localhost:5500',
+    'null' // For local development with file:// protocol
+);
+define('ALLOWED_ORIGINS', $allowed_origins);
+
+// JWT Token secret
+define('JWT_SECRET', 'your_secret_key_here_change_this_in_production');
+define('JWT_EXPIRY', 3600); // 1 hour
+
+// Logging
+define('ENABLE_LOGGING', true);
+define('LOG_FILE', ROOT_PATH . '/logs/app.log');
+
+// Error reporting
+if (CONFIG_DEBUG) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+}
+
+// Set timezone
+date_default_timezone_set('UTC');
 
 // Check MySQL connection before defining database name
 try {
@@ -23,12 +62,10 @@ try {
     header('Content-Type: application/json');
     echo json_encode([
         'error' => 'Database connection error: ' . $e->getMessage(),
-        'help' => 'Please check your MySQL credentials and ensure MySQL server is running on port 3307.'
+        'help' => 'Please check your MySQL credentials and ensure MySQL server is running.'
     ]);
     exit();
 }
-
-define('DB_NAME', 'fitzone_db');
 
 // Determine the site path more reliably
 $documentRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
@@ -48,14 +85,6 @@ if (!file_exists(UPLOAD_DIR)) {
 
 // Session timeout (in seconds)
 define('SESSION_TIMEOUT', 3600); // 1 hour
-
-// Define allowed origins for CORS
-define('ALLOWED_ORIGINS', [
-    'http://127.0.0.1:5500',
-    'http://localhost:5500', 
-    'http://localhost',
-    'null' // For local file testing
-]);
 
 // Handle preflight OPTIONS request ONLY if cors-handler.php has not been loaded
 // This is determined by checking if a specific flag is set
