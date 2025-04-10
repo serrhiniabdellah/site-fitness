@@ -64,7 +64,7 @@ try {
         'error' => 'Database connection error: ' . $e->getMessage(),
         'help' => 'Please check your MySQL credentials and ensure MySQL server is running.'
     ]);
-    exit();
+    exit; // Using exit without parentheses for consistent style
 }
 
 // Determine the site path more reliably

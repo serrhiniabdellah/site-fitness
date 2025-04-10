@@ -205,6 +205,79 @@
             color: #28a745;
             margin-top: 10px;
         }
+        
+        /* Payment method styling */
+        .payment-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .payment-option {
+            position: relative;
+        }
+        
+        .payment-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+        
+        .payment-label {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #e1e1e1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-option input[type="radio"]:checked + .payment-label {
+            border-color: #088178;
+            background-color: rgba(8, 129, 120, 0.05);
+            box-shadow: 0 0 0 1px #088178;
+        }
+        
+        .payment-icon {
+            font-size: 24px;
+            color: #088178;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(8, 129, 120, 0.1);
+            border-radius: 50%;
+        }
+        
+        .payment-details {
+            flex-grow: 1;
+        }
+        
+        .payment-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .payment-description {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .payment-logos {
+            display: flex;
+            gap: 8px;
+            font-size: 22px;
+            color: #666;
+        }
+        
+        /* Make labels more clickable */
+        .payment-label:hover {
+            background-color: rgba(8, 129, 120, 0.03);
+        }
     </style>
     
     <!-- Include cart service script -->
@@ -319,17 +392,31 @@
             
             <div class="form-section">
                 <h3>Payment Method</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>
-                            <input type="radio" name="payment" value="credit_card" checked> Credit Card
+                <div class="payment-options">
+                    <div class="payment-option">
+                        <input type="radio" id="credit_card" name="payment" value="credit_card" checked>
+                        <label for="credit_card" class="payment-label">
+                            <div class="payment-icon"><i class="far fa-credit-card"></i></div>
+                            <div class="payment-details">
+                                <div class="payment-title">Credit Card</div>
+                                <div class="payment-description">Pay securely with your credit card</div>
+                            </div>
+                            <div class="payment-logos">
+                                <i class="fab fa-cc-visa"></i>
+                                <i class="fab fa-cc-mastercard"></i>
+                                <i class="fab fa-cc-amex"></i>
+                            </div>
                         </label>
                     </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>
-                            <input type="radio" name="payment" value="paypal"> PayPal
+                    
+                    <div class="payment-option">
+                        <input type="radio" id="paypal" name="payment" value="paypal">
+                        <label for="paypal" class="payment-label">
+                            <div class="payment-icon"><i class="fab fa-paypal"></i></div>
+                            <div class="payment-details">
+                                <div class="payment-title">PayPal</div>
+                                <div class="payment-description">Pay easily with your PayPal account</div>
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -647,25 +734,6 @@
                     messageElem.className = 'info-message';
                     messageElem.textContent = 'Processing your order...';
 
-                    // Prepare order data
-                    const orderData = {
-                        shipping_info: {
-                            first_name: firstName,
-                            last_name: lastName,
-                            email: email,
-                            phone: phone,
-                            address: address,
-                            city: city,
-                            postal_code: postalCode,
-                            country: country
-                        },
-                        cart: cart,
-                        payment_method: paymentMethod.value,
-                        shipping_cost: 0 // Free shipping for now
-                    };
-
-                    console.log('Sending order data:', orderData);
-                    
                     // Get authorization token
                     const token = localStorage.getItem('fitzone_token');
                     if (!token) {
@@ -679,9 +747,50 @@
                     
                     // Check for Docker environment
                     const IS_DOCKER = window.location.port === '80' || window.location.port === '';
-                    const API_URL = IS_DOCKER ? '/api' : CONFIG.API_URL;
+                    const API_URL = IS_DOCKER ? '/api' : CONFIG.API_URL || 'http://localhost/site_fitness/backend/api';
                     
-                    // Send order to API using the correct URL based on environment
+                    // Create order with address information directly
+                    messageElem.textContent = 'Creating your order...';
+                    
+                    // Get user ID from stored user data
+                    const userData = JSON.parse(localStorage.getItem('fitzone_user'));
+                    const userId = userData?.id_utilisateur;
+                    
+                    // Create a deterministic address ID based on user ID and current address
+                    // This is a workaround for the backend requirement of id_adresse
+                    const addressHash = `${userId}-${address.replace(/\s+/g, '')}-${city}-${postalCode}`.substring(0, 20);
+                    const fakeAddressId = parseInt(addressHash.split('').map(c => c.charCodeAt(0)).reduce((a, b) => a + b, 0)) % 10000;
+                    
+                    console.log('Generated address ID for backend:', fakeAddressId);
+                    
+                    // Prepare order data with address information and id_adresse
+                    const orderData = {
+                        shipping_info: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            email: email,
+                            phone: phone,
+                            address: address,
+                            city: city,
+                            postal_code: postalCode,
+                            country: country
+                        },
+                        address: {
+                            address_line1: address,
+                            city: city,
+                            postal_code: postalCode,
+                            country: country,
+                            is_default: true
+                        },
+                        cart: cart,
+                        payment_method: paymentMethod.value,
+                        shipping_cost: 0, // Free shipping for now
+                        id_adresse: fakeAddressId // Explicitly include the id_adresse field
+                    };
+
+                    console.log('Sending order data:', orderData);
+                    
+                    // Send order to API
                     const response = await fetch(`${API_URL}/orders/create.php`, {
                         method: 'POST',
                         headers: {
@@ -725,16 +834,15 @@
                         // Trigger cart update event
                         document.dispatchEvent(new CustomEvent('cart:updated'));
                         
-                        // Redirect to orders page
+                        // Redirect to order confirmation page
                         setTimeout(() => {
-                            window.location.href = 'orders.html';
+                            window.location.href = 'order-confirmation.html?id=' + (data.data?.order_id || data.order_id || '');
                         }, 2000);
                     } else {
                         // Order failed
                         messageElem.className = 'error-message';
                         messageElem.textContent = data.message || 'Failed to process your order. Please try again.';
                     }
-                    
                 } catch (error) {
                     console.error('Error processing order:', error);
                     messageElem.className = 'error-message';

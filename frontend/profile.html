@@ -428,6 +428,13 @@
 
     <!-- Before other scripts -->
     <script src="js/logout-debug.js"></script>
+    <!-- Add our robust logout handler before other scripts -->
+    <script src="js/auth-logout.js"></script>
+    <!-- Add auth-header.js which now has improved logout handling -->
+    <script src="js/auth-header.js"></script>
+    
+    <!-- Add the robust auth-logout.js script -->
+    <script src="js/auth-logout.js"></script>
 
     <script>
         // Add debug helper function

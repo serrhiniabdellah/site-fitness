@@ -2,4 +2,5 @@
 CREATE DATABASE IF NOT EXISTS fitzone_db;
 USE fitzone_db;
 
--- The rest of the schema will be imported from the SQL file in docker-entrypoint-initdb.d
+-- The complete schema will be imported from the copied SQL file in the same directory
+SOURCE /docker-entrypoint-initdb.d/fitzone_db.sql;

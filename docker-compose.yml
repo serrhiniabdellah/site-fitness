@@ -54,6 +54,7 @@ services:
       - MYSQL_PASSWORD=fitzone_password
     volumes:
       - ./docker/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/database/fitzone_db.sql:/docker-entrypoint-initdb.d/fitzone_db.sql
       - fitzone-db-data:/var/lib/mysql
     networks:
       - fitzone-network

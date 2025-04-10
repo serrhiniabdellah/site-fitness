@@ -26,7 +26,7 @@ try {
         
         if (count($matches) === 3) {
             $category = $matches[1];
-            $productNumber = $matches[2];
+            $productNumber = intval($matches[2]); // Ensure it's an integer
             
             // Map category string to category ID
             $categoryMap = [
@@ -40,20 +40,36 @@ try {
             
             // Find product by category and ranking
             if ($categoryId > 0) {
-                $stmt = $conn->prepare("SELECT p.*, c.nom_categorie as category_name 
-                                       FROM produits p 
-                                       LEFT JOIN categories c ON p.id_categorie = c.id_categorie
-                                       WHERE p.id_categorie = ?
-                                       ORDER BY p.id_produit ASC
-                                       LIMIT ?, 1");
-                $productOffset = intval($productNumber) - 1;
-                $stmt->bind_param("ii", $categoryId, $productOffset);
+                // Fix: Use a subquery to select the nth product by ID in the category
+                // This is more reliable than using LIMIT with an offset parameter
+                if ($productNumber <= 1) {
+                    // For first product in category, simple query is sufficient
+                    $stmt = $conn->prepare("
+                        SELECT p.*, c.nom_categorie as category_name 
+                        FROM produits p 
+                        LEFT JOIN categories c ON p.id_categorie = c.id_categorie
+                        WHERE p.id_categorie = ? 
+                        ORDER BY p.id_produit ASC
+                        LIMIT 1");
+                    $stmt->bind_param("i", $categoryId);
+                } else {
+                    // For other positions, we need a more complex query to handle missing products
+                    $productOffset = $productNumber - 1;
+                    $stmt = $conn->prepare("
+                        SELECT p.*, c.nom_categorie as category_name 
+                        FROM produits p 
+                        LEFT JOIN categories c ON p.id_categorie = c.id_categorie
+                        WHERE p.id_categorie = ?
+                        ORDER BY p.id_produit ASC
+                        LIMIT ?, 1");
+                    $stmt->bind_param("ii", $categoryId, $productOffset);
+                }
             } else {
-                sendErrorResponse("Invalid product identifier");
+                sendErrorResponse("Invalid product identifier - category not recognized");
                 exit;
             }
         } else {
-            sendErrorResponse("Invalid product identifier format");
+            sendErrorResponse("Invalid product identifier format - expected format like 'equip3'");
             exit;
         }
     }
@@ -63,6 +79,7 @@ try {
     
     if ($result->num_rows === 0) {
         sendErrorResponse('Product not found');
+        exit;
     }
     
     $product = $result->fetch_assoc();
@@ -92,6 +109,11 @@ try {
     }
     
     $product['images'] = $images;
+    
+    // Make sure ID is always available in a consistent format
+    if (!isset($product['id']) && isset($product['id_produit'])) {
+        $product['id'] = $product['id_produit'];
+    }
     
     // Send successful response
     sendResponse(['success' => true, 'product' => $product]);

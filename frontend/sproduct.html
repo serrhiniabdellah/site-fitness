@@ -955,6 +955,105 @@
     <!-- Basic site scripts -->
     <script src="script.js"></script>
     <script src="js/header.js"></script>
+    <script>
+    // Initialize or ensure CartService is available
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a moment to ensure CartService has loaded
+        setTimeout(function() {
+            // Check if CartService exists
+            if (!window.CartService) {
+                console.warn('CartService not found, initializing fallback cart system');
+                
+                // Create minimal CartService fallback
+                window.CartService = {
+                    getCart: async function() {
+                        const cartData = localStorage.getItem('fitzone_cart') || '{"items":[],"total":0}';
+                        return JSON.parse(cartData);
+                    },
+                    
+                    addItem: async function(productId, quantity = 1, productData = {}) {
+                        try {
+                            // Get current cart
+                            const cartData = localStorage.getItem('fitzone_cart') || '{"items":[],"total":0}';
+                            const cart = JSON.parse(cartData);
+                            
+                            // Ensure productId is properly formatted
+                            if (typeof productId === 'object' && productId.id) {
+                                productData = productId;
+                                productId = productId.id;
+                            }
+                            
+                            // Find if product already exists
+                            const existingItemIndex = cart.items.findIndex(item => {
+                                return (item.id === productId || item.id_produit === productId);
+                            });
+                            
+                            // Build item data
+                            const item = {
+                                id: productId,
+                                id_produit: productId,
+                                name: productData.name || productData.nom_produit || `Product ${productId}`,
+                                price: parseFloat(productData.price || productData.prix || 0),
+                                image: productData.image || 'img/products/default.jpg',
+                                quantity: parseInt(quantity)
+                            };
+                            
+                            // Update quantity or add new item
+                            if (existingItemIndex !== -1) {
+                                cart.items[existingItemIndex].quantity += parseInt(quantity);
+                            } else {
+                                cart.items.push(item);
+                            }
+                            
+                            // Update total
+                            cart.total = cart.items.reduce((sum, item) => {
+                                return sum + (parseFloat(item.price) * parseInt(item.quantity));
+                            }, 0);
+                            
+                            // Save cart
+                            localStorage.setItem('fitzone_cart', JSON.stringify(cart));
+                            console.log('Item added to cart using fallback method:', item);
+                            
+                            // Update cart count indicators
+                            updateCartCount();
+                            
+                            return cart;
+                        } catch (error) {
+                            console.error('Error in fallback addItem:', error);
+                            throw error;
+                        }
+                    }
+                };
+            } else {
+                console.log('CartService is available, ready for use');
+            }
+            
+            // Update cart count function
+            window.updateCartCount = function() {
+                try {
+                    // Get cart
+                    const cartData = localStorage.getItem('fitzone_cart') || '{"items":[],"total":0}';
+                    const cart = JSON.parse(cartData);
+                    
+                    // Calculate total quantity
+                    const totalQuantity = cart.items.reduce((sum, item) => {
+                        return sum + parseInt(item.quantity || 1);
+                    }, 0);
+                    
+                    // Update all cart count elements
+                    const cartCountElements = document.querySelectorAll('.cart-count');
+                    cartCountElements.forEach(element => {
+                        element.textContent = totalQuantity;
+                    });
+                } catch (error) {
+                    console.error('Error updating cart count:', error);
+                }
+            };
+            
+            // Initial cart count update
+            updateCartCount();
+        }, 500); // Wait 500ms to ensure all scripts are loaded
+    });
+</script>
 </body>
-
 </html>

@@ -1,6 +1,46 @@
-# MySQL Management Instructions
+# FitZone Database Setup Instructions
 
-## Option 1: Using PowerShell (Windows)
+## Setup with Docker (Recommended)
 
-When using PowerShell, you need to reference executables in the current directory with .\ prefix:
+The database will be automatically created and populated with all tables and data when you run:
+
+```
+docker-compose up
+```
+
+This works because:
+1. The database container mounts the full SQL schema file from `backend/database/fitzone_db.sql`
+2. The initialization script runs this file to create all tables and insert sample data
+
+## Troubleshooting
+
+If your database tables are still empty after running docker-compose:
+
+1. Make sure your volume data isn't persisting old data. Try:
+   ```
+   docker-compose down -v
+   docker-compose up
+   ```
+
+2. Check container logs for any database import errors:
+   ```
+   docker logs fitzone-database
+   ```
+
+3. Manually import the database:
+   ```
+   docker exec -i fitzone-database mysql -ufitzone_user -pfitzone_password fitzone_db < ./backend/database/fitzone_db.sql
+   ```
+
+## Local Development (Non-Docker)
+
+If you're using a local XAMPP installation:
+
+1. Import the database directly with phpMyAdmin
+   - Create a database named `fitzone_db`
+   - Import the SQL file from `backend/database/fitzone_db.sql`
+
+2. Or use the provided scripts:
+   - Windows: Run `import-db.bat` to create and populate the database
+   - Manual: Visit `http://localhost/site-fitness/backend/database/import_database.php`
 

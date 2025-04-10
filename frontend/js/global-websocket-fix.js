@@ -1,5 +1,5 @@
 /**
- * Global WebSocket Fix v1.3
+ * Global WebSocket Fix v1.4
  * Fixes WebSocket URL issues for all contexts
  */
 (function() {
@@ -33,27 +33,31 @@
             return url;
         }
         
-        // Handle specific problematic Chrome extension URL
+        // Handle specific problematic Chrome extension URL patterns
         if (url === 'ws127.0.0.1:35729/livereload') {
             console.log('[WebSocket Fix] Fixed specific Chrome extension URL');
             return 'ws://127.0.0.1:35729/livereload';
         }
         
-        // Fix URL without recursion
-        // Fix ws127.0.0.1 format
+        // More aggressive fix for various malformed ws URLs
         if (url.match(/^ws[0-9]/)) {
             url = 'ws://' + url.substring(2);
-        }
+            console.log('[WebSocket Fix] Fixed ws numeric pattern:', url);
+        } 
         // Fix wss127.0.0.1 format
         else if (url.match(/^wss[0-9]/)) {
             url = 'wss://' + url.substring(3);
+            console.log('[WebSocket Fix] Fixed wss numeric pattern:', url);
         }
-        // Generic case - add protocol
-        else if (url.startsWith('ws:')) {
+        // Handle cases where ws: is missing the //
+        else if (url.startsWith('ws:') && !url.startsWith('ws://')) {
             url = 'ws://' + url.substring(3);
+            console.log('[WebSocket Fix] Added missing // after ws:');
         }
-        else if (url.startsWith('wss:')) {
+        // Handle cases where wss: is missing the //
+        else if (url.startsWith('wss:') && !url.startsWith('wss://')) {
             url = 'wss://' + url.substring(4);
+            console.log('[WebSocket Fix] Added missing // after wss:');
         }
         
         // Log if we changed something
