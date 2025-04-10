@@ -144,13 +144,9 @@
             FitZoneAuth.logout = function() {
                 console.log('Logout triggered');
                 
-                // Always allow logout attempts from all sources at this point
-                // This is a deliberate decision since the prevention was causing issues
+                // FIXED: Always allow logout regardless of whether it was user-initiated
+                // No more prevention of logout functionality
                 
-                // Reset the flag
-                window.userInitiatedLogout = false;
-                
-                // Proceed with actual logout
                 console.log('Executing logout');
                 
                 try {

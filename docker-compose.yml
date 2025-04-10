@@ -46,7 +46,7 @@ services:
     container_name: fitzone-database
     restart: always
     ports:
-      - "3308:3306"  # Changed from 3307:3306 to 3308:3306
+      - "3308:3306"
     environment:
       - MYSQL_ROOT_PASSWORD=rootpassword
       - MYSQL_DATABASE=fitzone_db
@@ -54,8 +54,15 @@ services:
       - MYSQL_PASSWORD=fitzone_password
     volumes:
       - ./docker/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./docker/database/import-schema.sh:/docker-entrypoint-initdb.d/import-schema.sh
       - ./backend/database/fitzone_db.sql:/docker-entrypoint-initdb.d/fitzone_db.sql
       - fitzone-db-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fitzone_user", "-pfitzone_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - fitzone-network
 
