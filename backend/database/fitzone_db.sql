@@ -48,9 +48,9 @@ CREATE TABLE `adresses` (
 -- Déchargement des données de la table `adresses`
 --
 
-INSERT INTO `adresses` (`id_adresse`, `id_utilisateur`, `id_commande`, `type`, `prenom`, `nom`, `telephone`, `adresse`, `adresse2`, `ville`, `code_postal`, `pays`, `est_defaut`) VALUES
-(0, 1, 8, 'shipping', 'Abdellah', 'SERRHINI', '0660995200', '5 Rue Paul Dautier 78140 Vélizy-Villacoublay', NULL, 'Velizy Villacoublay (78)', '78140', 'FR', 0),
-(0, 1, 20, 'shipping', 'filamatra', 'steeve', '056846466', '61 RUE FNIDEK APPT 8 AIT SKATOU2', NULL, 'Fès', '30000', 'GB', 0);
+INSERT INTO `adresses` (`id_utilisateur`, `id_commande`, `type`, `prenom`, `nom`, `telephone`, `adresse`, `adresse2`, `ville`, `code_postal`, `pays`, `est_defaut`) VALUES
+(1, 8, 'shipping', 'Abdellah', 'SERRHINI', '0660995200', '5 Rue Paul Dautier 78140 Vélizy-Villacoublay', NULL, 'Velizy Villacoublay (78)', '78140', 'FR', 0),
+(1, 20, 'shipping', 'filamatra', 'steeve', '056846466', '61 RUE FNIDEK APPT 8 AIT SKATOU2', NULL, 'Fès', '30000', 'GB', 0);
 
 -- --------------------------------------------------------
 
