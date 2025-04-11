@@ -278,6 +278,59 @@
         .payment-label:hover {
             background-color: rgba(8, 129, 120, 0.03);
         }
+
+        /* Loading spinner */
+        .spinner-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .spinner-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .spinner {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #088178;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Checkbox styles */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            width: auto;
+        }
+        
+        .checkbox-container label {
+            cursor: pointer;
+        }
     </style>
     
     <!-- Include cart service script -->
@@ -334,6 +387,14 @@
         <p>Complete your purchase securely</p>
     </section>
 
+    <!-- Loading spinner overlay -->
+    <div class="spinner-overlay" id="spinner-overlay">
+        <div class="spinner-container">
+            <div class="spinner"></div>
+            <p id="spinner-message">Processing your order...</p>
+        </div>
+    </div>
+
     <section class="checkout-container section-p1">
         <div class="checkout-form">
             <div class="form-section">
@@ -386,6 +447,12 @@
                             <option value="DE">Germany</option>
                             <!-- Add more countries as needed -->
                         </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group checkbox-container">
+                        <input type="checkbox" id="sendEmailConfirmation" checked>
+                        <label for="sendEmailConfirmation">Send order confirmation email</label>
                     </div>
                 </div>
             </div>
@@ -581,6 +648,20 @@
                 loadCartItems();
             }
             
+            // Function to show loading spinner
+            function showSpinner(message = 'Processing your order...') {
+                const spinner = document.getElementById('spinner-overlay');
+                const spinnerMessage = document.getElementById('spinner-message');
+                spinnerMessage.textContent = message;
+                spinner.style.display = 'flex';
+            }
+            
+            // Function to hide loading spinner
+            function hideSpinner() {
+                const spinner = document.getElementById('spinner-overlay');
+                spinner.style.display = 'none';
+            }
+            
             // Function to load cart items
             async function loadCartItems() {
                 try {
@@ -657,10 +738,18 @@
                     }
                 });
                 
+                // Validate email format if provided
+                const emailField = document.getElementById('email');
+                const emailValue = emailField.value.trim();
+                if (emailValue && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                    emailField.style.borderColor = '#dc3545';
+                    isValid = false;
+                }
+                
                 if (!isValid) {
                     const messageElem = document.getElementById('checkout-message');
                     messageElem.className = 'error-message';
-                    messageElem.textContent = 'Please fill in all required fields.';
+                    messageElem.textContent = 'Please fill in all required fields correctly.';
                 }
                 
                 return isValid;
@@ -671,182 +760,122 @@
                 const messageElem = document.getElementById('checkout-message');
                 messageElem.textContent = '';
                 messageElem.className = '';
+                
+                // Show loading spinner
+                showSpinner('Processing your order...');
 
                 try {
-                    // Validate form data
-                    const firstName = document.getElementById('firstName').value.trim();
-                    const lastName = document.getElementById('lastName').value.trim();
-                    const email = document.getElementById('email').value.trim();
-                    const address = document.getElementById('address').value.trim();
-                    const city = document.getElementById('city').value.trim();
-                    const postalCode = document.getElementById('postalCode').value.trim();
-                    const country = document.getElementById('country').value.trim();
-                    const phone = document.getElementById('phone') ? document.getElementById('phone').value.trim() : '';
+                    // Get form field values
+                    const firstName = document.getElementById('firstName').value;
+                    const lastName = document.getElementById('lastName').value;
+                    const email = document.getElementById('email').value;
+                    const phone = document.getElementById('phone').value;
+                    const address = document.getElementById('address').value;
+                    const city = document.getElementById('city').value;
+                    const postalCode = document.getElementById('postalCode').value;
+                    const country = document.getElementById('country').value;
+                    const sendEmailConfirmation = document.getElementById('sendEmailConfirmation').checked;
                     
-                    const paymentMethod = document.querySelector('input[name="payment"]:checked');
-                    
-                    // Validate form fields
-                    if (!firstName || !lastName || !email || !address || !city || !postalCode || !country) {
-                        messageElem.className = 'error-message';
-                        messageElem.textContent = 'Please fill in all required fields.';
-                        return;
-                    }
-                    
-                    if (!paymentMethod) {
-                        messageElem.className = 'error-message';
-                        messageElem.textContent = 'Please select a payment method.';
-                        return;
-                    }
-                    
+                    const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
+
                     // Get current cart
-                    let cart;
-                    try {
-                        if (typeof CartService !== 'undefined' && CartService.getCart) {
-                            cart = await CartService.getCart();
-                        } else {
-                            // Fallback to direct localStorage access
-                            const cartData = localStorage.getItem('fitzone_cart');
-                            if (cartData) {
-                                cart = JSON.parse(cartData);
-                            } else {
-                                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
-                                cart = {
-                                    items: cartItems,
-                                    total: cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-                                };
-                            }
-                        }
-                    } catch (e) {
-                        console.error('Error retrieving cart:', e);
-                        messageElem.className = 'error-message';
-                        messageElem.textContent = 'Error retrieving your cart. Please try again.';
-                        return;
-                    }
+                    const cart = await CartService.getCart();
 
-                    // Validate cart
-                    if (!cart || !cart.items || cart.items.length === 0) {
-                        messageElem.className = 'error-message';
-                        messageElem.textContent = 'Your cart is empty. Please add items to your cart before checkout.';
-                        return;
-                    }
+                    // Prepare shipping information
+                    const shippingInfo = {
+                        first_name: firstName,
+                        last_name: lastName,
+                        email: email,
+                        phone: phone,
+                        address: address,
+                        city: city,
+                        postal_code: postalCode,
+                        country: country
+                    };
 
-                    // Show processing message
-                    messageElem.className = 'info-message';
-                    messageElem.textContent = 'Processing your order...';
-
-                    // Get authorization token
-                    const token = localStorage.getItem('fitzone_token');
-                    if (!token) {
-                        messageElem.className = 'error-message';
-                        messageElem.textContent = 'Authentication required. Please log in again.';
-                        setTimeout(() => {
-                            window.location.href = 'login.html?redirect=checkout.html';
-                        }, 2000);
-                        return;
-                    }
+                    // Disable place order button
+                    document.getElementById('place-order-btn').disabled = true;
+                    document.getElementById('place-order-btn').textContent = 'Processing...';
                     
-                    // Check for Docker environment
-                    const IS_DOCKER = window.location.port === '80' || window.location.port === '';
-                    const API_URL = IS_DOCKER ? '/api' : CONFIG.API_URL || 'http://localhost/site_fitness/backend/api';
-                    
-                    // Create order with address information directly
-                    messageElem.textContent = 'Creating your order...';
-                    
-                    // Get user ID from stored user data
-                    const userData = JSON.parse(localStorage.getItem('fitzone_user'));
-                    const userId = userData?.id_utilisateur;
-                    
-                    // Create a deterministic address ID based on user ID and current address
-                    // This is a workaround for the backend requirement of id_adresse
-                    const addressHash = `${userId}-${address.replace(/\s+/g, '')}-${city}-${postalCode}`.substring(0, 20);
-                    const fakeAddressId = parseInt(addressHash.split('').map(c => c.charCodeAt(0)).reduce((a, b) => a + b, 0)) % 10000;
-                    
-                    console.log('Generated address ID for backend:', fakeAddressId);
-                    
-                    // Prepare order data with address information and id_adresse
+                    // Prepare complete order data
                     const orderData = {
-                        shipping_info: {
-                            first_name: firstName,
-                            last_name: lastName,
-                            email: email,
-                            phone: phone,
-                            address: address,
-                            city: city,
-                            postal_code: postalCode,
-                            country: country
-                        },
-                        address: {
-                            address_line1: address,
-                            city: city,
-                            postal_code: postalCode,
-                            country: country,
-                            is_default: true
-                        },
+                        shipping_info: shippingInfo,
                         cart: cart,
-                        payment_method: paymentMethod.value,
+                        payment_method: paymentMethod,
                         shipping_cost: 0, // Free shipping for now
-                        id_adresse: fakeAddressId // Explicitly include the id_adresse field
+                        send_email_confirmation: sendEmailConfirmation
                     };
 
                     console.log('Sending order data:', orderData);
                     
-                    // Send order to API
-                    const response = await fetch(`${API_URL}/orders/create.php`, {
+                    // Get API URL from config or use default
+                    const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
+                        ? window.CONFIG.API_URL 
+                        : 'http://localhost/site-fitness/backend/api';
+                    
+                    // Use the new comprehensive endpoint that handles both address and order creation
+                    const response = await fetch(`${apiUrl}/orders/create_complete_order.php`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
+                            'Authorization': `Bearer ${localStorage.getItem('fitzone_token')}`
                         },
                         body: JSON.stringify(orderData)
                     });
-                    
-                    // Get response as text first for debugging
+
+                    // Parse response
                     const responseText = await response.text();
-                    console.log('Order API raw response:', responseText);
-                    
-                    // Handle non-JSON responses gracefully
-                    if (!responseText || responseText.trim() === '' || responseText.includes('<!DOCTYPE')) {
-                        throw new Error('Server returned an invalid response. Please try again later.');
-                    }
-                    
-                    // Parse the response
                     let data;
+                    
                     try {
                         data = JSON.parse(responseText);
                     } catch (e) {
-                        console.error('Error parsing API response:', e);
-                        throw new Error('Invalid response from server. Please try again.');
+                        console.error('Failed to parse response:', responseText);
+                        throw new Error('Invalid response from server');
                     }
+
+                    console.log('Order API response:', data);
                     
                     if (data.success) {
-                        // Order successful
+                        // Clear cart
+                        await CartService.clearCart();
+                        
+                        // Update cart UI
+                        document.querySelectorAll('.cart-count').forEach(el => {
+                            el.textContent = '0';
+                        });
+                        
+                        // Show success message and redirect to confirmation page
                         messageElem.className = 'success-message';
-                        messageElem.textContent = 'Order placed successfully! Redirecting to orders page...';
-                        
-                        // Clear the cart
-                        if (typeof CartService !== 'undefined' && CartService.clearCart) {
-                            await CartService.clearCart();
-                        } else {
-                            localStorage.setItem('fitzone_cart', JSON.stringify({items: [], total: 0}));
-                            localStorage.removeItem('cartItems'); // Clear legacy format too
-                        }
-                        
-                        // Trigger cart update event
-                        document.dispatchEvent(new CustomEvent('cart:updated'));
-                        
-                        // Redirect to order confirmation page
+                        messageElem.textContent = 'Order placed successfully! ' + 
+                            (sendEmailConfirmation ? 'A confirmation email has been sent.' : '');
+                            
+                        // Wait a moment before redirecting
                         setTimeout(() => {
-                            window.location.href = 'order-confirmation.html?id=' + (data.data?.order_id || data.order_id || '');
+                            window.location.href = `order-confirmation.html?order_id=${data.data.order_id}`;
                         }, 2000);
                     } else {
-                        // Order failed
+                        // Show error message
                         messageElem.className = 'error-message';
                         messageElem.textContent = data.message || 'Failed to process your order. Please try again.';
+                        
+                        // Re-enable the button
+                        document.getElementById('place-order-btn').disabled = false;
+                        document.getElementById('place-order-btn').textContent = 'Place Order';
                     }
                 } catch (error) {
                     console.error('Error processing order:', error);
+                    
+                    // Show error message
                     messageElem.className = 'error-message';
                     messageElem.textContent = error.message || 'An error occurred while processing your order. Please try again.';
+                    
+                    // Re-enable the button
+                    document.getElementById('place-order-btn').disabled = false;
+                    document.getElementById('place-order-btn').textContent = 'Place Order';
+                } finally {
+                    // Hide spinner
+                    hideSpinner();
                 }
             }
         });

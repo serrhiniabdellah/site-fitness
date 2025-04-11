@@ -8,6 +8,13 @@
     <title>FitZone - Order Confirmation</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    <!-- Load config before auth scripts -->
+    <script src="js/config.js"></script>
+    <!-- Add required auth scripts in the correct order -->
+    <script src="js/auth.js"></script>
+    <script src="js/auth-manager.js"></script>
+    <script src="js/auth-ui.js"></script>
+    <script src="js/auth-persistence.js"></script>
     <style>
         .confirmation-container {
             max-width: 800px;
@@ -355,6 +362,7 @@
             </div>
 
             <div class="confirmation-actions">
+                <a href="orders.html" class="btn btn-secondary">Back to My Orders</a>
                 <a href="shop.html" class="btn btn-secondary">Continue Shopping</a>
                 <a href="#" id="download-invoice" class="btn btn-primary">Download Invoice</a>
             </div>
@@ -429,8 +437,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const API_URL = 'http://localhost/site%20fitness/backend/api';
-            
             // Get order ID from URL parameter
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order_id');
@@ -451,9 +457,16 @@
             const downloadInvoice = document.getElementById('download-invoice');
             
             // Authentication check
-            const user = FitZoneAuth.getCurrentUser();
+            if (!FitZoneAuth || !FitZoneAuth.isLoggedIn()) {
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+                return;
+            }
             
-            if (!user) {
+            const user = FitZoneAuth.getCurrentUser();
+            const token = FitZoneAuth.getToken();
+            
+            if (!user || !token) {
+                console.error('User data or token missing');
                 window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
                 return;
             }
@@ -465,34 +478,64 @@
                 return;
             }
             
+            // Update account dropdown display
+            updateAuthUI();
+            
             // Load order details
             async function loadOrderDetails() {
                 try {
-                    const response = await fetch(`${API_URL}/orders/get.php`, {
-                        method: 'POST',
+                    // Get API URL from config or use default
+                    const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
+                        ? window.CONFIG.API_URL 
+                        : 'http://localhost/site_fitness/backend/api';
+                    
+                    // Make the API request
+                    const response = await fetch(`${apiUrl}/orders/get.php?user_id=${user.id_utilisateur}&token=${token}&order_id=${orderId}`, {
+                        method: 'GET',
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            user_id: user.id_utilisateur,
-                            token: user.token,
-                            order_id: orderId
-                        })
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
                     
-                    const result = await response.json();
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    }
                     
-                    if (result.success) {
+                    const responseText = await response.text();
+                    console.log('Order details API response:', responseText);
+                    
+                    let result;
+                    try {
+                        result = JSON.parse(responseText);
+                    } catch (e) {
+                        console.error('Error parsing API response:', e);
+                        throw new Error('Invalid server response format');
+                    }
+                    
+                    // Check if the response has a data property containing the order
+                    if (result.success && result.data && result.data.order) {
+                        displayOrderDetails(result.data.order);
+                    } else if (result.success && result.order) {
+                        // Alternative structure: order directly in result
                         displayOrderDetails(result.order);
                     } else {
-                        console.error('Error fetching order details:', result.message);
-                        alert('Failed to load order details. Redirecting to homepage.');
-                        window.location.href = 'index.html';
+                        console.error('Invalid API response structure:', result);
+                        throw new Error(result.message || 'Failed to load order details');
                     }
                 } catch (error) {
                     console.error('Error loading order details:', error);
-                    alert('Error loading order details. Please try again later.');
-                    window.location.href = 'index.html';
+                    confirmationContainer.innerHTML = `
+                        <div class="error-message" style="text-align: center; padding: 30px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #dc3545; margin-bottom: 20px;"></i>
+                            <h3>Error loading order details</h3>
+                            <p>${error.message || 'Please try again later.'}</p>
+                            <div style="margin-top: 20px;">
+                                <a href="orders.html" class="btn btn-primary" style="margin-right: 10px;">View All Orders</a>
+                                <a href="shop.html" class="btn btn-secondary">Continue Shopping</a>
+                            </div>
+                        </div>
+                    `;
                 } finally {
                     // Hide loading spinner
                     loading.style.display = 'none';
@@ -513,23 +556,36 @@
                 orderStatus.textContent = getOrderStatusText(order.statut_commande);
                 
                 // Set addresses
-                shippingAddress.innerHTML = formatAddress(order.shipping_address);
-                billingAddress.innerHTML = formatAddress(order.billing_address);
+                if (order.shipping_address) {
+                    shippingAddress.innerHTML = formatAddress(order.shipping_address);
+                }
+                
+                if (order.billing_address) {
+                    billingAddress.innerHTML = formatAddress(order.billing_address);
+                }
                 
                 // Display order items
                 displayOrderItems(order.items);
                 
                 // Set order totals
                 orderSubtotal.textContent = `$${parseFloat(order.sous_total).toFixed(2)}`;
-                orderShipping.textContent = order.frais_livraison > 0 ? `$${parseFloat(order.frais_livraison).toFixed(2)}` : 'Free';
+                orderShipping.textContent = parseFloat(order.frais_livraison) > 0 
+                    ? `$${parseFloat(order.frais_livraison).toFixed(2)}` 
+                    : 'Free';
                 orderTotal.textContent = `$${parseFloat(order.total).toFixed(2)}`;
                 
-                // Set download invoice link
-                downloadInvoice.href = `${API_URL}/orders/invoice.php?order_id=${order.order_id}&token=${user.token}`;
+                // Set download invoice link - commented out until invoice feature is implemented
+                // const apiUrl = (window.CONFIG && window.CONFIG.API_URL) ? window.CONFIG.API_URL : 'http://localhost/site_fitness/backend/api';
+                // downloadInvoice.href = `${apiUrl}/orders/invoice.php?order_id=${order.order_id}&token=${token}`;
+                
+                // Hide download invoice button until feature is implemented
+                downloadInvoice.style.display = 'none';
             }
             
             // Format address
             function formatAddress(address) {
+                if (!address) return 'Address not available';
+                
                 return `
                     ${address.first_name} ${address.last_name}<br>
                     ${address.address}<br>
@@ -579,22 +635,52 @@
                     const itemElement = document.createElement('div');
                     itemElement.className = 'order-item';
                     
+                    const imageUrl = item.image || 'img/products/default.jpg';
+                    
                     itemElement.innerHTML = `
-                        <img src="${item.image || 'img/products/default.jpg'}" alt="${item.nom_produit}" class="order-item-image">
+                        <img src="${imageUrl}" alt="${item.nom_produit}" class="order-item-image">
                         <div class="order-item-details">
                             <div class="order-item-name">${item.nom_produit}</div>
                             <div class="order-item-meta">
-                                <span>Quantity: ${item.quantity}</span>
+                                <span>Quantity: ${item.quantite}</span>
                                 ${item.variant_nom ? `<span>Variant: ${item.variant_nom}</span>` : ''}
                             </div>
                         </div>
                         <div class="order-item-price">
-                            <span>$${(parseFloat(item.prix) * parseInt(item.quantity)).toFixed(2)}</span>
+                            <span>$${(parseFloat(item.prix) * parseInt(item.quantite)).toFixed(2)}</span>
                         </div>
                     `;
                     
                     orderItemsContainer.appendChild(itemElement);
                 });
+            }
+            
+            // Update auth UI elements
+            function updateAuthUI() {
+                const user = FitZoneAuth.getCurrentUser();
+                
+                // Update account dropdown
+                const loginMenu = document.getElementById('account-menu-login');
+                const dropdownMenu = document.getElementById('account-menu-dropdown');
+                
+                if (loginMenu) loginMenu.style.display = 'none';
+                if (dropdownMenu) dropdownMenu.style.display = 'block';
+                
+                // Update user name in dropdown
+                const userNameNav = document.getElementById('user-name-nav');
+                if (userNameNav && user && user.prenom) {
+                    userNameNav.textContent = user.prenom;
+                }
+                
+                // Setup logout functionality
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        FitZoneAuth.logout();
+                        window.location.href = 'index.html';
+                    });
+                }
             }
             
             // Initialize page

@@ -18,11 +18,16 @@ if(defined('CONFIG_DEBUG') && CONFIG_DEBUG) {
     error_log("Registration data received: " . json_encode($data));
 }
 
-// Validate required fields
+// Check for empty request
+if (empty($data) || !is_array($data)) {
+    Utils::sendResponse(false, 'No registration data received', null, 400);
+}
+
+// Validate required fields with better error messages
 $requiredFields = ['first_name', 'last_name', 'email', 'password'];
 foreach ($requiredFields as $field) {
     if (!isset($data[$field]) || empty($data[$field])) {
-        Utils::sendResponse(false, 'Missing required fields', ['missing_field' => $field], 400);
+        Utils::sendResponse(false, 'Missing required field: ' . $field, ['missing_field' => $field], 400);
     }
 }
 

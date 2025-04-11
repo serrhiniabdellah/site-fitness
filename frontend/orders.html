@@ -443,17 +443,24 @@
                     }
                     
                     // Determine API URL based on environment
-                    const IS_DOCKER = window.location.port === '80' || window.location.port === '';
-                    const API_URL = IS_DOCKER ? '/api' : CONFIG.API_URL || 'http://localhost/site_fitness/backend/api';
+                    const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
+                        ? window.CONFIG.API_URL 
+                        : 'http://localhost/site_fitness/backend/api';
+                    
+                    // Prepare request data
+                    const requestData = {
+                        user_id: user.id_utilisateur,
+                        token: token
+                    };
                     
                     // Fetch orders
-                    const response = await fetch(`${API_URL}/orders/list.php`, {
+                    const response = await fetch(`${apiUrl}/orders/user.php`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
-                        body: JSON.stringify({ user_id: user.id_utilisateur })
+                        body: JSON.stringify(requestData)
                     });
                     
                     const responseText = await response.text();
@@ -467,13 +474,19 @@
                         throw new Error('Invalid server response');
                     }
                     
-                    // Handle response
-                    if (data.success) {
-                        const orders = data.orders || [];
-                        displayOrders(orders);
+                    // Handle different response structures
+                    let orders = [];
+                    if (data.success && data.data && data.data.orders) {
+                        // Nested structure
+                        orders = data.data.orders;
+                    } else if (data.success && data.orders) {
+                        // Direct structure
+                        orders = data.orders;
                     } else {
                         throw new Error(data.message || 'Failed to fetch orders');
                     }
+                    
+                    displayOrders(orders);
                 } catch (error) {
                     console.error('Error loading orders:', error);
                     ordersContainer.innerHTML = `
@@ -549,12 +562,14 @@
                         const itemElement = document.createElement('div');
                         itemElement.className = 'order-item';
                         
+                        const imageUrl = item.image_url || 'img/products/default.jpg';
+                        
                         itemElement.innerHTML = `
-                            <img src="${item.image_url || 'img/products/default.jpg'}" alt="${item.nom_produit}" class="order-item-image">
+                            <img src="${imageUrl}" alt="${item.nom_produit}" class="order-item-image">
                             <div class="order-item-details">
                                 <div class="order-item-name">${item.nom_produit}</div>
                                 <div class="order-item-price">$${parseFloat(item.prix).toFixed(2)}</div>
-                                <div class="order-item-quantity">Qty: ${item.quantity}</div>
+                                <div class="order-item-quantity">Qty: ${item.quantite}</div>
                             </div>
                         `;
                         
@@ -579,10 +594,10 @@
                 orderFooter.className = 'order-footer';
                 orderFooter.innerHTML = `
                     <div class="order-total">
-                        Total: $${parseFloat(order.total_commande).toFixed(2)}
+                        Total: $${parseFloat(order.total).toFixed(2)}
                     </div>
                     <div class="order-actions">
-                        <button class="btn-outline" onclick="window.location.href='order-confirmation.html?id=${order.id_commande}'">View Details</button>
+                        <button class="btn-outline" onclick="window.location.href='order-confirmation.html?order_id=${order.id_commande}'">View Details</button>
                     </div>
                 `;
                 

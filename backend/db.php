@@ -144,6 +144,11 @@ class Database {
         return $this->dbh->rollBack();
     }
     
+    // Get the database connection
+    public function getConnection() {
+        return $this->dbh;
+    }
+    
     // Check if in transaction
     public function inTransaction() {
         return $this->transaction || $this->dbh->inTransaction();

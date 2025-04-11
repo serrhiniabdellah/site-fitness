@@ -8,19 +8,30 @@
     <!-- Add Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://pro.fontawesome.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - About Us</title>
+    
+    <!-- CRITICAL: Add the direct logout script as first script to ensure it works -->
+    <script src="js/direct-logout.js"></script>
+    
+    <!-- CRITICAL: Load logout fix very first to ensure it can't be overridden -->
+    <script src="js/global-logout-fix.js"></script>
+    
     <!-- Load WebSocket fixes early -->
     <script src="js/global-websocket-fix.js"></script>
+    
     <!-- Authentication and CORS handlers -->
     <script src="js/cors-proxy.js"></script>
     <script src="js/auth-persistence.js"></script>
-    <script src="js/auth-header.js"></script>
+    
     <!-- Base configuration script must load first -->
     <script src="js/config.js"></script>
+    
     <!-- Optional: LiveReload error handler -->
     <script src="js/livereload-handler.js"></script>
+    
     <!-- External stylesheets -->
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    
     <style>
         #page-header.about-header {
             background-image: url('img/banner/b16.jpg');
@@ -47,11 +58,12 @@
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
         }
     </style>
-    <!-- Add near the beginning of the head section -->
+    
+    <!-- FIXED: Load auth.js only once via script loader -->
     <script src="js/script-loader.js"></script>
-    <!-- Include cart service script -->
-<script src="js/cart-service.js"></script>
-<script src="js/global-cart.js"></script>
+    
+    <!-- FIXED: Cart service is loaded by script loader only, not directly -->
+    <!-- Remove the duplicate cart service scripts -->
 </head>
 
 <body>
@@ -289,346 +301,18 @@
         </div>
     </footer>
 
+    <!-- FIXED: Streamlined script loading to prevent duplicates -->
     <!-- Core modules -->
-    <script src="js/auth.js"></script>
     <script src="js/products.js"></script>
     <script src="js/cart.js"></script>
-
-    <!-- Additional modules as needed -->
     <script src="script.js"></script>
-
-    <!-- Header/navigation functionality -->
     <script src="js/header.js"></script>
-    <!-- Include cart service script -->
-  
-
-    <style>
-        /* Additional styles for the About page */
-        #about-values {
-            text-align: center;
-        }
-        
-        .values-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-        
-        .value-box {
-            flex: 1 0 20%;
-            min-width: 240px;
-            padding: 30px 20px;
-            margin: 15px 10px;
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-            background-color: #f8f9fa;
-        }
-        
-        .value-box:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .value-box i {
-            font-size: 3em;
-            color: #088178;
-            margin-bottom: 15px;
-        }
-        
-        .value-box h3 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        .team-container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            margin-top: 30px;
-        }
-        
-        .team-member {
-            flex: 1 0 30%;
-            min-width: 280px;
-            margin: 15px;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .team-member:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .team-member img {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-        }
-        
-        .team-info h3 {
-            margin-top: 0;
-            margin-bottom: 5px;
-            color: #1a1a1a;
-        }
-        
-        .team-info .position {
-            color: #088178;
-            font-weight: 600;
-            margin-bottom: 15px;
-        }
-        
-        .social-icons {
-            margin-top: 15px;
-        }
-        
-        .social-icons a {
-            display: inline-block;
-            margin-right: 10px;
-            font-size: 18px;
-            color: #606063;
-            transition: color 0.3s ease;
-        }
-        
-        .social-icons a:hover {
-            color: #088178;
-        }
-        
-        #about-team {
-            text-align: center;
-        }
-        
-        #about-team p {
-            max-width: 700px;
-            margin: 0 auto 30px;
-        }
-        
-        @media (max-width: 799px) {
-            .team-member {
-                min-width: 45%;
-                margin: 10px;
-            }
-            
-            .value-box {
-                min-width: 45%;
-                margin: 10px;
-            }
-        }
-        
-        @media (max-width: 477px) {
-            .team-member {
-                min-width: 100%;
-                margin: 10px 0;
-            }
-            
-            .value-box {
-                min-width: 100%;
-                margin: 10px 0;
-            }
-        }
-        
-        #about-head {
-            display: flex;
-            flex-direction: row;
-        }
-        
-        #about-head img {
-            width: 50%;
-            height: auto;
-        }
-        
-        #about-head div {
-            padding-left: 40px;
-        }
-        
-        @media (max-width: 799px) {
-            #about-head {
-                flex-direction: column;
-            }
-            
-            #about-head img {
-                width: 100%;
-                margin-bottom: 20px;
-            }
-            
-            #about-head div {
-                padding-left: 0;
-            }
-        }
-        
-        /* Account dropdown menu styling */
-        .account-menu {
-            position: relative;
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #fff;
-            min-width: 180px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-            right: 0;
-            border-radius: 4px;
-        }
-        
-        .account-menu:hover .dropdown-content {
-            display: block;
-        }
-        
-        .dropdown-content a {
-            color: #1a1a1a;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            font-size: 14px;
-            border-radius: 0;
-        }
-        
-        .dropdown-content a:hover {
-            background-color: #f1f1f1;
-            color: #088178;
-        }
-        
-        .dropdown-content a:last-child {
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        
-        .dropdown-content a:first-child {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-    </style>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is logged in and update navigation
-            function updateAuthUI() {
-                const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-                const loginLink = document.getElementById('login-link');
-                const logoutLink = document.getElementById('logout-link');
-                const ordersLink = document.getElementById('orders-link');
-                
-                if (isLoggedIn) {
-                    // User is logged in
-                    if (loginLink) loginLink.innerHTML = 'My Account';
-                    if (loginLink) loginLink.href = 'profile.html';
-                    if (logoutLink) logoutLink.style.display = 'block';
-                    if (ordersLink) ordersLink.style.display = 'block';
-                } else {
-                    // User is not logged in
-                    if (loginLink) loginLink.innerHTML = 'Login';
-                    if (loginLink) loginLink.href = 'login.html';
-                    if (logoutLink) logoutLink.style.display = 'none';
-                    if (ordersLink) ordersLink.style.display = 'none';
-                }
-            }
-            
-            // Handle logout
-            document.getElementById('logout-link').addEventListener('click', function(e) {
-                e.preventDefault();
-                if (typeof FitZoneAuth !== 'undefined') {
-                    FitZoneAuth.logout();
-                    window.location.href = 'index.html';
-                }
-            });
-            
-            // Update cart count
-            function updateCartCount() {
-                const cartItems = JSON.parse(localStorage.getItem('fitzone_cart'))?.items || [];
-                const cartCountElements = document.querySelectorAll('.cart-count');
-                
-                const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-                
-                cartCountElements.forEach(element => {
-                    element.innerText = totalItems;
-                    
-                    if (totalItems > 0) {
-                        element.style.display = 'block';
-                    } else {
-                        element.style.display = 'none';
-                    }
-                });
-            }
-            
-            // Call functions on page load
-            updateAuthUI();
-            updateCartCount();
-        });
-
-        // Update API URL to use the correct path to PHP
-        const API_URL = 'http://localhost/site_fitness/backend';
-        
-        // Add error handling for API calls
-        async function makeAPICall(endpoint, method = 'GET', data = null) {
-            try {
-                const options = {
-                    method: method,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    credentials: 'include' // Include cookies for session handling
-                };
-                
-                if (data) {
-                    options.body = JSON.stringify(data);
-                }
-                
-                const response = await fetch(API_URL + endpoint, options);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return await response.json();
-            } catch (error) {
-                console.error('API call failed:', error);
-                throw error;
-            }
-        }
-
-        // Use this function for all API calls
-        // Example for registration:
-        async function register(userData) {
-            try {
-                const result = await makeAPICall('register.php', 'POST', userData);
-                if (result.success) {
-                    alert('Registration successful!');
-                    // Redirect or update UI as needed
-                } else {
-                    alert(result.message || 'Registration failed');
-                }
-            } catch (error) {
-                alert('Registration failed: ' + error.message);
-            }
-        }
-
-        // Example for fetching products:
-        async function loadProducts() {
-            try {
-                const products = await makeAPICall('products.php');
-                // Update UI with products
-                displayProducts(products);
-            } catch (error) {
-                console.error('Failed to load products:', error);
-                // Show error message to user
-            }
-        }
-
-        // Call this when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProducts();
-        });
-    </script>
-<!-- Add right before </body> -->
-<script src="js/auth-ui.js"></script>
-<script src="js/auth-logout.js"></script>
+    
+    <!-- Load auth-header.js only once, after the global-logout-fix.js -->
+    <script src="js/auth-header.js"></script>
+    
+    <!-- Load auth-ui and auth-logout in correct order -->
+    <script src="js/auth-ui.js"></script>
+    <script src="js/auth-logout.js"></script>
 </body>
-</body>
-
 </html>

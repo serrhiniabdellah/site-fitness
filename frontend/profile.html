@@ -5,6 +5,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- WebSocket fix - Must load before any WebSocket usage -->
+    <script src="js/websocket-fix.js"></script>
+    
+    <!-- CRITICAL: Universal logout script - must load first -->
+    <script src="js/universal-logout.js"></script>
+    
     <!-- Load Chrome extension fixes early -->
     <script src="chrome-extension-fix.js"></script>
     <script src="chrome-extension-reload-fix.js"></script>
@@ -428,8 +434,6 @@
 
     <!-- Before other scripts -->
     <script src="js/logout-debug.js"></script>
-    <!-- Add our robust logout handler before other scripts -->
-    <script src="js/auth-logout.js"></script>
     <!-- Add auth-header.js which now has improved logout handling -->
     <script src="js/auth-header.js"></script>
     
@@ -624,44 +628,26 @@
             function performLogout() {
                 console.log('Performing logout');
                 
-                // Bypass the prevention logic by directly calling the original function
-                const originalLogoutFunc = FitZoneAuth.logout;
-                
-                // Store current reference to the overridden function
-                const currentLogout = FitZoneAuth.logout;
-                
-                // Temporarily restore original function
-                FitZoneAuth.logout = originalLogout;
-                
                 try {
-                    // Call the logout function directly
-                    const success = FitZoneAuth.logout();
-                    console.log('Direct logout result:', success);
+                    // Signal to other components that this is a user-initiated logout
+                    window.preventAutoLogout = false;
+                    window.lastUserInteraction = Date.now();
                     
-                    if (success) {
-                        // Force clear any auth data to be sure
-                        localStorage.removeItem('fitzone_token');
-                        localStorage.removeItem('fitzone_user');
-                        localStorage.removeItem('fitzone_auth_state');
-                        
-                        console.log('Redirecting to home page after logout');
-                        window.location.href = 'index.html';
-                    } else {
-                        console.error('Logout operation returned false');
-                        alert('Logout failed. Please try refreshing the page.');
-                    }
-                } catch (error) {
-                    console.error('Error during logout:', error);
-                    
-                    // Fallback: Force logout by clearing data manually
+                    // Clear all auth data directly - this is the most reliable approach
                     localStorage.removeItem('fitzone_token');
                     localStorage.removeItem('fitzone_user');
                     localStorage.removeItem('fitzone_auth_state');
                     
+                    // Trigger any logout handlers that might be listening for these events
+                    window.dispatchEvent(new CustomEvent('fitzone_logout'));
+                    
+                    // Redirect to homepage
+                    console.log('Logout successful, redirecting to home page');
                     window.location.href = 'index.html';
-                } finally {
-                    // Restore the prevention wrapper
-                    FitZoneAuth.logout = currentLogout;
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                    alert('An error occurred during logout. Your session has been cleared.');
+                    window.location.href = 'index.html';
                 }
             }
             
@@ -681,49 +667,39 @@
                         ? window.CONFIG.API_URL 
                         : 'http://localhost/site_fitness/backend/api';
                     
+                    // Prepare request data
+                    const requestData = {
+                        user_id: user.id_utilisateur,
+                        token: FitZoneAuth.getToken()
+                    };
+                    
                     // Fetch orders
                     const response = await fetch(`${apiUrl}/orders/history.php`, {
-                        method: 'GET',
+                        method: 'POST',
                         headers: {
+                            'Content-Type': 'application/json',
                             'Authorization': `Bearer ${FitZoneAuth.getToken()}`
-                        }
+                        },
+                        body: JSON.stringify(requestData)
                     });
                     
-                    if (!response.ok) {
-                        throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                    const responseText = await response.text();
+                    console.log('Order history API response:', responseText);
+                    
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        throw new Error('Invalid server response');
                     }
                     
-                    const data = await response.json();
-                    
                     if (data.success && data.data && data.data.orders) {
-                        if (data.data.orders.length > 0) {
-                            // Display orders
-                            let ordersHtml = '<ul class="order-list">';
-                            
-                            data.data.orders.forEach(order => {
-                                const statusClass = order.status === 'delivered' ? 'status-delivered' : 'status-pending';
-                                const formattedDate = new Date(order.date).toLocaleDateString();
-                                
-                                ordersHtml += `
-                                    <li class="order-item">
-                                        <div>
-                                            <div class="order-number">Order #${order.id}</div>
-                                            <div class="order-date">${formattedDate}</div>
-                                        </div>
-                                        <div>
-                                            <div>$${order.total.toFixed(2)}</div>
-                                            <span class="order-status ${statusClass}">${order.status}</span>
-                                        </div>
-                                    </li>
-                                `;
-                            });
-                            
-                            ordersHtml += '</ul>';
-                            orderHistoryElement.innerHTML = ordersHtml;
-                        } else {
-                            // No orders
-                            orderHistoryElement.innerHTML = '<p>You don\'t have any orders yet.</p>';
-                        }
+                        // Handle response with nested data structure
+                        displayOrders(data.data.orders);
+                    } else if (data.success && data.orders) {
+                        // Handle response with direct orders array
+                        displayOrders(data.orders);
                     } else {
                         // API returned error
                         throw new Error(data.message || 'Failed to load orders');
@@ -735,9 +711,49 @@
                         <div class="error-message">
                             <p>Sorry, we couldn't load your order history.</p>
                             <p>Error: ${error.message || 'Unknown error'}</p>
+                            <button class="profile-btn" onclick="window.location.reload()">Try Again</button>
                         </div>
                     `;
                 }
+            }
+            
+            // Display orders in the profile page
+            function displayOrders(orders) {
+                const orderHistoryElement = document.getElementById('order-history');
+                
+                if (!orders || orders.length === 0) {
+                    orderHistoryElement.innerHTML = '<p>You don\'t have any orders yet.</p>';
+                    return;
+                }
+                
+                // Display up to 3 most recent orders
+                const recentOrders = orders.slice(0, 3);
+                
+                let ordersHtml = '<ul class="order-list">';
+                
+                recentOrders.forEach(order => {
+                    const statusClass = order.statut_commande && order.statut_commande.toLowerCase() === 'delivered' 
+                        ? 'status-delivered' 
+                        : 'status-pending';
+                    const formattedDate = new Date(order.date_commande).toLocaleDateString();
+                    
+                    ordersHtml += `
+                        <li class="order-item">
+                            <div>
+                                <div class="order-number">Order #${order.id_commande}</div>
+                                <div class="order-date">${formattedDate}</div>
+                            </div>
+                            <div>
+                                <div>$${parseFloat(order.total).toFixed(2)}</div>
+                                <span class="order-status ${statusClass}">${order.statut_commande || 'Processing'}</span>
+                            </div>
+                        </li>
+                    `;
+                });
+                
+                // Add a "View all orders" link at the bottom
+                ordersHtml += '</ul><div class="profile-action"><a href="orders.html" class="profile-btn">View All Orders</a></div>';
+                orderHistoryElement.innerHTML = ordersHtml;
             }
 
             // Call the function to fetch order history

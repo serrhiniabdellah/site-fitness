@@ -28,7 +28,7 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `adresses` (
-  `id_adresse` int(11) NOT NULL,
+  `id_adresse` int(11) NOT NULL AUTO_INCREMENT,
   `id_utilisateur` int(11) DEFAULT NULL,
   `id_commande` int(11) DEFAULT NULL,
   `type` enum('shipping','billing') NOT NULL,
@@ -40,7 +40,8 @@ CREATE TABLE `adresses` (
   `ville` varchar(100) NOT NULL,
   `code_postal` varchar(20) NOT NULL,
   `pays` varchar(100) NOT NULL,
-  `est_defaut` tinyint(1) DEFAULT 0
+  `est_defaut` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`id_adresse`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

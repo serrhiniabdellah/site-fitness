@@ -42,33 +42,7 @@ if (!isset($data['shipping_info']) || !isset($data['cart']) || !isset($data['pay
 $conn->begin_transaction();
 
 try {
-    // 1. Create order record
-    $subtotal = isset($data['cart']['total']) ? floatval($data['cart']['total']) : 0;
-    $shippingCost = isset($data['shipping_cost']) ? floatval($data['shipping_cost']) : 0;
-    $total = $subtotal + $shippingCost;
-    
-    // Get payment method
-    $paymentMethod = $conn->real_escape_string($data['payment_method']);
-    
-    // Default status ID is 1 (pending)
-    $statusId = 1;
-    
-    // Create order in database
-    $stmt = $conn->prepare("
-        INSERT INTO commandes 
-            (id_utilisateur, id_statut, sous_total, frais_livraison, total, methode_paiement) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
-    $stmt->bind_param("iiddds", $userId, $statusId, $subtotal, $shippingCost, $total, $paymentMethod);
-    
-    if (!$stmt->execute()) {
-        throw new Exception("Failed to create order: " . $stmt->error);
-    }
-    
-    // Get the order ID
-    $orderId = $conn->insert_id;
-    
-    // 2. Add shipping address
+    // 1. First, create the address to get an ID
     $shipping = $data['shipping_info'];
     $firstname = $conn->real_escape_string($shipping['first_name']);
     $lastname = $conn->real_escape_string($shipping['last_name']);
@@ -79,18 +53,16 @@ try {
     $country = $conn->real_escape_string($shipping['country']);
     $addressType = 'shipping';
     
-    // Fix: Changed the binding to match parameter count and types
+    // Create an address first
     $stmt = $conn->prepare("
         INSERT INTO adresses 
-            (id_utilisateur, id_commande, type, prenom, nom, telephone, adresse, ville, code_postal, pays) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id_utilisateur, type, prenom, nom, telephone, adresse, ville, code_postal, pays) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    // Fix: Added the type parameter to the binding
     $stmt->bind_param(
-        "iissssssss", 
-        $userId, 
-        $orderId, 
+        "issssssss", 
+        $userId,
         $addressType,
         $firstname, 
         $lastname, 
@@ -102,10 +74,47 @@ try {
     );
     
     if (!$stmt->execute()) {
-        throw new Exception("Failed to save shipping address: " . $stmt->error);
+        throw new Exception("Failed to create address: " . $stmt->error);
     }
     
-    // 3. Add order items
+    // Get the address ID
+    $addressId = $conn->insert_id;
+    
+    // 2. Create order record with the address ID
+    $subtotal = isset($data['cart']['total']) ? floatval($data['cart']['total']) : 0;
+    $shippingCost = isset($data['shipping_cost']) ? floatval($data['shipping_cost']) : 0;
+    $total = $subtotal + $shippingCost;
+    
+    // Get payment method
+    $paymentMethod = $conn->real_escape_string($data['payment_method']);
+    
+    // Default status ID is 1 (pending)
+    $statusId = 1;
+    
+    // Create order in database with the address ID
+    $stmt = $conn->prepare("
+        INSERT INTO commandes 
+            (id_utilisateur, id_adresse, id_statut, sous_total, frais_livraison, total, methode_paiement) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->bind_param("iiiddds", $userId, $addressId, $statusId, $subtotal, $shippingCost, $total, $paymentMethod);
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to create order: " . $stmt->error);
+    }
+    
+    // Get the order ID
+    $orderId = $conn->insert_id;
+    
+    // 3. Update address with order ID for reference
+    $stmt = $conn->prepare("UPDATE adresses SET id_commande = ? WHERE id_adresse = ?");
+    $stmt->bind_param("ii", $orderId, $addressId);
+    
+    if (!$stmt->execute()) {
+        throw new Exception("Failed to update address with order ID: " . $stmt->error);
+    }
+    
+    // 4. Add order items
     if (!isset($data['cart']['items']) || !is_array($data['cart']['items']) || count($data['cart']['items']) === 0) {
         throw new Exception("Cart is empty");
     }
@@ -152,7 +161,7 @@ try {
         }
     }
     
-    // 4. Clear user's cart if they have one in the database
+    // 5. Clear user's cart if they have one in the database
     $stmt = $conn->prepare("DELETE FROM cart WHERE id_utilisateur = ?");
     $stmt->bind_param("i", $userId);
     $stmt->execute();

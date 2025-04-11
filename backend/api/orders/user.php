@@ -32,13 +32,29 @@ $db = new Database();
 
 // Get user orders
 $db->query("SELECT c.*, 
-           (SELECT COUNT(*) FROM commande_items WHERE id_commande = c.id_commande) as item_count 
+           s.nom_statut as statut_commande
            FROM commandes c 
+           JOIN statut_commande s ON c.id_statut = s.id_statut
            WHERE c.id_utilisateur = :user_id 
            ORDER BY c.date_commande DESC");
 $db->bind(':user_id', $userId);
 
 $orders = $db->resultSetArray();
+
+// Fetch items for each order
+foreach ($orders as &$order) {
+    // Get order items
+    $db->query("SELECT i.*, p.nom_produit, p.image as image_url, v.nom as variant_nom 
+                FROM commande_items i
+                JOIN produits p ON i.id_produit = p.id_produit
+                LEFT JOIN variants_produit v ON i.id_variant = v.id_variant
+                WHERE i.id_commande = :order_id");
+    $db->bind(':order_id', $order['id_commande']);
+    $items = $db->resultSetArray();
+    
+    // Add items to order
+    $order['items'] = $items;
+}
 
 Utils::sendResponse(true, 'User orders retrieved successfully', ['orders' => $orders]);
 ?>

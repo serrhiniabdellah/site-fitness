@@ -12,24 +12,26 @@ console.log('Chrome Extension WebSocket URL Fixer loaded');
     window.WebSocket = function(url, protocols) {
         // Fix common WebSocket URL formatting issues
         if (url && typeof url === 'string') {
-            // Fix missing colon after protocol
-            if (url.startsWith('ws') && !url.startsWith('ws:') && !url.startsWith('wss:')) {
-                if (url.startsWith('ws127.0.0.1')) {
-                    url = url.replace('ws127.0.0.1', 'ws://127.0.0.1');
-                    console.log('Fixed WebSocket URL:', url);
-                } else if (url.startsWith('wslocalhost')) {
-                    url = url.replace('wslocalhost', 'ws://localhost');
-                    console.log('Fixed WebSocket URL:', url);
-                } else {
-                    // Add missing colon and slashes
-                    if (url.match(/^ws[^:]/)) {
-                        url = url.replace(/^ws/, 'ws://');
-                        console.log('Fixed WebSocket URL format:', url);
-                    } else if (url.match(/^wss[^:]/)) {
-                        url = url.replace(/^wss/, 'wss://');
-                        console.log('Fixed WebSocket URL format:', url);
-                    }
+            const originalUrl = url;
+            
+            // Specific fixes for Chrome extension issues
+            if (url === 'ws127.0.0.1:35729/livereload' || 
+                url.startsWith('ws127.0.0.1')) {
+                url = url.replace(/^ws(?=[0-9])/, 'ws://');
+                console.log('Fixed Chrome extension WebSocket URL:', url);
+            }
+            
+            // General fixes for any URL missing protocol separator
+            if (!url.includes('://')) {
+                if (url.startsWith('ws') && !url.startsWith('ws://')) {
+                    url = url.replace(/^ws/, 'ws://');
+                } else if (url.startsWith('wss') && !url.startsWith('wss://')) {
+                    url = url.replace(/^wss/, 'wss://');
                 }
+            }
+            
+            if (url !== originalUrl) {
+                console.log('WebSocket URL transformed:', originalUrl, '->', url);
             }
         }
         

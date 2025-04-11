@@ -17,7 +17,8 @@
     document.addEventListener('keydown', function() {
         window.lastUserInteraction = Date.now();
     });
-    window.userInitiatedLogout = false;
+    // Always consider logout as user initiated (FIXED)
+    window.userInitiatedLogout = true;
     
     // Run this once the DOM is loaded
     document.addEventListener('DOMContentLoaded', function() {
@@ -56,35 +57,30 @@
                 e.preventDefault();
                 console.log('Logout link clicked by user');
                 
-                // Set both flags to ensure logout is considered user-initiated
+                // Always set to true to ensure logout is allowed
                 window.userInitiatedLogout = true;
                 window.lastUserInteraction = Date.now();
+                
+                // Force clear auth data immediately
+                localStorage.removeItem('fitzone_token');
+                localStorage.removeItem('fitzone_user');
+                localStorage.removeItem('fitzone_auth_state');
                 
                 // Execute logout directly using our reliable method
                 if (window.performDirectLogout) {
                     console.log('Using direct logout method');
-                    const success = window.performDirectLogout();
-                    if (success) {
-                        window.location.href = 'index.html';
-                    }
+                    window.performDirectLogout();
                 } else if (typeof FitZoneAuth !== 'undefined' && FitZoneAuth.logout) {
                     // Original method
                     console.log('Using FitZoneAuth logout method');
                     FitZoneAuth.logout();
-                    
-                    // Force clear auth data as fallback
-                    localStorage.removeItem('fitzone_token');
-                    localStorage.removeItem('fitzone_user');
-                    
-                    // Redirect to home page
-                    window.location.href = 'index.html';
                 } else {
                     console.error('FitZoneAuth or logout method not available');
-                    // Fallback logout
-                    localStorage.removeItem('fitzone_token');
-                    localStorage.removeItem('fitzone_user');
-                    window.location.href = 'index.html';
                 }
+                
+                // Always redirect after logout attempt
+                console.log('Redirecting to home page after logout');
+                window.location.href = 'index.html';
             });
             console.log('Attached reliable logout handler to', newElement);
         });
@@ -138,40 +134,32 @@
             if (dropdownMenu) dropdownMenu.style.display = 'none';
         }
         
-        // Modify the FitZoneAuth.logout method to be more permissive
-        if (isLoggedIn && typeof FitZoneAuth !== 'undefined' && !FitZoneAuth._patched) {
-            const originalLogout = FitZoneAuth.logout;
+        // COMPLETELY REPLACE the FitZoneAuth.logout method
+        if (typeof FitZoneAuth !== 'undefined') {
+            // Create a new forced logout method that always works
             FitZoneAuth.logout = function() {
-                console.log('Logout triggered');
-                
-                // FIXED: Always allow logout regardless of whether it was user-initiated
-                // No more prevention of logout functionality
-                
-                console.log('Executing logout');
+                console.log('[FIX] Executing unconditional logout');
                 
                 try {
-                    // Call the original logout function
-                    const result = originalLogout.apply(this, arguments);
-                    
-                    // Force clear auth data regardless of the result
+                    // Force clear auth data
                     localStorage.removeItem('fitzone_token');
                     localStorage.removeItem('fitzone_user');
                     localStorage.removeItem('fitzone_auth_state');
                     
-                    console.log('Auth data cleared successfully');
+                    // Dispatch event for UI updates
+                    document.dispatchEvent(new CustomEvent('auth:stateChanged', { 
+                        detail: { isLoggedIn: false }
+                    }));
+                    
+                    console.log('[FIX] Auth data cleared successfully');
                     return true;
                 } catch (error) {
-                    console.error('Error during logout:', error);
-                    // Fallback approach
-                    localStorage.removeItem('fitzone_token');
-                    localStorage.removeItem('fitzone_user');
-                    localStorage.removeItem('fitzone_auth_state');
+                    console.error('[FIX] Error during logout:', error);
                     return false;
                 }
             };
             
-            // Mark as patched to avoid double-patching
-            FitZoneAuth._patched = true;
+            console.log('[FIX] FitZoneAuth.logout replaced with guaranteed working version');
         }
     };
 })();

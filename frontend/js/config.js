@@ -109,7 +109,9 @@ async function makeApiCall(endpoint, method = 'GET', data = null, tryAlt = true)
         const apiUrl = CONFIG.API_URL;
         const fullUrl = endpoint.startsWith('/') ? `${apiUrl}${endpoint}` : `${apiUrl}/${endpoint}`;
         
-        console.log(`Making ${method} request to ${fullUrl}`);
+        if (DEBUG_MODE) {
+            console.log(`Making ${method} request to ${fullUrl}`);
+        }
         
         try {
             const response = await fetch(fullUrl, options);
@@ -120,42 +122,78 @@ async function makeApiCall(endpoint, method = 'GET', data = null, tryAlt = true)
                 return { success: false, message: 'Empty response from server' };
             }
             
-            // Parse JSON response
+            // Parse JSON response - with silent error handling
             try {
                 return JSON.parse(responseText);
             } catch (parseError) {
-                console.error('JSON parse error:', parseError, 'Response text:', responseText.substring(0, 100) + '...');
-                throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+                // Check if this looks like an HTML response (likely a page redirect)
+                if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html')) {
+                    // Silently fail for HTML responses - this is expected in some cases
+                    if (DEBUG_MODE) {
+                        console.warn('Received HTML response instead of JSON', { url: fullUrl });
+                    }
+                    return { success: false, message: 'Invalid response format (HTML)' };
+                } else {
+                    // Only log parse errors for non-HTML responses
+                    if (DEBUG_MODE) {
+                        console.warn('JSON parse error:', parseError.message);
+                    }
+                    throw new Error(`Invalid JSON response`);
+                }
             }
         } catch (fetchError) {
             // If primary URL fails and we haven't tried alternative yet, try the alternative URL
             if (tryAlt) {
-                console.log('Primary API URL failed. Trying alternative URL...');
+                if (DEBUG_MODE) {
+                    console.log('Primary API URL failed. Trying alternative URL...');
+                }
                 const altApiUrl = CONFIG.API_URL_ALT;
                 const altFullUrl = endpoint.startsWith('/') ? `${altApiUrl}${endpoint}` : `${altApiUrl}/${endpoint}`;
                 
-                console.log(`Making ${method} request to alternative URL: ${altFullUrl}`);
-                
-                const altResponse = await fetch(altFullUrl, options);
-                const altResponseText = await altResponse.text();
-                
-                if (!altResponseText) {
-                    return { success: false, message: 'Empty response from server (alternative URL)' };
+                if (DEBUG_MODE) {
+                    console.log(`Making ${method} request to alternative URL: ${altFullUrl}`);
                 }
                 
                 try {
-                    return JSON.parse(altResponseText);
-                } catch (parseError) {
-                    console.error('JSON parse error (alt):', parseError);
-                    throw new Error(`Invalid JSON response from alternative URL: ${altResponseText.substring(0, 100)}...`);
+                    const altResponse = await fetch(altFullUrl, options);
+                    const altResponseText = await altResponse.text();
+                    
+                    if (!altResponseText) {
+                        return { success: false, message: 'Empty response from server (alternative URL)' };
+                    }
+                    
+                    try {
+                        return JSON.parse(altResponseText);
+                    } catch (parseError) {
+                        // Similarly handle HTML responses silently
+                        if (altResponseText.trim().startsWith('<!DOCTYPE') || altResponseText.trim().startsWith('<html')) {
+                            if (DEBUG_MODE) {
+                                console.warn('Alternative URL returned HTML response');
+                            }
+                            return { success: false, message: 'Invalid response format (HTML)' };
+                        } else {
+                            if (DEBUG_MODE) {
+                                console.warn('JSON parse error (alt):', parseError.message);
+                            }
+                            throw new Error(`Invalid JSON response from alternative URL`);
+                        }
+                    }
+                } catch (altFetchError) {
+                    // Silently fail the alternative request
+                    return { success: false, message: 'Failed to connect to API servers' };
                 }
             } else {
+                if (DEBUG_MODE) {
+                    console.warn('API request failed:', fetchError.message);
+                }
                 throw fetchError;
             }
         }
     } catch (error) {
-        console.error('API call failed:', error);
-        throw error;
+        if (DEBUG_MODE) {
+            console.warn('API call failed:', error.message);
+        }
+        return { success: false, error: error.message };
     }
 }
 
