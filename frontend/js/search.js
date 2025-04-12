@@ -1,286 +1,401 @@
 /**
  * FitZone Search Functionality
+ * Enables product search across all pages
  */
 
-// Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Get DOM elements
-    const searchInput = document.getElementById('search-input');
-    const searchButton = document.getElementById('search-button');
-    const searchResults = document.getElementById('search-results');
+    // Get all search elements (desktop and mobile)
+    const searchForms = document.querySelectorAll('#search-form');
+    const searchInputs = document.querySelectorAll('#search-input');
+    const searchResults = document.querySelectorAll('#search-results');
+    const searchButtons = document.querySelectorAll('#search-button');
+    
+    // Mobile search toggle functionality
+    const mobileSearchIcon = document.querySelector('#mobile .fa-search');
     const searchContainer = document.getElementById('search-container');
-
-    // Exit if elements not found
-    if (!searchInput || !searchButton || !searchResults) return;
-
-    // Add event listeners
-    // Search when button is clicked
-    searchButton.addEventListener('click', function() {
-        performSearch(searchInput.value);
-    });
-
-    // Search when Enter key is pressed
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            performSearch(searchInput.value);
-        }
-    });
-
-    // Live search as user types (with debounce)
-    let debounceTimer;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(debounceTimer);
-        if (searchInput.value.length >= 2) {
-            debounceTimer = setTimeout(function() {
-                performSearch(searchInput.value);
-            }, 500); // Wait 500ms after user stops typing
-        } else {
-            searchResults.innerHTML = '';
-            hideSearchResults();
-        }
-    });
-
-    // Hide search results when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!searchContainer.contains(event.target) && 
-            !event.target.matches('#lg-search, #lg-search *')) {
-            hideSearchResults();
-        }
-    });
-
-    /**
-     * Perform search and display results
-     * @param {string} query - Search query
-     */
-    function performSearch(query) {
-        // Clear previous results
-        searchResults.innerHTML = '';
+    
+    if (mobileSearchIcon && searchContainer) {
+        window.toggleSearchBar = function() {
+            searchContainer.classList.toggle('active');
+            if (searchContainer.classList.contains('active')) {
+                searchContainer.querySelector('input').focus();
+            }
+        };
         
-        // Don't search if query is too short
-        if (!query || query.length < 2) {
-            hideSearchResults();
-            return;
-        }
-
-        // Show loading indicator
-        searchResults.innerHTML = '<div class="search-loading">Searching...</div>';
-        showSearchResults();
-
-        // Get API URL from config or use default
-        const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
-            ? window.CONFIG.API_URL 
-            : 'http://localhost:8000/backend/api';
-
-        // Make API request to search endpoint
-        fetch(`${apiUrl}/products/search.php?q=${encodeURIComponent(query)}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
-            .then(data => {
-                displaySearchResults(data, query);
-            })
-            .catch(error => {
-                console.error('Search error:', error);
-                // Fall back to client-side search if API fails
-                performClientSideSearch(query);
-            });
-    }
-
-    /**
-     * Fallback to client-side search if API is unavailable
-     * @param {string} query - Search query
-     */
-    function performClientSideSearch(query) {
-        // Try to get products from global products array (if available)
-        if (typeof window.products !== 'undefined' && window.products.length > 0) {
-            const results = window.products.filter(product => 
-                product.name.toLowerCase().includes(query.toLowerCase()) || 
-                product.description.toLowerCase().includes(query.toLowerCase()) ||
-                product.brand.toLowerCase().includes(query.toLowerCase())
-            ).slice(0, 5); // Limit to 5 results
-            
-            displayClientSideResults(results, query);
-        } else {
-            searchResults.innerHTML = `
-                <div class="search-error">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <p>Search service is currently unavailable</p>
-                </div>
-            `;
-        }
-    }
-
-    /**
-     * Display client-side search results
-     * @param {Array} products - Filtered products
-     * @param {string} query - Search query
-     */
-    function displayClientSideResults(products, query) {
-        if (products.length === 0) {
-            searchResults.innerHTML = `
-                <div class="no-results">
-                    <p>No products found for "${query}"</p>
-                </div>
-            `;
-            return;
-        }
-
-        // Create result list
-        const resultList = document.createElement('ul');
-        resultList.className = 'search-results-list';
-
-        // Add each product to results
-        products.forEach(product => {
-            const listItem = document.createElement('li');
-            listItem.className = 'search-result-item';
-
-            // Format price
-            const formattedPrice = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD'
-            }).format(product.price);
-
-            // Create HTML for result item
-            listItem.innerHTML = `
-                <a href="sproduct.html?id=${product.id}" class="search-result-link">
-                    <div class="search-result-image">
-                        <img src="${product.image || 'img/products/default.jpg'}" alt="${product.name}">
-                    </div>
-                    <div class="search-result-details">
-                        <h4 class="search-result-name">${product.name}</h4>
-                        <p class="search-result-category">${product.category || 'Product'}</p>
-                        <p class="search-result-price">${formattedPrice}</p>
-                    </div>
-                </a>
-            `;
-
-            resultList.appendChild(listItem);
+        mobileSearchIcon.addEventListener('click', toggleSearchBar);
+        
+        // Close search when clicking outside
+        document.addEventListener('click', function(e) {
+            if (searchContainer && searchContainer.classList.contains('active') && 
+                !searchContainer.contains(e.target) && e.target !== mobileSearchIcon) {
+                searchContainer.classList.remove('active');
+            }
         });
-
-        // Add view all results link
-        const viewAllItem = document.createElement('li');
-        viewAllItem.className = 'search-view-all';
-        viewAllItem.innerHTML = `
-            <a href="shop.html?search=${encodeURIComponent(query)}">
-                View all results for "${query}" <i class="fas fa-arrow-right"></i>
-            </a>
-        `;
-        resultList.appendChild(viewAllItem);
-
-        // Add results to container
-        searchResults.innerHTML = '';
-        searchResults.appendChild(resultList);
-        showSearchResults();
     }
-
-    /**
-     * Display API search results
-     * @param {Object} data - API response data
-     * @param {string} query - Search query
-     */
-    function displaySearchResults(data, query) {
-        // Clear previous results
-        searchResults.innerHTML = '';
+    
+    // Initialize search functionality for all search forms
+    searchForms.forEach((form, index) => {
+        if (!form) return;
         
-        if (data.success && data.data && data.data.products) {
-            const products = data.data.products;
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const searchInput = searchInputs[index];
+            if (!searchInput) return;
             
-            if (products.length === 0) {
-                searchResults.innerHTML = `
-                    <div class="no-results">
-                        <p>No products found for "${query}"</p>
-                    </div>
-                `;
+            const query = searchInput.value.trim();
+            if (query.length > 1) {
+                // Redirect to shop page with search query
+                window.location.href = `shop.html?search=${encodeURIComponent(query)}`;
+            }
+        });
+    });
+    
+    // Live search functionality 
+    searchInputs.forEach((input, index) => {
+        if (!input) return;
+        
+        input.addEventListener('input', debounce(function() {
+            const query = this.value.trim();
+            const resultsContainer = searchResults[index];
+            
+            if (!resultsContainer) return;
+            
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                resultsContainer.style.display = 'none';
                 return;
             }
-
-            // Create result list
-            const resultList = document.createElement('ul');
-            resultList.className = 'search-results-list';
-
-            // Add each product to results
-            products.forEach(product => {
-                const listItem = document.createElement('li');
-                listItem.className = 'search-result-item';
-
-                // Format price
-                const formattedPrice = new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD'
-                }).format(product.price);
-
-                // Create HTML for result item
-                listItem.innerHTML = `
-                    <a href="sproduct.html?id=${product.id}" class="search-result-link">
+            
+            // Get products (either from global variable or from function)
+            let products = [];
+            if (typeof getAllProducts === 'function') {
+                products = getAllProducts();
+            } else if (window.allProducts && Array.isArray(window.allProducts)) {
+                products = window.allProducts;
+            } else {
+                // Default products if no source is available
+                products = [
+                    { id: '1', name: 'Whey Protein Premium', category: 'Protein', price: 49.99, image: 'img/products/img7.png' },
+                    { id: '2', name: 'Mass Gainer 5000', category: 'Mass Gainers', price: 59.99, image: 'img/products/MASS3.avif' },
+                    { id: 'equip1', name: 'Pro Resistance Bands Set - 5 Levels', category: 'Equipment', price: 29.99, image: 'img/products/img6.png' },
+                    { id: 'protein2', name: 'Ultra Pure Protein Isolate - Vanilla', category: 'Protein', price: 64.99, image: 'img/products/images1.jpg' }
+                ];
+            }
+            
+            // Filter products based on search query
+            const matchedProducts = searchProducts(query, products);
+            
+            // Display results
+            displaySearchResults(matchedProducts, query, resultsContainer);
+        }, 300));
+        
+        // Close results when clicking outside
+        document.addEventListener('click', function(e) {
+            const resultsContainer = searchResults[index];
+            if (resultsContainer && !resultsContainer.contains(e.target) && e.target !== input) {
+                resultsContainer.style.display = 'none';
+            }
+        });
+        
+        // Focus on search input shows results again if there are any
+        input.addEventListener('focus', function() {
+            const resultsContainer = searchResults[index];
+            if (resultsContainer && resultsContainer.innerHTML !== '') {
+                resultsContainer.style.display = 'block';
+            }
+        });
+    });
+    
+    // Helper function to search products
+    window.searchProducts = function(query, productsToSearch) {
+        // Default to global products if not provided
+        const products = productsToSearch || (typeof getAllProducts === 'function' ? getAllProducts() : []);
+        
+        if (!products || products.length === 0) return [];
+        
+        query = query.toLowerCase();
+        
+        return products.filter(product => {
+            // Check if the product properties exist before searching
+            const name = product.name ? product.name.toLowerCase() : '';
+            const description = product.description ? product.description.toLowerCase() : '';
+            const category = product.category ? product.category.toLowerCase() : '';
+            
+            return name.includes(query) || 
+                  description.includes(query) || 
+                  category.includes(query);
+        });
+    }
+    
+    // Display search results in the dropdown
+    function displaySearchResults(products, query, resultsContainer) {
+        if (!resultsContainer) return;
+        
+        if (products.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="no-results">
+                    <p>No products found matching "${query}"</p>
+                </div>
+            `;
+            resultsContainer.style.display = 'block';
+            return;
+        }
+        
+        let html = '';
+        
+        // Limit to max 5 results in dropdown
+        const displayProducts = products.slice(0, 5);
+        
+        displayProducts.forEach(product => {
+            html += `
+                <div class="search-result-item">
+                    <a href="sproduct.html?id=${product.id}">
                         <div class="search-result-image">
-                            <img src="${product.image || 'img/products/default.jpg'}" alt="${product.name}">
+                            <img src="${product.image || 'img/products/default.png'}" alt="${product.name}">
                         </div>
-                        <div class="search-result-details">
-                            <h4 class="search-result-name">${product.name}</h4>
-                            <p class="search-result-category">${product.category || 'Product'}</p>
-                            <p class="search-result-price">${formattedPrice}</p>
+                        <div class="search-result-info">
+                            <h4>${highlightMatch(product.name, query)}</h4>
+                            <p class="category">${product.category || 'Product'}</p>
+                            <p class="price">$${product.price ? product.price.toFixed(2) : '0.00'}</p>
                         </div>
                     </a>
-                `;
-
-                resultList.appendChild(listItem);
-            });
-
-            // Add view all results link
-            const viewAllItem = document.createElement('li');
-            viewAllItem.className = 'search-view-all';
-            viewAllItem.innerHTML = `
-                <a href="shop.html?search=${encodeURIComponent(query)}">
-                    View all results for "${query}" <i class="fas fa-arrow-right"></i>
-                </a>
+                </div>
             `;
-            resultList.appendChild(viewAllItem);
-
-            // Add results to container
-            searchResults.appendChild(resultList);
-            showSearchResults();
-        } else {
-            // Fallback to client-side search
-            performClientSideSearch(query);
+        });
+        
+        // Add "See all results" link if there are more results
+        if (products.length > 5) {
+            html += `
+                <div class="see-all-results">
+                    <a href="shop.html?search=${encodeURIComponent(query)}">
+                        See all ${products.length} results for "${query}"
+                    </a>
+                </div>
+            `;
         }
+        
+        resultsContainer.innerHTML = html;
+        resultsContainer.style.display = 'block';
     }
-
-    /**
-     * Show search results container
-     */
-    function showSearchResults() {
-        searchResults.style.display = 'block';
-        searchResults.classList.add('show');
+    
+    // Highlight matched text in search results
+    function highlightMatch(text, query) {
+        if (!text || !query) return text;
+        
+        const regex = new RegExp(`(${escapeRegExp(query)})`, 'gi');
+        return text.replace(regex, '<mark>$1</mark>');
     }
-
-    /**
-     * Hide search results container
-     */
-    function hideSearchResults() {
-        searchResults.style.display = 'none';
-        searchResults.classList.remove('show');
+    
+    // Helper function to escape special characters in regex
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
-
-    /**
-     * Toggle search bar on mobile
-     */
-    window.toggleSearchBar = function() {
-        if (searchContainer) {
-            const isVisible = searchContainer.classList.contains('active');
-            if (isVisible) {
-                searchContainer.classList.remove('active');
-                // Also hide search results
-                hideSearchResults();
-            } else {
-                searchContainer.classList.add('active');
-                // Focus the search input when opening
-                setTimeout(() => {
-                    searchInput.focus();
-                }, 100);
+    
+    // Debounce function to limit API calls
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // If we're on the shop page and there's a search parameter, run search
+    if (window.location.pathname.includes('shop.html')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('search')) {
+            const searchQuery = urlParams.get('search');
+            if (searchQuery && document.querySelector('#search-input')) {
+                document.querySelector('#search-input').value = searchQuery;
             }
         }
-    };
+    }
 });
+
+// Create CSS for search functionality
+if (!document.getElementById('search-styles')) {
+    const style = document.createElement('style');
+    style.id = 'search-styles';
+    style.textContent = `
+        /* Search container */
+        .search-container {
+            position: relative;
+        }
+        
+        #search-form {
+            display: flex;
+            align-items: center;
+        }
+        
+        #search-input {
+            padding: 8px 12px;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+            min-width: 200px;
+            font-size: 14px;
+        }
+        
+        #search-button {
+            background: #088178;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+            transition: background-color 0.3s;
+        }
+        
+        #search-button:hover {
+            background: #065f58;
+        }
+        
+        /* Search results dropdown */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e1e1e1;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: none;
+        }
+        
+        .search-result-item {
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .search-result-item a {
+            display: flex;
+            padding: 12px;
+            text-decoration: none;
+            color: inherit;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item a:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .search-result-image {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .search-result-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .search-result-info {
+            flex: 1;
+        }
+        
+        .search-result-info h4 {
+            margin: 0 0 5px;
+            font-size: 14px;
+            color: #1a1a1a;
+        }
+        
+        .search-result-info .category {
+            margin: 0 0 5px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .search-result-info .price {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #088178;
+        }
+        
+        .see-all-results {
+            padding: 12px;
+            text-align: center;
+            background: #f5f5f5;
+        }
+        
+        .see-all-results a {
+            color: #088178;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .see-all-results a:hover {
+            text-decoration: underline;
+        }
+        
+        .no-results {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+        }
+        
+        mark {
+            background-color: #fff3cd;
+            padding: 0 3px;
+        }
+        
+        /* Mobile search */
+        #search-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 80px;
+            z-index: 1001;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        #search-container.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .search-wrapper {
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+        
+        /* Media Queries */
+        @media (max-width: 799px) {
+            #search-input {
+                min-width: 150px;
+            }
+            
+            .search-results {
+                width: 100%;
+                left: 0;
+            }
+        }
+        
+        @media (max-width: 477px) {
+            .search-container {
+                display: none;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}

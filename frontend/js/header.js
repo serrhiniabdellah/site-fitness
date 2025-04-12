@@ -1,5 +1,5 @@
 /**
- * FitZone Header Module v2.2
+ * FitZone Header Module v2.3
  * Handles navigation bar and account dropdown functionality
  */
 document.addEventListener('DOMContentLoaded', function() {
@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle logout for ALL logout buttons
     setupLogoutHandlers();
+    
+    // Setup account dropdown toggle functionality
+    setupAccountDropdown();
     
     /**
      * Sets up event listeners for all logout buttons
@@ -68,13 +71,50 @@ document.addEventListener('DOMContentLoaded', function() {
      * Updates navbar based on login state
      */
     function updateNavbar(isLoggedIn) {
-        // Get user data if logged in
-        const user = isLoggedIn ? FitZoneAuth.getCurrentUser() : null;
+        // Get login/account menu elements
+        const loginMenu = document.getElementById('account-menu-login');
+        const accountMenu = document.getElementById('account-menu-dropdown');
         
-        // Update user name in dropdown
-        const userNameNav = document.getElementById('user-name-nav');
-        if (userNameNav && user && user.prenom) {
-            userNameNav.textContent = user.prenom;
+        if (loginMenu && accountMenu) {
+            if (isLoggedIn) {
+                loginMenu.style.display = 'none';
+                accountMenu.style.display = 'block';
+                
+                // Get user data if logged in
+                const user = FitZoneAuth.getCurrentUser();
+                
+                // Update user name in dropdown
+                const userNameNav = document.getElementById('user-name-nav');
+                if (userNameNav && user && user.prenom) {
+                    userNameNav.textContent = user.prenom;
+                }
+            } else {
+                loginMenu.style.display = 'block';
+                accountMenu.style.display = 'none';
+            }
+        }
+    }
+    
+    /**
+     * Set up dropdown menu toggle functionality
+     */
+    function setupAccountDropdown() {
+        const accountLink = document.querySelector('.account-link');
+        const dropdownContent = document.querySelector('.dropdown-content');
+        
+        if (accountLink && dropdownContent) {
+            // Toggle dropdown when account link is clicked
+            accountLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                dropdownContent.classList.toggle('show');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!accountLink.contains(e.target) && !dropdownContent.contains(e.target)) {
+                    dropdownContent.classList.remove('show');
+                }
+            });
         }
     }
     
