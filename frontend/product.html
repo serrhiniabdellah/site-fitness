@@ -7,6 +7,9 @@
     <title>Product Details - Fitness Supplements & Equipment</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="login.css">
+
     <!-- Other existing stylesheets and meta tags -->
     
     <!-- Include cart service script -->
@@ -23,7 +26,16 @@
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
-                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                                    <!-- Search Bar Integration -->
+                                    <li class="search-container">
+                                        <form id="search-form">
+                                            <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                                            <button type="submit" id="search-button">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </form>
+                                        <div id="search-results" class="search-results"></div>
+                                    </li>
                 <li class="account-menu" id="account-menu-login">
                     <a href="login.html">Login</a>
                 </li>

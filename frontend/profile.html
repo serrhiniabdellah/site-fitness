@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- WebSocket fix - Must load before any WebSocket usage -->
     <script src="js/websocket-fix.js"></script>
-    
+    <script src="js/global-websocket-fix.js"></script>
+    <script src="js/websocket-earlyfix.js"></script>
+
     <!-- CRITICAL: Universal logout script - must load first -->
     <script src="js/universal-logout.js"></script>
     
@@ -18,13 +20,19 @@
     <script src="js/cors-proxy.js"></script>
     <!-- Add auth persistence handler -->
     <script src="js/auth-persistence.js"></script>
+    <script src="js/auth-logout.js"></script>
+    <script src="js/auth-header.js"></script>
+
+    <link rel="stylesheet" href="css/search.css">
+
     <!-- Updated CSP to allow API and WebSocket connections -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://localhost:* https://corsproxy.io/* ws://127.0.0.1:* wss://127.0.0.1:* ws://localhost:* wss://localhost:*;">
     <title>FitZone - My Profile</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
-    
+    <link rel="stylesheet" href="css/search.css">
+
     <!-- Include cart service script -->
     <script src="js/cart-service.js"></script>
     <script src="js/global-cart.js"></script>
@@ -192,9 +200,20 @@
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
-                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+
+                                <!-- Search Bar Integration -->
+                                <li class="search-container">
+                                    <form id="search-form">
+                                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                                        <button type="submit" id="search-button">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </form>
+                                    <div id="search-results" class="search-results"></div>
+                                </li>
+                                <!-- End Search Bar Integration -->
                 <li class="account-menu">
-                    <a href="profile.html" class="account-link active">
+                    <a href="profile.html" class="account-link">
                         <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
                     </a>
                     <div class="dropdown-content">
@@ -206,13 +225,7 @@
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
-        <div id="search-container">
-            <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Search for products...">
-                <button id="search-button"><i class="fas fa-search"></i></button>
-                <div id="search-results"></div>
-            </div>
-        </div>
+
         <div id="mobile">
             <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
             <i class="fas fa-search" onclick="toggleSearchBar()"></i>

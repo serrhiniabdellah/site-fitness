@@ -9,44 +9,72 @@
     <!-- Add auth persistence handler -->
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-header.js"></script>
+    
+    <!-- External stylesheets -->
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="login.css">
-    <!-- Other existing stylesheets and meta tags -->
-    
+    <link rel="stylesheet" href="css/search.css">
+
     <!-- Include cart service script -->
     <script src="js/cart-service.js"></script>
     <script src="js/global-cart.js"></script>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    
     <style>
-        .wrapper {
-            width: 450px;
-        }
-        
-        .wrapper .input-box {
-            margin: 20px 0;
-        }
-        
-        .terms-checkbox {
-            display: flex;
-            align-items: center;
-        }
-        
-        .terms-checkbox input[type="checkbox"] {
-            margin-right: 8px;
-        }
-        
-        .error-message {
-            color: #e74c3c;
+        .success-message {
+            color: #28a745;
             text-align: center;
             margin-top: 10px;
             font-size: 14px;
         }
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        /* Account dropdown menu styling */
+        .account-menu {
+            position: relative;
+        }
         
-        .password-requirements {
-            font-size: 12px;
-            color: #666;
-            margin: 5px 0;
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            right: 0;
+            border-radius: 4px;
+        }
+        
+        .account-menu:hover .dropdown-content {
+            display: block;
+        }
+        
+        .dropdown-content a {
+            color: #1a1a1a;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #088178;
+        }
+        
+        .dropdown-content a:last-child {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+        
+        .dropdown-content a:first-child {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
         }
     </style>
 </head> 
@@ -59,13 +87,46 @@
                 <li><a href="shop.html">Shop</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
-                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i></a></li>
-                <li><a href="login.html">Login</a></li>
+                <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
+                
+                <!-- Search Bar Integration -->
+                <li class="search-container">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                        <button type="submit" id="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                    <div id="search-results" class="search-results"></div>
+                </li>
+                <!-- End Search Bar Integration -->
+                
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
+        <div id="search-container">
+            <div class="search-wrapper">
+                <input type="text" id="mobile-search-input" placeholder="Search products...">
+                <button id="mobile-search-button"><i class="fas fa-search"></i></button>
+                <div id="mobile-search-results" class="search-results"></div>
+            </div>
+        </div>
         <div id="mobile">
-            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
+            <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
@@ -166,6 +227,8 @@
     <script src="js/config.js"></script>
     <script src="js/auth.js"></script>
     <script src="script.js"></script>
+    <script src="js/header.js"></script>
+    <script src="js/search.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if auth debug is available and use it
@@ -274,4 +337,3 @@
     </script>
 </body>
 </html>
-``` 

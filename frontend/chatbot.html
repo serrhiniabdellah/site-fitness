@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FitZone Chat | Expert en Fitness</title>
+  <style>
+    :root {
+      --primary: #2E5BFF;
+      --primary-dark: #1A4CFF;
+      --secondary: #00C7BE;
+      --accent: #FF6D4D;
+      --user-bubble: #2E5BFF;
+      --bot-bubble: #F0F4FF;
+      --text-dark: #2D3748;
+      --text-light: #FFFFFF;
+      --shadow: 0 4px 20px rgba(46, 91, 255, 0.1);
+      --shadow-hover: 0 6px 24px rgba(46, 91, 255, 0.15);
+      --radius: 16px;
+      --radius-small: 12px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+      font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--text-dark);
+    }
+
+    .chat-container {
+      background: white;
+      width: 100%;
+      max-width: 500px;
+      height: 90vh;
+      max-height: 800px;
+      display: flex;
+      flex-direction: column;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transform: translateY(20px);
+      opacity: 0;
+      animation: containerEntrance 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
+    }
+
+    .chat-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-header h2 {
+      font-weight: 600;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chat-header h2::before {
+      content: "💪";
+      font-size: 1.4rem;
+    }
+
+    .chat-window {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background-color: #fafbff;
+      background-image: 
+        radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.03) 1px, transparent 0);
+      background-size: 20px 20px;
+    }
+
+    .message {
+      max-width: 80%;
+      padding: 14px 18px;
+      margin: 6px 0;
+      border-radius: var(--radius);
+      word-wrap: break-word;
+      line-height: 1.5;
+      position: relative;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: messageAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    .user-message {
+      background-color: var(--user-bubble);
+      color: var(--text-light);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 2px 8px rgba(46, 91, 255, 0.2);
+      animation-delay: 0.1s;
+    }
+
+    .bot-message {
+      background-color: var(--bot-bubble);
+      color: var(--text-dark);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .message-typing {
+      display: inline-block;
+    }
+
+    .typing-indicator {
+      display: inline-flex;
+      gap: 4px;
+      padding: 10px 14px;
+      background-color: var(--bot-bubble);
+      border-radius: var(--radius);
+      align-self: flex-start;
+      margin: 6px 0;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #9ca3af;
+      border-radius: 50%;
+      animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    .input-area {
+      display: flex;
+      padding: 12px;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      background-color: white;
+      position: relative;
+    }
+
+    .input-area input {
+      flex: 1;
+      padding: 12px 18px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 24px;
+      font-size: 15px;
+      outline: none;
+      transition: var(--transition);
+      background-color: #f8f9fa;
+    }
+
+    .input-area input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255, 109, 77, 0.2);
+      background-color: white;
+    }
+
+    .input-area button {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      border: none;
+      padding: 0;
+      margin-left: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: var(--transition);
+      width: 48px;
+      height: 48px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(46, 91, 255, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .input-area button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .input-area button::after {
+      content: "→";
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .input-area button:active {
+      transform: scale(0.95);
+    }
+
+    .clear-history {
+      position: absolute;
+      top: 16px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--primary);
+      border: none;
+      padding: 8px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      transition: var(--transition);
+      z-index: 10;
+    }
+
+    .clear-history:hover {
+      background: white;
+      box-shadow: var(--shadow-hover);
+      color: var(--accent);
+    }
+
+    .clear-history::before {
+      content: "🗑️";
+    }
+
+    .timestamp {
+      font-size: 11px;
+      color: rgba(0, 0, 0, 0.4);
+      margin: 2px 0 8px;
+      text-align: right;
+    }
+
+    .user-message + .timestamp {
+      text-align: right;
+    }
+
+    .bot-message + .timestamp {
+      text-align: left;
+    }
+
+    /* Animations */
+    @keyframes containerEntrance {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes messageAppear {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes typingAnimation {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
+    }
+
+    @keyframes buttonPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    /* Effet de "tremblement" pour les erreurs */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-4px); }
+      40%, 80% { transform: translateX(4px); }
+    }
+
+    .error-message {
+      animation: shake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    /* Animation d'onde pour les bulles */
+    .message::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%);
+      opacity: 0;
+      border-radius: inherit;
+    }
+
+    .message:hover::after {
+      animation: ripple 1s ease-out;
+    }
+
+    @keyframes ripple {
+      to {
+        transform: scale(1.5);
+        opacity: 0.3;
+      }
+    }
+
+    /* Scrollbar personnalisée */
+    .chat-window::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat-window::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 10px;
+    }
+
+    .chat-window::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    .chat-window::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.15);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .chat-container {
+        height: 100vh;
+        max-height: none;
+        border-radius: 0;
+      }
+      
+      .message {
+        max-width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>FitZoneChat</h2>
+      <button class="clear-history" id="clearHistory">Effacer</button>
+    </div>
+    <div class="chat-window" id="chatWindow"></div>
+    <form class="input-area" id="chatForm">
+      <input type="text" id="chatInput" placeholder="Posez votre question sur le fitness..." autocomplete="off" />
+      <button type="submit" id="sendButton"></button>
+    </form>
+  </div>
+
+  <script>
+    const chatWindow = document.getElementById('chatWindow');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const clearHistoryBtn = document.getElementById('clearHistory');
+    const sendButton = document.getElementById('sendButton');
+
+    const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+    const API_KEY = 'Bearer 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';
+
+    let messages = [];
+    let isTyping = false;
+
+    function addMessage(text, className) {
+      const messageContainer = document.createElement('div');
+      messageContainer.style.opacity = '0';
+      messageContainer.style.transform = className === 'user-message' ? 'translateX(20px)' : 'translateX(-20px)';
+      
+      const msg = document.createElement('div');
+      msg.className = 'message ' + className;
+      msg.textContent = text;
+      
+      // Ajout d'un timestamp
+      const now = new Date();
+      const timestamp = document.createElement('div');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      messageContainer.appendChild(msg);
+      messageContainer.appendChild(timestamp);
+      chatWindow.appendChild(messageContainer);
+      
+      // Animation d'entrée
+      setTimeout(() => {
+        messageContainer.style.transition = 'opacity 0.3s ease, transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        messageContainer.style.opacity = '1';
+        messageContainer.style.transform = 'translateX(0)';
+      }, 10);
+      
+      chatWindow.scrollTo({
+        top: chatWindow.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+
+    function showTypingIndicator() {
+      if (isTyping) return;
+      
+      isTyping = true;
+      const indicator = document.createElement('div');
+      indicator.className = 'typing-indicator';
+      indicator.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+      `;
+      chatWindow.appendChild(indicator);
+      chatWindow.scrollTo({
+        top: chatWindow.scrollHeight,
+        behavior: 'smooth'
+      });
+      
+      return indicator;
+    }
+
+    function hideTypingIndicator(indicator) {
+      if (!indicator) return;
+      
+      indicator.style.transition = 'opacity 0.3s ease';
+      indicator.style.opacity = '0';
+      setTimeout(() => {
+        indicator.remove();
+        isTyping = false;
+      }, 300);
+    }
+
+    function loadHistory() {
+      const savedMessages = localStorage.getItem('chatHistory');
+      if (savedMessages) {
+        messages = JSON.parse(savedMessages);
+        messages.forEach((msg, index) => {
+          const className = msg.role === 'user' ? 'user-message' : 'bot-message';
+          setTimeout(() => {
+            addMessage(msg.content, className);
+          }, index * 100);
+        });
+      } else {
+        const welcome = "🏋️‍♂️ Bonjour ! Je suis FitZoneChat, votre coach fitness. Prêt à transformer votre routine sportive ?";
+        setTimeout(() => {
+          addMessage(welcome, 'bot-message');
+        }, 300);
+        messages.push({ role: 'assistant', content: welcome });
+        saveHistory();
+      }
+    }
+
+    function saveHistory() {
+      localStorage.setItem('chatHistory', JSON.stringify(messages));
+    }
+
+    function clearHistory() {
+      // Animation de disparition
+      const messages = chatWindow.querySelectorAll('.message, .timestamp');
+      messages.forEach((msg, index) => {
+        setTimeout(() => {
+          msg.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+          msg.style.opacity = '0';
+          msg.style.transform = msg.classList.contains('user-message') 
+            ? 'translateX(30px)' 
+            : 'translateX(-30px)';
+        }, index * 50);
+      });
+      
+      setTimeout(() => {
+        localStorage.removeItem('chatHistory');
+        chatWindow.innerHTML = '';
+        messages = [];
+        
+        const welcome = "Conversation réinitialisée. Prêt pour une nouvelle séance ? 💪🔥";
+        addMessage(welcome, 'bot-message');
+        messages.push({ role: 'assistant', content: welcome });
+        saveHistory();
+        
+        // Animation du bouton
+        clearHistoryBtn.classList.add('pulse');
+        setTimeout(() => {
+          clearHistoryBtn.classList.remove('pulse');
+        }, 1000);
+      }, messages.length * 50 + 300);
+    }
+
+    // Charger l'historique au démarrage
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(loadHistory, 500);
+      
+      // Focus automatique sur l'input
+      setTimeout(() => {
+        chatInput.focus();
+      }, 1000);
+    });
+
+    // Gestion de l'envoi des messages
+    chatForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const userText = chatInput.value.trim();
+      if (!userText || isTyping) return;
+
+      // Ajout du message utilisateur avec animation
+      addMessage(userText, 'user-message');
+      messages.push({ role: 'user', content: userText });
+      saveHistory();
+      chatInput.value = '';
+      
+      // Désactiver le bouton pendant le traitement
+      sendButton.disabled = true;
+      sendButton.style.opacity = '0.7';
+      
+      // Afficher l'indicateur de typing
+      const typingIndicator = showTypingIndicator();
+
+      try {
+        // Appel API avec l'historique complet
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Authorization': API_KEY,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://www.sitename.com',
+            'X-Title': 'FitZoneChat'
+          },
+          body: JSON.stringify({
+            model: 'deepseek/deepseek-r1:free',
+            messages: messages
+          })
+        });
+
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        
+        const data = await response.json();
+        const botText = data.choices?.[0]?.message?.content || 'Je n\'ai pas pu traiter votre demande.';
+        
+        // Simuler un temps de frappe réaliste
+        hideTypingIndicator(typingIndicator);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Ajout de la réponse du bot
+        addMessage(botText, 'bot-message');
+        messages.push({ role: 'assistant', content: botText });
+        saveHistory();
+      } catch (error) {
+        hideTypingIndicator(typingIndicator);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        const errorMsg = 'Désolé, une erreur est survenue. Veuillez réessayer.';
+        addMessage(errorMsg, 'bot-message error-message');
+        messages.push({ role: 'assistant', content: errorMsg });
+        saveHistory();
+        
+        // Animation du bouton pour indiquer l'erreur
+        sendButton.style.animation = 'shake 0.6s';
+        setTimeout(() => {
+          sendButton.style.animation = '';
+        }, 600);
+      } finally {
+        sendButton.disabled = false;
+        sendButton.style.opacity = '1';
+        chatInput.focus();
+      }
+    });
+
+    // Bouton pour effacer l'historique
+    clearHistoryBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      clearHistory();
+      
+      // Animation de feedback
+      clearHistoryBtn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        clearHistoryBtn.style.transform = 'scale(1)';
+      }, 200);
+    });
+
+    // Micro-interaction sur le bouton d'envoi
+    sendButton.addEventListener('mousedown', () => {
+      sendButton.style.transform = 'scale(0.95)';
+    });
+    
+    sendButton.addEventListener('mouseup', () => {
+      sendButton.style.transform = 'scale(1)';
+    });
+    
+    sendButton.addEventListener('mouseleave', () => {
+      sendButton.style.transform = 'scale(1)';
+    });
+
+    // Amélioration de l'UX : envoi avec Shift+Enter
+    chatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatForm.dispatchEvent(new Event('submit'));
+      }
+    });
+  </script>
+</body>
+</html>

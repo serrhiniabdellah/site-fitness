@@ -10,41 +10,43 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchResults = document.getElementById('search-results');
     const searchContainer = document.getElementById('search-container');
 
+    // Exit if elements not found
+    if (!searchInput || !searchButton || !searchResults) return;
+
     // Add event listeners
-    if (searchInput && searchButton) {
-        // Search when button is clicked
-        searchButton.addEventListener('click', function() {
+    // Search when button is clicked
+    searchButton.addEventListener('click', function() {
+        performSearch(searchInput.value);
+    });
+
+    // Search when Enter key is pressed
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
             performSearch(searchInput.value);
-        });
+        }
+    });
 
-        // Search when Enter key is pressed
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+    // Live search as user types (with debounce)
+    let debounceTimer;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        if (searchInput.value.length >= 2) {
+            debounceTimer = setTimeout(function() {
                 performSearch(searchInput.value);
-            }
-        });
+            }, 500); // Wait 500ms after user stops typing
+        } else {
+            searchResults.innerHTML = '';
+            hideSearchResults();
+        }
+    });
 
-        // Live search as user types (with debounce)
-        let debounceTimer;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            if (searchInput.value.length >= 2) {
-                debounceTimer = setTimeout(function() {
-                    performSearch(searchInput.value);
-                }, 500); // Wait 500ms after user stops typing
-            } else {
-                searchResults.innerHTML = '';
-                hideSearchResults();
-            }
-        });
-
-        // Hide search results when clicking outside
-        document.addEventListener('click', function(event) {
-            if (!searchContainer.contains(event.target)) {
-                hideSearchResults();
-            }
-        });
-    }
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!searchContainer.contains(event.target) && 
+            !event.target.matches('#lg-search, #lg-search *')) {
+            hideSearchResults();
+        }
+    });
 
     /**
      * Perform search and display results
@@ -67,9 +69,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get API URL from config or use default
         const apiUrl = (window.CONFIG && window.CONFIG.API_URL) 
             ? window.CONFIG.API_URL 
-            : 'http://localhost/site_fitness/backend/api';
+            : 'http://localhost:8000/backend/api';
 
-        // Make API request
+        // Make API request to search endpoint
         fetch(`${apiUrl}/products/search.php?q=${encodeURIComponent(query)}`)
             .then(response => {
                 if (!response.ok) {
@@ -81,18 +83,101 @@ document.addEventListener('DOMContentLoaded', function() {
                 displaySearchResults(data, query);
             })
             .catch(error => {
-                searchResults.innerHTML = `
-                    <div class="search-error">
-                        <i class="fas fa-exclamation-circle"></i>
-                        <p>Error searching products</p>
-                    </div>
-                `;
                 console.error('Search error:', error);
+                // Fall back to client-side search if API fails
+                performClientSideSearch(query);
             });
     }
 
     /**
-     * Display search results
+     * Fallback to client-side search if API is unavailable
+     * @param {string} query - Search query
+     */
+    function performClientSideSearch(query) {
+        // Try to get products from global products array (if available)
+        if (typeof window.products !== 'undefined' && window.products.length > 0) {
+            const results = window.products.filter(product => 
+                product.name.toLowerCase().includes(query.toLowerCase()) || 
+                product.description.toLowerCase().includes(query.toLowerCase()) ||
+                product.brand.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 5); // Limit to 5 results
+            
+            displayClientSideResults(results, query);
+        } else {
+            searchResults.innerHTML = `
+                <div class="search-error">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Search service is currently unavailable</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
+     * Display client-side search results
+     * @param {Array} products - Filtered products
+     * @param {string} query - Search query
+     */
+    function displayClientSideResults(products, query) {
+        if (products.length === 0) {
+            searchResults.innerHTML = `
+                <div class="no-results">
+                    <p>No products found for "${query}"</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Create result list
+        const resultList = document.createElement('ul');
+        resultList.className = 'search-results-list';
+
+        // Add each product to results
+        products.forEach(product => {
+            const listItem = document.createElement('li');
+            listItem.className = 'search-result-item';
+
+            // Format price
+            const formattedPrice = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(product.price);
+
+            // Create HTML for result item
+            listItem.innerHTML = `
+                <a href="sproduct.html?id=${product.id}" class="search-result-link">
+                    <div class="search-result-image">
+                        <img src="${product.image || 'img/products/default.jpg'}" alt="${product.name}">
+                    </div>
+                    <div class="search-result-details">
+                        <h4 class="search-result-name">${product.name}</h4>
+                        <p class="search-result-category">${product.category || 'Product'}</p>
+                        <p class="search-result-price">${formattedPrice}</p>
+                    </div>
+                </a>
+            `;
+
+            resultList.appendChild(listItem);
+        });
+
+        // Add view all results link
+        const viewAllItem = document.createElement('li');
+        viewAllItem.className = 'search-view-all';
+        viewAllItem.innerHTML = `
+            <a href="shop.html?search=${encodeURIComponent(query)}">
+                View all results for "${query}" <i class="fas fa-arrow-right"></i>
+            </a>
+        `;
+        resultList.appendChild(viewAllItem);
+
+        // Add results to container
+        searchResults.innerHTML = '';
+        searchResults.appendChild(resultList);
+        showSearchResults();
+    }
+
+    /**
+     * Display API search results
      * @param {Object} data - API response data
      * @param {string} query - Search query
      */
@@ -129,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Create HTML for result item
                 listItem.innerHTML = `
-                    <a href="${product.url}" class="search-result-link">
+                    <a href="sproduct.html?id=${product.id}" class="search-result-link">
                         <div class="search-result-image">
                             <img src="${product.image || 'img/products/default.jpg'}" alt="${product.name}">
                         </div>
@@ -158,11 +243,8 @@ document.addEventListener('DOMContentLoaded', function() {
             searchResults.appendChild(resultList);
             showSearchResults();
         } else {
-            searchResults.innerHTML = `
-                <div class="search-error">
-                    <p>Error retrieving search results</p>
-                </div>
-            `;
+            // Fallback to client-side search
+            performClientSideSearch(query);
         }
     }
 
@@ -171,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function showSearchResults() {
         searchResults.style.display = 'block';
+        searchResults.classList.add('show');
     }
 
     /**
@@ -178,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function hideSearchResults() {
         searchResults.style.display = 'none';
+        searchResults.classList.remove('show');
     }
 
     /**
@@ -185,10 +269,13 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     window.toggleSearchBar = function() {
         if (searchContainer) {
-            const isVisible = searchContainer.style.display === 'flex';
-            searchContainer.style.display = isVisible ? 'none' : 'flex';
-            
-            if (!isVisible) {
+            const isVisible = searchContainer.classList.contains('active');
+            if (isVisible) {
+                searchContainer.classList.remove('active');
+                // Also hide search results
+                hideSearchResults();
+            } else {
+                searchContainer.classList.add('active');
                 // Focus the search input when opening
                 setTimeout(() => {
                     searchInput.focus();

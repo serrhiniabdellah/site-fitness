@@ -15,6 +15,29 @@
                 <i class="fas fa-search" aria-hidden="true"></i>
             </a>
         </li>
-        <li><a href="login.html" class="auth-link">Login</a></li>
+        <!-- Search Bar Integration -->
+        <li class="search-container">
+            <form id="search-form">
+                <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                <button type="submit" id="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+            <div id="search-results" class="search-results"></div>
+        </li>
+        <!-- End Search Bar Integration -->
+        <li class="account-menu" id="account-menu-login">
+            <a href="login.html" class="auth-link">Login</a>
+        </li>
+        <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+            <a href="profile.html" class="account-link">
+                <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+            </a>
+            <div class="dropdown-content">
+                <a href="profile.html">My Profile</a>
+                <a href="orders.html">My Orders</a>
+                <a href="#" id="logout-link">Logout</a>
+            </div>
+        </li>
     </ul>
 </nav>

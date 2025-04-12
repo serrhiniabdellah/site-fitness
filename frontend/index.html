@@ -1,10 +1,15 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/websocket-fix.js"></script>
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+
+    
     <title>FitZone - Home</title>
     
     <!-- CRITICAL: Universal logout script - must load first -->
@@ -13,28 +18,37 @@
     <!-- Early WebSocket Fix - Load before any other scripts -->
     <script src="js/websocket-earlyfix.js"></script>
     
-    <title>FitZone</title>
     <!-- Load WebSocket fixes in proper order - ONLY ONE SHOULD APPLY -->
-    <!-- PICK ONE OF THESE OPTIONS - comment out the others -->
     <script src="js/global-websocket-fix.js"></script>
-    <!-- <script src="chrome-extension-fix.js"></script> -->
-    <!-- <script src="chrome-extension-reload-fix.js"></script> -->
+    
     <!-- Add auth and CORS handlers -->
     <script src="js/cors-proxy.js"></script>
     <script src="js/auth-persistence.js"></script>
     <script src="js/auth-logout.js"></script>
     <script src="js/auth-header.js"></script>
-    <!-- Updated Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:*;">
-    <title>FitZone - Premium Fitness Products</title>
-    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <!-- Add auth-logout.js for robust logout functionality -->
+<script src="js/auth-logout.js"></script>
+<script src="js/universal-logout.js"></script>
 
-    <link rel="stylesheet" href="style.css">
-    <!-- Other existing stylesheets and meta tags -->
+<script src="js/universal-logout-fix.js"></script>
+    <!-- Updated Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://pro.fontawesome.com https://unpkg.com https://fonts.googleapis.com; font-src 'self' https://pro.fontawesome.com https://unpkg.com https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ws://127.0.0.1:* wss://127.0.0.1:* https://openrouter.ai;">
     
+    <!-- External stylesheets -->
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Add chatbot widget CSS -->
+    <link rel="stylesheet" href="css/chatbot-widget.css">
+    
+    <!-- Add search CSS -->
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="login.css">
+
     <!-- Include cart service script -->
     <script src="js/cart-service.js"></script>
     <script src="js/global-cart.js"></script>
+    
     <style>
         .scroll-indicator {
             position: absolute;
@@ -83,7 +97,19 @@
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
-                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                
+                <!-- Search Bar Integration -->
+                <li class="search-container">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                        <button type="submit" id="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                    <div id="search-results" class="search-results"></div>
+                </li>
+                <!-- End Search Bar Integration -->
+                
                 <li class="account-menu" id="account-menu-login">
                     <a href="login.html">Login</a>
                 </li>
@@ -102,64 +128,17 @@
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Rechercher des produits...">
+                <input type="text" id="search-input" placeholder="Search for products...">
                 <button id="search-button"><i class="fas fa-search"></i></button>
                 <div id="search-results"></div>
             </div>
         </div>
         <div id="mobile">
-            <a href="cart.html"><i class="far fa-shopping-bag"></i></a>
+            <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
             <i class="fas fa-search" onclick="toggleSearchBar()"></i>
             <i id="bar" class="fas fa-outdent"></i>
         </div>
     </section>
-
-    <!-- Add styles for the account dropdown menu if not already present -->
-    <style>
-        /* Account dropdown menu styling */
-        .account-menu {
-            position: relative;
-        }
-        
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: #fff;
-            min-width: 180px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-            z-index: 1;
-            right: 0;
-            border-radius: 4px;
-        }
-        
-        .account-menu:hover .dropdown-content {
-            display: block;
-        }
-        
-        .dropdown-content a {
-            color: #1a1a1a;
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-            font-size: 14px;
-            border-radius: 0;
-        }
-        
-        .dropdown-content a:hover {
-            background-color: #f1f1f1;
-            color: #088178;
-        }
-        
-        .dropdown-content a:last-child {
-            border-bottom-left-radius: 4px;
-            border-bottom-right-radius: 4px;
-        }
-        
-        .dropdown-content a:first-child {
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-    </style>
 
     <section id="hero">
         <h4>Fitness Essentials</h4>
@@ -202,55 +181,49 @@
         </div>
     </section>
 
-    <!-- Make sure product cards in the featured product section link to sproduct.html -->
-
-<section id="product1" class="section-p1">
-    <h2>Featured Products</h2>
-    <p>Summer Collection New Modern Design</p>
-    <div class="pro-container">
-        <!-- Modify each product to have proper links -->
-        <div class="pro" data-id="1">
-            <a href="sproduct.html?id=1">
-                <img src="img/products/img7.png" alt="Whey Protein Premium">
-            </a>
-            <div class="des">
-                <span>Protein</span>
-                <h5><a href="sproduct.html?id=1">Whey Protein Premium</a></h5>
-                <div class="star">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
+    <section id="product1" class="section-p1">
+        <h2>Featured Products</h2>
+        <p>Summer Collection New Modern Design</p>
+        <div class="pro-container">
+            <div class="pro" data-id="1">
+                <a href="sproduct.html?id=1">
+                    <img src="img/products/img7.png" alt="Whey Protein Premium">
+                </a>
+                <div class="des">
+                    <span>Protein</span>
+                    <h5><a href="sproduct.html?id=1">Whey Protein Premium</a></h5>
+                    <div class="star">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h4>$49.99</h4>
                 </div>
-                <h4>$49.99</h4>
+                <a href="#" class="cart" onclick="addToCart(event, 1)"><i class="fal fa-shopping-cart"></i></a>
             </div>
-            <a href="#" class="cart" onclick="addToCart(event, 1)"><i class="fal fa-shopping-cart"></i></a>
-        </div>
-        
-        <div class="pro" data-id="2">
-            <a href="sproduct.html?id=2">
-                <img src="img/products/MASS3.avif" alt="Mass Gainer 5000">
-            </a>
-            <div class="des">
-                <span>Mass Gainers</span>
-                <h5><a href="sproduct.html?id=2">Mass Gainer 5000</a></h5>
-                <div class="star">
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star"></i>
-                    <i class="fas fa-star-half-alt"></i>
+            
+            <div class="pro" data-id="2">
+                <a href="sproduct.html?id=2">
+                    <img src="img/products/MASS3.avif" alt="Mass Gainer 5000">
+                </a>
+                <div class="des">
+                    <span>Mass Gainers</span>
+                    <h5><a href="sproduct.html?id=2">Mass Gainer 5000</a></h5>
+                    <div class="star">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <h4>$59.99</h4>
                 </div>
-                <h4>$59.99</h4>
+                <a href="#" class="cart" onclick="addToCart(event, 2)"><i class="fal fa-shopping-cart"></i></a>
             </div>
-            <a href="#" class="cart" onclick="addToCart(event, 2)"><i class="fal fa-shopping-cart"></i></a>
         </div>
-        
-        <!-- Continue with the same pattern for other products -->
-        <!-- ... existing code for other products ... -->
-    </div>
-</section>
+    </section>
 
     <section id="banner" class="section-m1">
         <h4>Special Offers</h4>
@@ -297,115 +270,6 @@
                     <h4>$64.99</h4>
                 </div>
                 <a href="#" class="cart" onclick="addToCart(event, 'protein2')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <!-- Continue for each product... -->
-            <div class="pro" data-category="mass-gainers" data-id="mass4">
-                <a href="sproduct.html?id=mass4">
-                    <img src="img/products/mass2.png" alt="Super Mass Gainer">
-                </a>
-                <div class="des">
-                    <span>NutriMass</span>
-                    <h5><a href="sproduct.html?id=mass4">Max Gainer Pro Complex - Vanilla</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star-half-alt"></i>
-                    </div>
-                    <h4>$69.99</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'mass4')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <div class="pro" data-category="mass-gainers" data-id="mass6">
-                <a href="sproduct.html?id=mass6">
-                    <img src="img/products/masse.jpeg" alt="Extreme Mass Builder">
-                </a>
-                <div class="des">
-                    <span>MuscleForce</span>
-                    <h5><a href="sproduct.html?id=mass6">Elite Mass Gainer - Double Chocolate</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star-half-alt"></i>
-                    </div>
-                    <h4>$75</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'mass6')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <div class="pro" data-category="mass-gainers" data-id="mass3">
-                <a href="sproduct.html?id=mass3">
-                    <img src="img/products/HYPERmass.avif" alt="Hyper Mass Gainer">
-                </a>
-                <div class="des">
-                    <span>MuscleMax</span>
-                    <h5><a href="sproduct.html?id=mass3">HyperMass 5000 - Ultimate Weight Gainer</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$89.99</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'mass3')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <div class="pro" data-category="equipment" data-id="equip3">
-                <a href="sproduct.html?id=equip3">
-                    <img src="img/products/img8.png" alt="Adjustable Dumbbells">
-                </a>
-                <div class="des">
-                    <span>PowerFit</span>
-                    <h5><a href="sproduct.html?id=equip3">Adjustable Dumbbell Set - 2.5-25kg</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$199.99</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'equip3')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <div class="pro" data-category="bcaa" data-id="bcaa1">
-                <a href="sproduct.html?id=bcaa1">
-                    <img src="img/products/Bcaa.jpeg" alt="BCAA Energy">
-                </a>
-                <div class="des">
-                    <span>AminoFit</span>
-                    <h5><a href="sproduct.html?id=bcaa1">Essential BCAA 2:1:1 - Berry Blast</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$39.99</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'bcaa1')"><i class="fal fa-shopping-cart"></i></a>
-            </div>
-            <div class="pro" data-category="bcaa" data-id="bcaa3">
-                <a href="sproduct.html?id=bcaa3">
-                    <img src="img/products/Bcaa2.jpg" alt="BCAA Ultimate">
-                </a>
-                <div class="des">
-                    <span>FitZone</span>
-                    <h5><a href="sproduct.html?id=bcaa3">Premium BCAA 4:1:1 - Tropical Punch</a></h5>
-                    <div class="star">
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <h4>$48</h4>
-                </div>
-                <a href="#" class="cart" onclick="addToCart(event, 'bcaa3')"><i class="fal fa-shopping-cart"></i></a>
             </div>
         </div>
     </section>
@@ -512,6 +376,8 @@
     <script src="js/search.js"></script>
     <script src="script.js"></script>
     <script src="js/header.js"></script>
+    <!-- Add chatbot widget JS -->
+    <script src="js/chatbot-widget.js"></script>
     
     <!-- Development only - Fixed reload script with proper WebSocket URL -->
     <script src="reload.js"></script>

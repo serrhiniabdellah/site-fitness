@@ -25,15 +25,40 @@
                 <li><a href="contact.html" class="ACTIVE_CONTACT_PLACEHOLDER">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html" class="ACTIVE_CART_PLACEHOLDER"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
                 <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
-                <li id="account-link"><a href="login.html" class="ACTIVE_ACCOUNT_PLACEHOLDER">Login</a></li>
+                
+                <!-- Search Bar Integration -->
+                <li class="search-container">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                        <button type="submit" id="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                    <div id="search-results" class="search-results"></div>
+                </li>
+                <!-- End Search Bar Integration -->
+                
+                <li class="account-menu" id="account-menu-login">
+                    <a href="login.html" class="ACTIVE_LOGIN_PLACEHOLDER">Login</a>
+                </li>
+                <li class="account-menu" id="account-menu-dropdown" style="display:none;">
+                    <a href="profile.html" class="account-link ACTIVE_PROFILE_PLACEHOLDER">
+                        <span id="user-name-nav">Account</span> <i class="fas fa-user"></i>
+                    </a>
+                    <div class="dropdown-content">
+                        <a href="profile.html">My Profile</a>
+                        <a href="orders.html" class="ACTIVE_ORDERS_PLACEHOLDER">My Orders</a>
+                        <a href="#" id="logout-link">Logout</a>
+                    </div>
+                </li>
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
         <div id="search-container">
             <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Search for products...">
-                <button id="search-button"><i class="fas fa-search"></i></button>
-                <div id="search-results"></div>
+                <input type="text" id="mobile-search-input" placeholder="Search products...">
+                <button id="mobile-search-button"><i class="fas fa-search"></i></button>
+                <div id="mobile-search-results" class="search-results"></div>
             </div>
         </div>
         <div id="mobile">

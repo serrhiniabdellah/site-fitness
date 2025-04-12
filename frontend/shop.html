@@ -6,7 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitZone - Shop</title>
-    
+    <script src="js/websocket-fix.js"></script>
+    <script src="chrome-extension-fix.js"></script>
+    <script src="chrome-extension-reload-fix.js"></script>
+    <script src="js/cors-proxy.js"></script>
+    <script src="js/auth-persistence.js"></script>
+
     <!-- CRITICAL: Universal logout script - must load first -->
     <script src="js/universal-logout.js"></script>
     
@@ -15,6 +20,9 @@
     
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="css/search.css">
+
     <!-- Add config.js before other scripts -->
     <script src="js/config.js"></script>
     <style>
@@ -248,11 +256,22 @@
         <div>
             <ul id="navbar">
                 <li><a href="index.html">Home</a></li>
-                <li><a href="shop.html" class="active">Shop</a></li>
+                <li><a class="active" href="shop.html">Shop</a></li>
                 <li><a href="about.html">About</a></li>
                 <li><a href="contact.html">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
-                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                <!-- Search Bar Integration -->
+                <li class="search-container">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                        <button type="submit" id="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                    <div id="search-results" class="search-results"></div>
+                </li>
+                <!-- End Search Bar Integration -->
+                
                 <li class="account-menu" id="account-menu-login">
                     <a href="login.html">Login</a>
                 </li>

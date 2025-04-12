@@ -5,9 +5,24 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="js/logout-debug.js"></script>
+    <script src="js/auth-header.js"></script>
+    <script src="js/auth-logout.js"></script>
+    <script src="js/header.js"></script>
+    <script src="script.js"></script>
+    <!-- Base configuration -->
+    <script src="js/config.js"></script>
+
+    <!-- Core modules -->
+    <script src="js/auth.js"></script>
+
+
     <title>FitZone - Contact Us</title>
     <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" />
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="login.css">
+
     <style>
         #page-header.about-header {
             background-image: url('img/banner/b14.png');
@@ -48,9 +63,20 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="shop.html">Shop</a></li>
                 <li><a href="about.html">About</a></li>
-                <li><a class="active" href="contact.html">Contact</a></li>
+                <li><a href="contact.html" class="active">Contact</a></li>
                 <li id="lg-bag"><a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a></li>
-                <li id="lg-search"><a href="#" onclick="toggleSearchBar()"><i class="fas fa-search"></i></a></li>
+                
+                <!-- Search Bar Integration -->
+                <li class="search-container">
+                    <form id="search-form">
+                        <input type="text" id="search-input" placeholder="Search products..." aria-label="Search products">
+                        <button type="submit" id="search-button">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
+                    <div id="search-results" class="search-results"></div>
+                </li>
+                <!-- End Search Bar Integration -->
                 <li class="account-menu" id="account-menu-login">
                     <a href="login.html">Login</a>
                 </li>
@@ -67,13 +93,7 @@
                 <a href="#" id="close"><i class="far fa-times"></i></a>
             </ul>
         </div>
-        <div id="search-container">
-            <div class="search-wrapper">
-                <input type="text" id="search-input" placeholder="Search for products...">
-                <button id="search-button"><i class="fas fa-search"></i></button>
-                <div id="search-results"></div>
-            </div>
-        </div>
+
         <div id="mobile">
             <a href="cart.html"><i class="far fa-shopping-bag"></i><span class="cart-count">0</span></a>
             <i class="fas fa-search" onclick="toggleSearchBar()"></i>
@@ -209,113 +229,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Form submission handler
-            const contactForm = document.getElementById('contact-form');
-            const formMessage = document.getElementById('form-message');
-            
-            if (contactForm) {
-                contactForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    const name = document.getElementById('name').value;
-                    const email = document.getElementById('email').value;
-                    const subject = document.getElementById('subject').value;
-                    const message = document.getElementById('message').value;
-                    
-                    // Show loading state
-                    formMessage.innerHTML = '<p class="info-message">Sending your message...</p>';
-                    
-                    // Simulate sending (in a real app, you'd make an API request here)
-                    setTimeout(() => {
-                        console.log('Contact form submission:', { name, email, subject, message });
-                        
-                        // Reset form
-                        contactForm.reset();
-                        
-                        // Show success message
-                        formMessage.innerHTML = '<p class="success-message">Thank you for your message! We\'ll get back to you soon.</p>';
-                        
-                        // Clear success message after 5 seconds
-                        setTimeout(() => {
-                            formMessage.innerHTML = '';
-                        }, 5000);
-                    }, 1500);
-                });
-            }
-            
-            // Update cart count
-            function updateCartCount() {
-                const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
-                const cartCountElements = document.querySelectorAll('.cart-count');
-                
-                const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
-                
-                cartCountElements.forEach(element => {
-                    element.innerText = totalItems;
-                    
-                    if (totalItems > 0) {
-                        element.style.display = 'block';
-                    } else {
-                        element.style.display = 'none';
-                    }
-                });
-            }
-            
-            // Call update cart count when page loads
-            updateCartCount();
-
-            // Check if user is logged in and update navigation
-            function updateAuthUI() {
-                const isLoggedIn = typeof FitZoneAuth !== 'undefined' && FitZoneAuth.isLoggedIn();
-                const loginLink = document.getElementById('login-link');
-                const logoutLink = document.getElementById('logout-link');
-                const ordersLink = document.getElementById('orders-link');
-                
-                if (isLoggedIn) {
-                    // User is logged in
-                    if (loginLink) loginLink.innerHTML = 'My Account';
-                    if (loginLink) loginLink.href = 'profile.html';
-                    if (logoutLink) logoutLink.style.display = 'block';
-                    if (ordersLink) ordersLink.style.display = 'block';
-                } else {
-                    // User is not logged in
-                    if (loginLink) loginLink.innerHTML = 'Login';
-                    if (loginLink) loginLink.href = 'login.html';
-                    if (logoutLink) logoutLink.style.display = 'none';
-                    if (ordersLink) ordersLink.style.display = 'none';
-                }
-            }
-            
-            // Handle logout
-            document.getElementById('logout-link').addEventListener('click', function(e) {
-                e.preventDefault();
-                if (typeof FitZoneAuth !== 'undefined') {
-                    FitZoneAuth.logout();
-                    window.location.href = 'index.html';
-                }
-            });
-            
-            // Call functions on page load
-            updateAuthUI();
-        });
-    </script>
-    
-    <!-- Remove any existing "Déconnexion" button functionality -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Hide any old déconnexion buttons
-            const oldLogoutBtns = document.querySelectorAll('a[href="javascript:void(0)"]');
-            oldLogoutBtns.forEach(btn => {
-                if (btn.textContent.trim() === 'Déconnexion') {
-                    btn.style.display = 'none';
-                }
-            });
-        });
-    </script>
-    
     <!-- Scripts -->
     <script src="chrome-extension-fix.js"></script>
     <script src="js/auth-persistence.js"></script>
@@ -443,7 +356,6 @@
             display: none !important;
         }
     </style>
-    <script src="js/auth-ui.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Check if user is logged in
@@ -466,18 +378,8 @@
                     userNameNav.textContent = user.prenom;
                 }
                 
-                // Setup logout functionality
-                const logoutLink = document.getElementById('logout-link');
-                if (logoutLink) {
-                    logoutLink.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        console.log('Logout clicked');
-                        if (typeof FitZoneAuth !== 'undefined') {
-                            FitZoneAuth.logout();
-                            window.location.href = 'index.html';
-                        }
-                    });
-                }
+                // Setup unified logout functionality
+                setupLogoutHandlers();
                 
                 // Hide any old "Déconnexion" buttons
                 const oldLogoutBtns = document.querySelectorAll('a[href="javascript:void(0)"]');
@@ -491,8 +393,59 @@
                 if (loginMenu) loginMenu.style.display = 'block';
                 if (dropdownMenu) dropdownMenu.style.display = 'none';
             }
+            
+            // Handle logout from both profile button and dropdown with a single function
+            function setupLogoutHandlers() {
+                // Handle profile logout button
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked from profile button');
+                        performLogout();
+                    });
+                }
+                
+                // Handle dropdown logout link
+                const logoutLink = document.getElementById('logout-link');
+                if (logoutLink) {
+                    logoutLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Logout clicked from dropdown');
+                        performLogout();
+                    });
+                }
+            }
+            
+            // Unified logout function
+            function performLogout() {
+                console.log('Performing logout');
+                
+                try {
+                    // Signal to other components that this is a user-initiated logout
+                    window.preventAutoLogout = false;
+                    window.lastUserInteraction = Date.now();
+                    
+                    // Clear all auth data directly - this is the most reliable approach
+                    localStorage.removeItem('fitzone_token');
+                    localStorage.removeItem('fitzone_user');
+                    localStorage.removeItem('fitzone_auth_state');
+                    
+                    // Trigger any logout handlers that might be listening for these events
+                    window.dispatchEvent(new CustomEvent('fitzone_logout'));
+                    
+                    // Redirect to homepage
+                    console.log('Logout successful, redirecting to home page');
+                    window.location.href = 'index.html';
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                    alert('An error occurred during logout. Your session has been cleared.');
+                    window.location.href = 'index.html';
+                }
+            }
         });
     </script>
 </body>
 
 </html>
+``` 

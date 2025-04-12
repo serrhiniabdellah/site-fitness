@@ -692,8 +692,18 @@
                         
                         html += `
                             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <div>${name} x ${quantity}</div>
-                                <div>$${itemTotal.toFixed(2)}</div>
+                                <div style="flex: 3;">
+                                    <strong>${name}</strong>
+                                    <div style="color: #666; font-size: 14px;">
+                                        ${item.variant_name ? `Size: ${item.variant_name}` : ''}
+                                    </div>
+                                </div>
+                                <div style="flex: 1; text-align: center;">
+                                    x${quantity}
+                                </div>
+                                <div style="flex: 1; text-align: right;">
+                                    $${itemTotal.toFixed(2)}
+                                </div>
                             </div>
                         `;
                     });
@@ -882,3 +892,4 @@
     </script>
 </body>
 </html>
+``` 
