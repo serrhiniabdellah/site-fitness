@@ -170,45 +170,12 @@ const products = [
         features: ["52g protein per serving", "Complex carb blend", "Added BCAAs", "Rich chocolate flavor", "Mixes easily"]
     },
     {
-        id: "bcaa1",
-        category: "bcaa",
-        brand: "AminoFit",
-        name: "Essential BCAA 2:1:1 - Berry Blast",
-        price: 45,
-        image: "img/products/Bcaa.jpeg",
-        stars: 5,
-        description: "Essential branched-chain amino acids in the scientifically proven 2:1:1 ratio.",
-        features: ["Supports muscle recovery", "Prevents muscle breakdown", "Enhances protein synthesis", "Great berry taste", "No artificial colors"]
-    },
-    {
-        id: "bcaa2",
-        category: "bcaa",
-        brand: "PeakPerformance",
-        name: "Advanced BCAA Recovery Formula",
-        price: 55,
-        image: "img/products/Bcaa1.jpeg",
-        stars: 4.5,
-        description: "Enhanced BCAA formula with added electrolytes for improved recovery.",
-        features: ["Fermented BCAAs", "Added electrolytes", "Contains glutamine", "Sugar-free formula", "Supports hydration"]
-    },
-    {
-        id: "bcaa3",
-        category: "bcaa",
-        brand: "FitZone",
-        name: "Premium BCAA 4:1:1 - Tropical Punch",
-        price: 48,
-        image: "img/products/Bcaa2.jpg",
-        stars: 5,
-        description: "Advanced 4:1:1 ratio BCAA formula for enhanced muscle support.",
-        features: ["Higher leucine content", "Added citrulline", "Tropical punch flavor", "Supports endurance", "Anti-catabolic effects"]
-    },
-    {
         id: "protein1",
         category: "protein",
         brand: "Premium Nutrition",
         name: "Gold Standard Whey Protein",
         price: 60,
-        image: "img/products/pro1.jpeg",
+        image: "img/products/img6.png",
         stars: 5,
         description: "Industry-leading whey protein with superior mixability and taste.",
         features: ["24g protein per serving", "Low in fat and carbs", "Fast-absorbing formula", "Supports muscle growth", "Multiple flavors available"]
@@ -230,7 +197,7 @@ const products = [
         brand: "FitGear",
         name: "Pro Resistance Bands Set - 5 Levels",
         price: 29.99,
-        image: "img/products/img6.png",
+        image: "img/products/71.jpg",
         stars: 5,
         description: "Complete resistance bands set for home workouts with varying resistance levels.",
         features: ["5 different resistance levels", "Durable latex material", "Includes door anchor", "Comfortable handles", "Carrying bag included"]
@@ -241,12 +208,160 @@ const products = [
         brand: "PowerFit",
         name: "Adjustable Dumbbell Set - 2.5-25kg",
         price: 199.99,
-        image: "img/products/img8.png",
+        image: "img/products/img8.avif",
         stars: 5,
         description: "Space-saving adjustable dumbbells for comprehensive home workouts.",
         features: ["Adjustable from 2.5kg to 25kg", "Replaces multiple dumbbells", "Quick weight change mechanism", "Durable construction", "Compact storage"]
     }
 ];
+
+// Add BCAA mock products with complete data
+function getBcaaProducts() {
+    return [
+        {
+            id: "bcaa1",
+            id_produit: "bcaa1", 
+            category: "bcaa",
+            category_name: "BCAA Supplements",
+            id_categorie: 3,
+            brand: "AminoFit",
+            name: "Essential BCAA 2:1:1 - Berry Blast",
+            nom_produit: "Essential BCAA 2:1:1 - Berry Blast",
+            price: 45,
+            prix: 45,
+            image: "img/products/Bcaa.jpeg",
+            stars: 5,
+            stock: 25,
+            description: "Essential branched-chain amino acids in the scientifically proven 2:1:1 ratio.",
+            features: ["Supports muscle recovery", "Prevents muscle breakdown", "Enhances protein synthesis", "Great berry taste", "No artificial colors"]
+        },
+        {
+            id: "bcaa2",
+            id_produit: "bcaa2",
+            category: "bcaa",
+            category_name: "BCAA Supplements",
+            id_categorie: 3,
+            brand: "PeakPerformance",
+            name: "Advanced BCAA Recovery Formula",
+            nom_produit: "Advanced BCAA Recovery Formula",
+            price: 55,
+            prix: 55,
+            image: "img/products/Bcaa1.jpeg",
+            stars: 4.5,
+            stock: 18,
+            description: "Enhanced BCAA formula with added electrolytes for improved recovery.",
+            features: ["Fermented BCAAs", "Added electrolytes", "Contains glutamine", "Sugar-free formula", "Supports hydration"]
+        },
+        {
+            id: "bcaa3",
+            id_produit: "bcaa3",
+            category: "bcaa",
+            category_name: "BCAA Supplements",
+            id_categorie: 3,
+            brand: "FitZone",
+            name: "Premium BCAA 4:1:1 - Tropical Punch",
+            nom_produit: "Premium BCAA 4:1:1 - Tropical Punch",
+            price: 48,
+            prix: 48,
+            image: "img/products/Bcaa2.jpg",
+            stars: 5,
+            stock: 22,
+            description: "Advanced 4:1:1 ratio BCAA formula for enhanced muscle support. Our premium blend is designed to support optimal muscle recovery and growth during intense training periods. The higher leucine content helps stimulate protein synthesis more effectively than standard 2:1:1 formulas.",
+            features: ["Higher leucine content", "Added citrulline", "Tropical punch flavor", "Supports endurance", "Anti-catabolic effects"]
+        }
+    ];
+}
+
+// Add sample reviews data for mock products
+function getMockReviews(productId) {
+    const allReviews = {
+        'bcaa1': [
+            {
+                prenom: 'David Miller',
+                date_avis: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 5,
+                commentaire: "Great product! I've been using this BCAA for 3 months and it's helped my recovery tremendously."
+            },
+            {
+                prenom: 'Sarah Johnson',
+                date_avis: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 4.5,
+                commentaire: "Love the taste and it mixes well. I feel less sore after my workouts."
+            }
+        ],
+        'bcaa2': [
+            {
+                prenom: 'Michael Thompson',
+                date_avis: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 4,
+                commentaire: "Good formula with electrolytes. Helps me stay hydrated during workouts."
+            },
+            {
+                prenom: 'Jennifer Adams',
+                date_avis: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 5,
+                commentaire: "Best recovery supplement I've tried! Will definitely purchase again."
+            }
+        ],
+        'bcaa3': [
+            {
+                prenom: 'Robert Garcia',
+                date_avis: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 5,
+                commentaire: "The tropical punch flavor is amazing! I look forward to drinking this after every workout."
+            },
+            {
+                prenom: 'Emily Wilson',
+                date_avis: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 4.5,
+                commentaire: "Great value for the quality. The 4:1:1 ratio seems to help with recovery better than other BCAAs I've tried."
+            },
+            {
+                prenom: 'John Martinez',
+                date_avis: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+                note: 5,
+                commentaire: "This has become a staple in my supplement routine. Highly recommended for serious athletes!"
+            }
+        ]
+    };
+    
+    // Return product-specific reviews or default reviews if not found
+    return allReviews[productId] || [
+        {
+            prenom: 'Default User',
+            date_avis: new Date().toISOString(),
+            note: 4.5,
+            commentaire: "Good quality product. Meets expectations."
+        }
+    ];
+}
+
+// Get related products by category (returns products excluding the current one)
+function getRelatedProductsByCategory(category, currentProductId) {
+    // Find products from all arrays by category
+    let relatedProducts = [];
+    
+    // Add BCAA products if category matches or if we need BCAA products specifically
+    if (!category || category === 'bcaa' || category === '3') {
+        relatedProducts = [...relatedProducts, ...getBcaaProducts()];
+    }
+    
+    // Add main products array if it exists
+    if (typeof products !== 'undefined' && Array.isArray(products)) {
+        relatedProducts = [...relatedProducts, ...products];
+    }
+    
+    // Filter out the current product and limit to related category if specified
+    return relatedProducts
+        .filter(p => p.id !== currentProductId && 
+                    (!category || 
+                     p.category === category || 
+                     p.id_categorie === category ||
+                     (category === 'bcaa' && p.category === 'bcaa') ||
+                     (category === '3' && (p.category === 'bcaa' || p.id_categorie === 3))
+                    ))
+        .slice(0, 4); // Limit to 4 products
+}
 
 // Function to get all products
 function getAllProducts() {

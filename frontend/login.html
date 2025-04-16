@@ -29,6 +29,7 @@
     <script src="js/cart-service.js"></script>
     <script src="js/global-cart.js"></script>
     <script src="js/cart-merge.js"></script>
+    <script src="js/cart-auth-integration.js"></script>
     <script src="js/auth-debug.js"></script>
     <!-- Add auth-logout.js for reliable logout functionality -->
     <script src="js/auth-logout.js"></script>
@@ -429,7 +430,7 @@
                                 if (window.CartMerge) {
                                     try {
                                         submitBtn.textContent = 'Merging your cart...';
-                                        await CartMerge.mergeCartsOnLogin();
+                                        await CartMerge.mergeAnonymousCart(token);
                                     } catch (cartError) {
                                         console.error('Error merging carts:', cartError);
                                         // Continue despite merge error

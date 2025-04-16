@@ -105,7 +105,7 @@ const products = [
         brand: "Premium Nutrition",
         name: "Gold Standard Whey Protein",
         price: 60,
-        image: "img/products/pro1.jpeg",
+        image: "img/products/img6.png",
         stars: 5,
         description: "Industry-leading whey protein with superior mixability and taste.",
         features: ["24g protein per serving", "Low in fat and carbs", "Fast-absorbing formula", "Supports muscle growth", "Multiple flavors available"]
@@ -127,7 +127,7 @@ const products = [
         brand: "FitGear",
         name: "Pro Resistance Bands Set - 5 Levels",
         price: 29.99,
-        image: "img/products/img6.png",
+        image: "img/products/71.jpg",
         stars: 5,
         description: "Complete resistance bands set for home workouts with varying resistance levels.",
         features: ["5 different resistance levels", "Durable latex material", "Includes door anchor", "Comfortable handles", "Carrying bag included"]
@@ -138,7 +138,7 @@ const products = [
         brand: "PowerFit",
         name: "Adjustable Dumbbell Set - 2.5-25kg",
         price: 199.99,
-        image: "img/products/img8.png",
+        image: "img/products/img8.avif",
         stars: 5,
         description: "Space-saving adjustable dumbbells for comprehensive home workouts.",
         features: ["Adjustable from 2.5kg to 25kg", "Replaces multiple dumbbells", "Quick weight change mechanism", "Durable construction", "Compact storage"]
